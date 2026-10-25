@@ -10,6 +10,7 @@ from venues import identity
 BASE='/keirin-lineup2/'
 REPOSITORY='itaingtr/keirin-lineup2'
 SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-comparison.js')
+TOP_BUTTON=f'''<button type="button" class="refresh-button home-button" onclick="location.href='{BASE}'" aria-label="トップページへ">トップ</button>'''
 MOBILE_STYLE='''<style id="mobile-readability-style">
 @media(max-width:640px){
 html{overflow-x:auto}
@@ -44,6 +45,8 @@ def public_html(page,day):
     result=re.sub(r'value="(?:\./|/)?(?:line)?(\d{8})\.html/?"',
                   lambda match:'value="'+BASE+'line'+match[1]+'.html"',result)
     if day>='20261025':
+        result=re.sub(r'(<button[^>]*class="refresh-button"[^>]*>更新</button>)',
+                      lambda match:match[1]+TOP_BUTTON,result,count=1)
         # 1.12 * 1.12: enlarge the layout without pre-zooming Safari's visual
         # viewport. One document scroller lets pinching and horizontal panning
         # use the same scroll range instead of competing nested containers.

@@ -11,3 +11,5 @@
 - Keep the original itaingtr/keirin-lineup site and all its stored data intact. Stop the old fallback schedulers only after this new public deployment and its automatic writer have passed.
 
 - The user requested another 12% increase after the first 1.12 enlargement, plus a fix for horizontal panning snapping back on iPhone. From October 25, keep the browser viewport at initial-scale=1 and use mobile-only layout zoom 1.2544 (1.12 × 1.12). Keep the live button right-aligned and use document-level horizontal scrolling on phones: the table wrapper and odds content must not create competing inner horizontal scrollers. Preserve pinch zoom and older page layouts; do not add JavaScript that forces a scroll position.
+
+- From October 25, the public exporter places a same-size 「トップ」 button immediately after 「更新」. Reuse the refresh-button styling and navigate in the same tab to /keirin-lineup2/ so date-page data bases cannot redirect it into a data directory. Keep it in future nightly exports too.
