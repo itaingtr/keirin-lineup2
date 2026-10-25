@@ -12,7 +12,11 @@ REPOSITORY='itaingtr/keirin-lineup2'
 SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-comparison.js')
 MOBILE_STYLE='''<style id="mobile-readability-style">
 @media(max-width:640px){
-.table-wrap tbody tr{grid-template-columns:38px max(218px,calc(100vw / 1.12 - 75px)) minmax(0,1fr)}
+html{overflow-x:auto}
+body{width:calc(100vw / 1.2544);zoom:1.2544;overflow:visible}
+.table-wrap{overflow:visible;overscroll-behavior-x:auto}
+.table-wrap .odds-content{overflow:visible}
+.table-wrap tbody tr{grid-template-columns:38px max(218px,calc(100vw / 1.2544 - 75px)) minmax(0,1fr)}
 .table-wrap td.race{justify-self:stretch;width:100%;min-width:0;gap:6px}
 .table-wrap .video-actions{margin-left:auto}
 }
@@ -40,9 +44,11 @@ def public_html(page,day):
     result=re.sub(r'value="(?:\./|/)?(?:line)?(\d{8})\.html/?"',
                   lambda match:'value="'+BASE+'line'+match[1]+'.html"',result)
     if day>='20261025':
-        # Slightly enlarge the first view while keeping the live link within the
-        # visible card header on a 393 CSS-pixel iPhone 14 Pro portrait screen.
-        result=result.replace('width=device-width,initial-scale=1"','width=device-width,initial-scale=1.12"')
+        # 1.12 * 1.12: enlarge the layout without pre-zooming Safari's visual
+        # viewport. One document scroller lets pinching and horizontal panning
+        # use the same scroll range instead of competing nested containers.
+        result=re.sub(r'(name="viewport" content="width=device-width,initial-scale=)[\d.]+',
+                      r'\g<1>1',result,count=1)
         result=result.replace('</head>',MOBILE_STYLE+'</head>',1)
     if parse_page(result)!=parse_page(page) or '/open-web?' in result:
         raise ValueError('Do not alter race data or retain server-only links')
