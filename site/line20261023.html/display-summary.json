@@ -1,0 +1,17 @@
+{
+  "target_date": "2026-10-23",
+  "provider": "winticket",
+  "races": 26,
+  "riders": 203,
+  "quotes": 0,
+  "venues": [
+    "四日市",
+    "奈良",
+    "熊本"
+  ],
+  "checked_at": "2026-10-22T17:06:58.411318+00:00",
+  "excluded_meetings": {},
+  "source_expected_races": 26,
+  "database_writes": 0
+}
+

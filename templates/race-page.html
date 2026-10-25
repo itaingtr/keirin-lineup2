@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja"><head>
+<base href="@@BASE@@"><script>if(/\/line\d{8}\.html\/(?:index\.html)?$/.test(location.pathname))document.querySelector("base").href="../";</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>@@TITLE@@</title>
+<style>
+:root{color-scheme:light;--ink:#18212f;--muted:#627086;--line:#dbe2ea;--paper:#f4f7fb;--blue:#155eef}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}header{padding:27px clamp(18px,5vw,64px);background:linear-gradient(120deg,#10243c,#1d4978);color:#fff}.eyebrow{font-size:13px;letter-spacing:.08em;opacity:.8}h1{font-size:clamp(24px,4vw,36px);margin:7px 0 8px}.intro{margin:0;color:#dce8f5}main{max-width:1180px;margin:auto;padding:22px clamp(12px,3vw,36px) 48px}.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 14px}input,select{font:inherit;padding:10px 12px;border:1px solid #c8d2df;border-radius:9px;background:#fff;color:var(--ink)}input{min-width:min(280px,100%)}.count{color:var(--muted);font-size:14px;margin-left:auto}.notice{padding:12px 14px;margin:0 0 16px;border:1px solid #cfe0f7;background:#eff6ff;border-radius:10px;color:#294b72;font-size:14px;line-height:1.6}.table-wrap{max-width:520px;margin-left:0;overflow:visible;border:0;background:transparent;box-shadow:none}table{border-collapse:separate;border-spacing:0;width:100%;min-width:0;table-layout:fixed}.desktop-columns,thead{display:none}tbody{display:grid;gap:12px}tbody tr{display:grid;grid-template-columns:max-content minmax(0,1fr);grid-template-areas:"venue race" "lineup lineup";align-items:center;gap:10px 12px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 14px #172b450d}tbody tr:hover{background:#f7faff}tbody tr:last-child td{border-bottom:0}th,td{padding:0;border:0;text-align:left;vertical-align:top}td.venue{grid-area:venue;text-align:left;font-weight:700;font-size:13px;width:auto;padding:0}td.race{grid-area:race;display:flex;flex-direction:row;align-items:center;justify-self:start;gap:10px;width:auto;padding:0;text-align:left}td.race .race-link{display:inline-block;color:var(--blue);font-size:13px;font-weight:750;text-decoration:none}td.race .race-link:hover{text-decoration:underline}.race-class{font-size:11px}.race-time{font-size:12px;font-weight:700;color:#46556a;white-space:nowrap}.race-link-small{font-size:13px!important}.video-link{display:inline-flex;align-items:center;gap:4px;margin-top:0;padding:5px 8px;border-radius:7px;background:#d63b3b;color:#fff;text-decoration:none;font-size:11px;font-weight:750;white-space:nowrap}.video-link:hover{background:#b92d2d}td.lineup-cell{grid-area:lineup;width:100%;min-width:0;overflow:hidden}.lineup{display:flex;justify-content:flex-start;align-items:flex-start;gap:12px;min-height:0;padding:2px 0 4px}.line-group{display:flex;align-items:flex-start;gap:0}.contest-pair{position:relative;display:flex;align-items:flex-start;gap:0;padding:0 5px;margin:0 .75px}.contest-pair::before,.contest-pair::after{position:absolute;top:39px;font-size:13px;font-weight:800;line-height:19px;color:#46556a;pointer-events:none}.contest-pair::before{content:"(";left:0}.contest-pair::after{content:")";right:0}.rider{display:flex;flex:0 0 22px;flex-direction:column;align-items:center;gap:0}.score,.period{width:22px;height:14px;text-align:center;font-size:10px;line-height:14px;font-weight:750;color:#627086}.score{color:#8c939d}.score-high{color:#000}.score-low{color:#c9cdd3}.stats{width:22px;display:flex;flex-direction:column;align-items:center;margin-top:0;color:#627086;font-size:10px;line-height:12px;font-variant-numeric:tabular-nums;text-align:center}.stat{display:block;width:22px;height:12px;line-height:12px;text-align:center!important}.stat-b{font-weight:850;color:#111}.stat-b-zero{font-weight:400;color:#c9cdd3}.recent-s{display:block;width:22px;height:12px;text-align:center;font-size:10px;line-height:12px;color:#627086;font-variant-numeric:tabular-nums}.prediction-mark{display:block;height:13px;font-size:13px;line-height:13px;font-weight:800;color:#18212f;white-space:nowrap}.car{position:relative;z-index:1;width:19px;height:19px;display:grid;place-items:center;border-radius:50%;font-weight:850;font-size:12px;line-height:1}.name{position:relative;z-index:2;align-self:center;height:4em;margin-top:0;writing-mode:vertical-rl;text-orientation:upright;text-align:start;line-height:1;letter-spacing:0;font-size:13px;color:#27364b;white-space:nowrap}.c1{background:#fff;color:#111;border:1px solid #b9c4d0}.c2{background:#252b35;color:#fff}.c3{background:#e53935;color:#fff}.c4{background:#2878d0;color:#fff}.c5{background:#f1d331;color:#302b10}.c6{background:#35a765;color:#fff}.c7{background:#ed8d2c;color:#fff}.c8{background:#e66da5;color:#fff}.c9{background:#8052b8;color:#fff}footer{color:var(--muted);font-size:13px;margin-top:14px;line-height:1.6}@media(max-width:640px){header{padding:20px 16px}main{padding:14px 10px 32px}h1{font-size:25px}.count{width:100%;margin-left:0}.notice{padding:10px 11px;font-size:13px}.table-wrap{max-width:none}tbody tr{grid-template-columns:auto minmax(0,1fr);gap:8px 10px;padding:12px}td.race{gap:8px}.video-link{padding:4px 7px;font-size:10px}td.venue{font-size:12px}td.race .race-link{font-size:12px}.race-class{font-size:10px}.race-time{font-size:11px}.race-link-small{font-size:12px!important}.prediction-mark{height:12px;font-size:12px;line-height:12px}.lineup{gap:19px}.rider{flex-basis:22px}.car{width:18px;height:18px;font-size:11px}.name{font-size:12px;height:4em;margin-top:0}}
+</style><link rel="stylesheet" href="./comments.css?v=bottom-20261017d">
+<style>
+/* Keep this layout local to today's page and the matching index. */
+.table-wrap{width:100%;max-width:none;overflow-x:auto;overscroll-behavior-x:contain}
+.table-wrap table{width:860px;min-width:860px;max-width:860px}
+.table-wrap tbody tr{grid-template-columns:52px 314px minmax(0,1fr);grid-template-areas:"venue race comment" "lineup lineup comment" "composer composer comment";column-gap:12px;align-items:start}
+.table-wrap td.race{flex-wrap:nowrap;gap:8px}
+.table-wrap .video-actions{display:inline-flex;align-items:center;gap:4px;flex:none}
+.table-wrap .live-link{background:#155eef;padding:4px 6px;font-size:10px}
+.table-wrap .live-link:hover{background:#1047b8}
+.table-wrap td.race-comment-cell{display:contents}
+.table-wrap .race-comment-feed{grid-area:comment;margin-left:8px;min-width:0;max-height:none;overflow:visible}
+.table-wrap .race-comment-post{min-width:0;overflow-wrap:anywhere}
+.table-wrap .race-comment-body{white-space:pre-wrap;overflow-wrap:anywhere}
+.table-wrap .race-comment-form{grid-area:composer;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px;margin:0;min-width:0}
+.table-wrap .race-comment-form[hidden]{display:none}
+.table-wrap .race-comment-input{height:28px;min-height:28px;min-width:0;padding:5px 6px;resize:none;white-space:pre;overflow:auto;line-height:16px}
+.table-wrap .race-comment-save{align-self:center;white-space:nowrap}
+.table-wrap .race-comment-status{grid-column:1/-1}
+.table-wrap .race-comment-status:empty{display:none}
+@media(max-width:640px){
+.table-wrap table{width:max(650px,var(--odds-pair-width,0px));min-width:max(650px,var(--odds-pair-width,0px));max-width:max(650px,var(--odds-pair-width,0px))}
+.table-wrap .race-comment-feed{margin-left:0}
+.table-wrap tbody tr{grid-template-columns:44px 270px minmax(0,1fr);column-gap:4px}
+.table-wrap td.race-comment-cell{margin:0;font-size:10px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.table-wrap .race-comment-body{font-size:10px;line-height:1.4}
+.table-wrap .race-comment-post{padding:4px 5px}
+.table-wrap .race-comment-time{font-size:8px}
+.table-wrap .race-comment-input{font-size:16px;line-height:20px;height:32px;min-height:32px;padding:5px 6px}
+.page-bottom #search,.page-bottom .race-comments-email{font-size:16px}
+.table-wrap .race-comment-save{font-size:10px;padding:4px 7px}
+}
+.table-wrap tbody tr.odds-open{grid-template-areas:"venue race comment" "lineup lineup comment" "composer composer comment" "odds odds odds"}
+.table-wrap .odds-toggle,.table-wrap .odds-refresh{font:inherit;font-size:11px;padding:5px 9px;border:1px solid #c8d2df;border-radius:6px;background:#eff6ff;color:#155eef;cursor:pointer}
+.table-wrap .odds-toggle{margin-top:4px}
+.table-wrap .odds-cell{grid-area:odds;width:calc(var(--exacta-width) + var(--exacta-lineup-width,var(--exacta-width)) + 12px);max-width:100%;min-width:0;border:0;padding:0;justify-self:start}
+.table-wrap .odds-cell[hidden]{display:none}
+.table-wrap .odds-heading{font-size:10px;margin-right:6px}
+.table-wrap .odds-refresh{font-size:10px;padding:2px 5px}
+.table-wrap .odds-status{font-size:9px;line-height:1.2;margin:2px 0;color:#526176}
+.table-wrap .odds-content{width:100%;max-width:100%;overflow-x:auto}
+.table-wrap .odds-comparison{display:flex;align-items:flex-start;gap:12px;width:max-content}
+.table-wrap .odds-comparison-view{flex:0 0 var(--exacta-width);width:var(--exacta-width);margin:0}
+.table-wrap .exacta-matrix{display:table;width:var(--exacta-width);min-width:0;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;font-variant-numeric:tabular-nums}
+.table-wrap .exacta-matrix caption{caption-side:bottom;font-size:9px;line-height:12px;text-align:left;margin:2px 0 0;color:#627086}
+.table-wrap .exacta-matrix[data-odds-order="lineup"]{border-collapse:separate;border-spacing:0}
+.table-wrap .exacta-matrix .exacta-label-column{width:18px}
+.table-wrap .exacta-matrix thead{display:table-header-group}
+.table-wrap .exacta-matrix tbody{display:table-row-group}
+.table-wrap .exacta-matrix tr{display:table-row;background:transparent;box-shadow:none;border:0;border-radius:0}
+.table-wrap .exacta-matrix th,.table-wrap .exacta-matrix td{display:table-cell;border:0;padding:1px;line-height:14px;height:16px;white-space:nowrap;background:transparent;vertical-align:middle}
+.table-wrap .exacta-matrix .exacta-line-start{padding-left:3px}
+.table-wrap .exacta-matrix .exacta-line-row-start>th,.table-wrap .exacta-matrix .exacta-line-row-start>td{padding-top:4px;height:19px}
+.table-wrap .exacta-matrix th.exacta-pair-heading{position:relative;padding-top:25px}
+.table-wrap .exacta-line-pair{position:absolute;left:100%;top:1px;transform:translateX(-50%);width:28px;text-align:center;white-space:nowrap}
+.table-wrap .exacta-line-pair .exacta-pair-value{display:block;font-size:9px;line-height:11px;height:11px;text-align:center}
+.table-wrap .exacta-line-pair .exacta-pair-value:first-child{transform:translateX(-1ch)}
+.table-wrap .rider-odds{position:relative;display:flex;flex:none;align-items:center;justify-content:center;width:22px;height:35px;padding-top:24px;font-variant-numeric:tabular-nums}
+.table-wrap .rider-odds .exacta-line-pair{top:0;width:22px}
+.table-wrap .rider-odds .exacta-pair-value{font-size:8px;line-height:11px;height:11px;font-weight:500;color:#253247}
+.table-wrap .rider-odds .exacta-minimum{font-weight:800}
+.table-wrap .rider-odds .exacta-low{color:#d32f2f}
+.table-wrap .rider-odds .exacta-high{color:#8591a0}
+.table-wrap .rider-odds .exacta-very-high{color:#b0b8c3}
+.table-wrap .rider-odds .exacta-extreme{color:#c8cfd8}
+.table-wrap .rider-win-odds{width:22px;text-align:center;line-height:11px;min-height:11px;font-size:8px}
+.table-wrap .lineup-odds-visible .contest-pair::before,.table-wrap .lineup-odds-visible .contest-pair::after{top:74px}
+.table-wrap .exacta-matrix th{text-align:center;font-weight:500}
+.table-wrap .exacta-matrix .exacta-corner{font-size:9px;color:#627086;vertical-align:bottom;text-align:left}
+.table-wrap .exacta-matrix .exacta-value{text-align:right;letter-spacing:-.2px;font-weight:500;color:#253247}
+.table-wrap .exacta-matrix .exacta-value.exacta-low{color:#d32f2f}
+.table-wrap .exacta-matrix .exacta-value.exacta-minimum{font-weight:800}
+.table-wrap .exacta-matrix .exacta-high{color:#8591a0}
+.table-wrap .exacta-matrix .exacta-very-high{color:#b0b8c3}
+.table-wrap .exacta-matrix .exacta-extreme{color:#c8cfd8}
+.table-wrap .exacta-matrix .exacta-value.exacta-long{font-size:8.5px}
+.table-wrap .exacta-matrix .exacta-diagonal{text-align:right;color:#c9cdd3}
+.table-wrap .exacta-matrix .exacta-unavailable{color:#7a8798}
+.table-wrap .exacta-rider{display:flex;align-items:center;gap:2px;min-width:0}
+.table-wrap .exacta-number{display:inline-grid;place-items:center;flex:0 0 13px;width:13px;height:13px;border-radius:2px;font-size:9px;line-height:1;font-weight:750;box-sizing:border-box}
+.table-wrap .exacta-rider-name{font-size:9px;line-height:1.05;letter-spacing:-.2px;color:#253247;font-weight:400}
+.table-wrap .exacta-column-rider{flex-direction:column;gap:1px;padding-bottom:2px}
+.table-wrap .exacta-matrix thead th{vertical-align:top}
+.table-wrap .exacta-score{height:10px;line-height:10px;font-size:9px}
+.table-wrap .exacta-synthetic{font-size:8px;line-height:10px;min-height:10px;font-weight:500;letter-spacing:-.2px;color:#253247}
+.table-wrap .exacta-synthetic.exacta-favorite{font-weight:850}
+.table-wrap .exacta-column-rider .exacta-rider-name{writing-mode:vertical-rl;text-orientation:upright;height:4em;max-height:4em;overflow:hidden;text-align:start}
+.table-wrap .exacta-row-rider,.table-wrap .exacta-mirror-rider{justify-content:center}
+
+</style>
+<style id="meeting-results-style">
+.meeting-results{display:flex;flex-direction:column;align-items:center;width:22px;margin-top:3px;font-variant-numeric:tabular-nums;text-align:center}
+.meeting-result{display:flex;flex-direction:column;align-items:center;width:22px;min-height:27px;margin:0 0 2px}
+.meeting-order{display:inline-flex;align-items:center;justify-content:center;gap:1px;min-width:22px;height:14px;color:#155eef;text-decoration:none;font-size:10px;line-height:12px;white-space:nowrap}
+.meeting-order:hover{text-decoration:underline}.meeting-order:focus-visible{outline:2px solid #155eef;outline-offset:1px;border-radius:2px}
+.meeting-rank{display:inline-block;min-width:12px;line-height:12px;text-align:center;font-weight:700}
+.meeting-rank-circle{width:12px;height:12px;border:1px solid currentColor;border-radius:50%;line-height:10px}
+.meeting-rank-solid{width:12px;height:12px;border:1px solid #18212f;border-radius:50%;line-height:10px;background:#18212f;color:#fff}
+.meeting-back{font-size:8px;line-height:12px;color:#18212f;font-weight:800}
+.meeting-time,.meeting-empty{display:block;width:22px;height:12px;font-size:9px;line-height:12px;color:#627086;text-align:center}
+.meeting-empty{color:#b3bbc6}
+
+</style>
+<style>.table-wrap td.lineup-cell{overflow:visible}.meeting-first-day{font-size:8px;height:12px;line-height:12px;white-space:nowrap;color:#8491a3}@media(max-width:640px){.table-wrap .lineup-nine{gap:12px}}</style></head><body data-web-navigation="20261022">
+@@HEADER@@
+<main><div class="tools"><select id="date-select" aria-label="日付を選択">@@DATE_OPTIONS@@</select><button type="button" class="refresh-button" onclick="location.reload()" aria-label="ページを更新">更新</button></div>
+
+<div class="table-wrap"><table><colgroup class="desktop-columns"><col style="width:78px"><col style="width:138px"><col></colgroup><thead><tr><th>競輪場</th><th>レース・映像</th><th>並び</th></tr></thead><tbody id="rows" data-initial-odds data-odds-primary="number"></tbody></table></div>
+<footer>車番色は1白・2黒・3赤・4青・5黄・6緑・7橙・8ピンク・9紫です。着順・映像・ライブは同じタブで公式ページを開きます。ブラウザーの「戻る」で出走表に戻れます。映像は公開後に視聴できます。</footer><section class="page-bottom" aria-label="検索・説明・ログイン"><div class="bottom-tools"><input id="search" type="search" placeholder="選手名・競輪場で検索" aria-label="選手名または競輪場を検索"><span class="count" id="count" aria-live="polite">@@COUNT@@</span></div><p class="notice">予想印はウィンチケットAI予想の上位順（◎・○・▲・△）を表示しています。並び予想とライン構成は@@PROVIDER_NAME@@の各レース詳細を反映しています。並び予想を確認できない開催のS級戦は掲載していません。得点は小数点以下を切り捨て。@@STATS_NOTE@@Sの数値は印の上、選手名の下は期別、B、逃、捲、差、マの順で表示しています。別ラインごとに間隔を空けています。差・マの下は今場所の前日までの着順（Bはバック取得）と個人あがりを古い順に表示。着順を押すと同じタブで公式の競走成績を開き、対象選手の背景を緑にします。初日には前日までの今場所成績がないため「初日」と表示します。</p><div id="comments-auth-slot"></div></section></main>
+<script>
+const races=@@RACES@@;
+const body=document.getElementById("rows"),search=document.getElementById("search"),count=document.getElementById("count"),dateSelect=document.getElementById("date-select");
+function webUrl(source){return '/open-web?to='+encodeURIComponent(source);}
+function liveUrl(r){ return 'https://www.winticket.jp/keirin/'+r.venueSlug+'/live'; }
+function videoUrl(r){ return 'https://www.winticket.jp/keirin/'+r.venueSlug+'/raceresult/'+r.meetingStart+r.venueCode+'/'+r.meetingDay+'/'+r.race; }
+const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function meetingResultUrl(result){const url=new URL(result.result_url);url.searchParams.set('playerIds',result.player_id);return url.href;}
+function meetingMarkup(p,r){
+ const history=p.meetingResults||[],days=Math.max(0,r.meetingDay-1);
+ if(!days)return '<div class="meeting-results" aria-label="今場所の前日までの成績"><span class="meeting-empty meeting-first-day" title="初日のため、前日までの今場所成績はありません">初日</span></div>';
+ return '<div class="meeting-results" aria-label="今場所の前日までの成績">'+Array.from({length:days},(_,i)=>{
+  const day=i+1,result=history.find(x=>x.meeting_day===day);
+  if(!result)return '<div class="meeting-result" data-meeting-day="'+day+'" title="'+day+'日目の成績は掲載されていません"><span class="meeting-empty">—</span><span class="meeting-time">—</span></div>';
+  const label=result.has_accident?result.accident:String(result.order);
+  const time=result.final_half_record&&Number(result.final_half_record)>0?result.final_half_record:'—';
+  const decoration=result.display_type===1?' meeting-rank-circle':result.display_type===2?' meeting-rank-solid':'';
+  const description=result.race_date+' '+result.race_number+'R '+(result.has_accident?(result.accident_name||result.accident):result.order+'着')+(result.back?' B取得':'')+' 個人あがり '+(time==='—'?'記録なし':time+'秒');
+  return '<div class="meeting-result" data-meeting-day="'+day+'"><a class="meeting-order" href="'+escapeHtml(webUrl(meetingResultUrl(result)))+'" data-source-url="'+escapeHtml(meetingResultUrl(result))+'" target="_self" title="'+escapeHtml(description)+'" aria-label="'+escapeHtml(p.name+' '+description+'の競走成績を開く')+'"><span class="meeting-rank'+decoration+'">'+escapeHtml(label)+'</span>'+(result.back?'<span class="meeting-back" aria-label="B取得">B</span>':'')+'</a><span class="meeting-time" aria-label="個人あがり '+escapeHtml(time)+'">'+escapeHtml(time)+'</span></div>';
+ }).join('')+'</div>';
+}
+function riderMarkup(n,r,contestPosition=""){
+ const p=r.players.find(x=>x.no===n),name=escapeHtml(Array.from(p.name).slice(0,4).join(""));
+ const scoreClass=p.rawScore>=r.averageScore+3?" score-high":p.rawScore<=r.averageScore-3?" score-low":"";
+ const stats=p.stats.slice(1).map((value,i)=>'<div class="stat'+(i===0?(value===0?' stat-b-zero':' stat-b'):'')+((i===0&&value>=10)||(i===1&&value>0&&value===Math.max(...r.players.map(player=>player.stats[2])))||(i===2&&value>0&&value===Math.max(...r.players.map(player=>player.stats[3])))?' stat-highlight':'')+'" aria-label="'+["B","逃","捲","差","マ"][i]+' '+value+'">'+value+'</div>').join("");
+ return '<div class="rider"><span class="recent-s">'+p.stats[0]+'</span><span class="prediction-mark">'+p.mark+'</span><span class="score'+scoreClass+'">'+p.score+'</span><span class="car c'+n+(contestPosition?' contest-'+contestPosition:'')+'">'+n+'</span><span class="name">'+name+'</span><span class="period">'+p.period+'</span><div class="stats">'+stats+'</div>'+meetingMarkup(p,r)+'</div>'
+}function draw(){const q=search.value.trim().toLocaleLowerCase();const shown=races.filter(r=>(!q||r.venue.toLocaleLowerCase().includes(q)||r.players.some(p=>p.name.toLocaleLowerCase().includes(q))));body.innerHTML=shown.map(r=>'<tr><td class="venue">'+escapeHtml(r.venue)+'</td><td class="race"><a class="race-link'+(r.venue==="弥彦"&&r.race===1?" race-link-small":"")+'" href="'+r.source+'" data-comment-key="'+r.commentKey+'" target="_self">'+r.race+'R <span class="race-class">'+escapeHtml(r.raceType)+'</span></a><span class="race-time">'+r.startTime+'</span><span class="video-actions"><a class="video-link" href="'+escapeHtml(webUrl(videoUrl(r)))+'" data-source-url="'+videoUrl(r)+'" target="_self" title="同じタブで公式のレース映像ページを開きます">▶ 映像を見る</a><a class="video-link live-link" href="'+escapeHtml(webUrl(liveUrl(r)))+'" data-source-url="'+liveUrl(r)+'" target="_self" title="'+escapeHtml(r.venue)+'のライブ映像を開きます">ライブ</a></span></td><td class="lineup-cell"><div class="lineup'+(r.players.length===9?' lineup-nine':'')+'" aria-label="'+escapeHtml(r.venue)+' '+r.race+'レース 並び予想">'+r.groups.map(line=>'<div class="line-group">'+line.map(unit=>unit.type==="contest"?'<div class="contest-pair" aria-label="競り">'+unit.riders.map(n=>riderMarkup(n,r)).join("")+'</div>':unit.riders.map(n=>riderMarkup(n,r)).join("")).join("")+'</div>').join("")+'</div></td></tr>').join("");count.textContent=shown.length+" / "+races.length+" レース"}
+search.addEventListener("input",draw);dateSelect.addEventListener("change",()=>{if(dateSelect.value)location.href=dateSelect.value});draw();
+</script><script src="./predictions.js?v=ai-20261022" defer></script><script src="./comments.js?v=bottom-20261017d" defer></script>
+<script src="./odds-current.js?v=initial-20261018" defer></script>
+<script src="./odds-comparison.js?v=live-20261019" defer></script>
+</body></html>
+
+
+
+
+

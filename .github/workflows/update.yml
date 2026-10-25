@@ -1,0 +1,73 @@
+name: Update and publish public keirin lineup
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'publish: saved card / cards: next day / odds: current race day'
+        type: choice
+        options: [publish, cards, odds]
+        default: publish
+      date:
+        description: 'Optional YYYY-MM-DD for manual cards only'
+        required: false
+        type: string
+  schedule:
+    # Japan: odds hourly 09:00-20:00; next-day cards at 21:00 and 23:30.
+    - cron: '0 0-11 * * *'
+    - cron: '0 12 * * *'
+    - cron: '30 14 * * *'
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: keirin-lineup2-update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate the independent collector and public export
+        run: python3 -m unittest discover -s tests -v
+      - name: Prepare the requested update without a database write
+        id: update
+        env:
+          UPDATE_EVENT: ${{ github.event_name }}
+          UPDATE_SCHEDULE: ${{ github.event.schedule }}
+          UPDATE_MODE: ${{ inputs.mode || 'publish' }}
+          UPDATE_DATE: ${{ inputs.date }}
+        run: |
+          python3 -u scripts/update_publication.py \
+            --event "$UPDATE_EVENT" --schedule "$UPDATE_SCHEDULE" \
+            --mode "$UPDATE_MODE" --date "$UPDATE_DATE" \
+            --run-key "run-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --work /tmp/lineup2-publication
+      - name: Verify actual public pages, rider links and paired odds
+        if: steps.update.outputs.publish == 'true'
+        run: |
+          npm install --prefix /tmp/lineup2-qa --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_pages.cjs /tmp/lineup2-publication/report.json
+      - name: Configure GitHub Pages
+        if: steps.update.outputs.publish == 'true'
+        uses: actions/configure-pages@v5
+      - name: Upload public site only
+        if: steps.update.outputs.publish == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - name: Deploy without a manual approval
+        if: steps.update.outputs.publish == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify anonymous public access and all current assets
+        if: steps.update.outputs.publish == 'true'
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: python3 scripts/verify_pages.py --site public --base "$PAGES_URL"

@@ -1,0 +1,17 @@
+{
+  "target_date": "2026-10-24",
+  "provider": "winticket",
+  "races": 26,
+  "riders": 201,
+  "quotes": 1376,
+  "venues": [
+    "奈良",
+    "小松島",
+    "熊本"
+  ],
+  "checked_at": "2026-10-23T21:52:48.616648+00:00",
+  "excluded_meetings": {},
+  "source_expected_races": 26,
+  "database_writes": 0
+}
+
