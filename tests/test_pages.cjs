@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const {JSDOM}=require('jsdom');
+const {JSDOM}=require('jsdom');const vm=require('node:vm');
 const report=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const root=path.resolve(__dirname,'..'),publicDir=path.join(root,'public');
 const day=report.target_date.replaceAll('-','');
@@ -10,8 +10,9 @@ assert.equal(html,fs.readFileSync(path.join(publicDir,'line'+day+'.html'),'utf8'
 const config=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'odds-config.json'),'utf8'));
 const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.json'),'utf8'));
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
+const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
 const pause=()=>new Promise(resolve=>setTimeout(resolve,15));
-let pairs=0,links=0,riders=0;
+let pairs=0,links=0,riders=0,replays=0;
 (async()=>{
  for(const route of ['', 'line'+day+'.html']){
   const url='https://itaingtr.github.io/keirin-lineup2/'+route;
@@ -40,7 +41,7 @@ let pairs=0,links=0,riders=0;
    const p=new URL(script.src).pathname;assert.ok(p.startsWith('/keirin-lineup2/'));
    assert.ok(fs.existsSync(path.join(publicDir,p.slice('/keirin-lineup2/'.length))));
   }
-  for(const a of doc.querySelectorAll('.meeting-order,.video-link')){
+  for(const a of doc.querySelectorAll('.meeting-order,.live-link')){
    assert.equal(a.target,'_self');assert.equal(a.href,a.dataset.sourceUrl);
    assert.equal(new URL(a.href).origin,'https://www.winticket.jp');
    if(a.matches('.meeting-order'))assert.ok(new URL(a.href).searchParams.get('playerIds'));
@@ -52,6 +53,22 @@ let pairs=0,links=0,riders=0;
   }
   for(const [i,row] of [...doc.querySelector('#rows').children].entries()){
    const race=sourceRaces[i];riders+=race.players.length;
+   const replay=row.querySelector('.video-link:not(.live-link)'),video=new URL(replay.href);
+   assert.equal(video.origin,'https://my.keirin.kdreams.jp');assert.equal(video.pathname,'/stadium/digest/');
+   assert.equal(video.searchParams.get('kyogijoCd'),race.venueCode);
+   assert.equal(video.searchParams.get('kaisaiDate'),day);
+   assert.equal(video.searchParams.get('raceNo'),String(race.race));
+   assert.equal(video.searchParams.get('gradeCd'),videoGrades[race.venueCode+race.meetingStart]);
+   assert.equal(video.searchParams.get('l-id'),'Highlightreel');
+   assert.equal(replay.href,replay.dataset.sourceUrl);assert.equal(replay.target,'_blank');
+   let opened;window.open=(...args)=>{opened=args;};replay.click();
+   assert.deepEqual(opened,[replay.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
+   const mobileLocation={href:''};let prevented=false;
+   vm.runInNewContext('('+window.openVideo.toString()+')(event,url)',{
+    event:{preventDefault(){prevented=true;}},url:replay.href,location:mobileLocation,
+    window:{matchMedia(query){assert.equal(query,'(max-width: 640px)');return {matches:true};},open(){assert.fail('Mobile replay must use the same tab');}}
+   });
+   assert.ok(prevented);assert.equal(mobileLocation.href,replay.href);replays++;
    row.querySelector('.odds-toggle').click();await pause();
    const snapshot=expected.get(new URL(race.source).pathname);
    if(!snapshot||snapshot.status!=='snapshot')continue;
@@ -64,5 +81,5 @@ let pairs=0,links=0,riders=0;
   }
   assert.deepEqual(errors,[]);dom.window.close();
  }
- console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,urls:2}));
+ console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,urls:2}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

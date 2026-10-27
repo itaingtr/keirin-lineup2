@@ -159,7 +159,8 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(original,(site/'line20261022.html/index.html').read_bytes())
             self.assertNotIn('@@',original.decode())
             self.assertIn('winticket.jp/keirin/',original.decode())
-            self.assertNotIn('keirin.kdreams.jp',original.decode())
+            self.assertIn('my.keirin.kdreams.jp/stadium/digest/',original.decode())
+            self.assertIn('const videoGrades={"8720261022":"3"};',original.decode())
             data['races'][0]['players'][0]['score'] += 1
             with self.assertRaises(ValueError): write_pages(data,site)
             self.assertEqual(original,(site/'index.html').read_bytes())
