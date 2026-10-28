@@ -201,7 +201,8 @@ def daily_races(doc, target_date):
         seen.add(race['id'])
         schedule = schedules[race['scheduleId']]
         cup = cups[schedule['cupId']]
-        require(schedule['date'] == target and not schedule['entriesUnfixed'], 'Wrong date or incomplete daily schedule')
+        require(schedule['date'] == target, 'Daily schedule date differs from requested ' + target_date)
+        require(not schedule['entriesUnfixed'], 'Source entries not finalized for meeting ' + cup['id'] + ' on ' + target_date + '; existing pages are preserved')
         code = cup['venueId']
         require(code in VENUES and cup['id'] == cup['startDate'] + code, 'Unknown or mismatched calendar venue')
         require(not race['cancel'], 'Daily schedule contains a cancelled S-class race')

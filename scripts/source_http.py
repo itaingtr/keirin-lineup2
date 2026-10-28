@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 import json
 import re
+import time
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 
@@ -73,12 +75,23 @@ class Document(HTMLParser):
 def fetch(url, sources):
     check_url(url)
     request = Request(url, headers={'User-Agent': 'KeirinLineup2/1.0 (+https://github.com/itaingtr/keirin-lineup)'})
-    with build_opener(SafeRedirect()).open(request, timeout=40) as response:
-        check_url(response.url)
-        raw = response.read(6_000_001)
-        if len(raw) > 6_000_000:
-            raise ValueError('Source response exceeds the size limit')
-        text = raw.decode(response.headers.get_content_charset() or 'utf-8')
+    delays = (2, 5)
+    for attempt in range(len(delays) + 1):
+        try:
+            with build_opener(SafeRedirect()).open(request, timeout=40) as response:
+                check_url(response.url)
+                raw = response.read(6_000_001)
+                if len(raw) > 6_000_000:
+                    raise ValueError('Source response exceeds the size limit')
+                text = raw.decode(response.headers.get_content_charset() or 'utf-8')
+            break
+        except (HTTPError, URLError, TimeoutError) as error:
+            if attempt == len(delays) or (isinstance(error, HTTPError)
+                    and error.code not in (404, 408, 500, 502, 503, 504)):
+                raise
+            delay = delays[attempt]
+            print(f'Source read retry {attempt + 1}/2 in {delay}s: {url} ({error})', flush=True)
+            time.sleep(delay)
     sources.append({'url':url, 'observed_at':datetime.now(timezone.utc).isoformat(), 'raw_html':text})
     return Document(text).root, sources[-1]['observed_at']
 
