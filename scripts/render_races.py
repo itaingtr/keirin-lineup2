@@ -47,6 +47,17 @@ def parse_lineup(lineup, numbers):
     return groups
 
 
+def order_races(races, grades):
+    """Keep meetings together: grade first, then their earliest listed start."""
+    starts = {}
+    for race in races:
+        meeting = race['venueCode'] + race['meetingStart']
+        starts[meeting] = min(starts.get(meeting, '24:00'), race['startTime'] or '24:00')
+    return sorted(races, key=lambda r: (-int(grades[r['venueCode'] + r['meetingStart']]),
+                                        starts[r['venueCode'] + r['meetingStart']],
+                                        r['venueCode'], r['race']))
+
+
 def validate(dataset):
     require(isinstance(dataset, dict) and dataset.get('schema_version') == 1, 'Expected schema_version 1')
     target = date.fromisoformat(dataset['target_date'])
@@ -103,9 +114,7 @@ def validate(dataset):
                            'venueCode': venue_code, 'venueSlug': VENUES[venue_code][1],
                            'meetingStart': start, 'meetingDay': int(day),
                            'commentKey': '/' + VENUES[venue_code][1] + '/racedetail/' + venue_code + start + day.zfill(2) + race_no.zfill(4) + '/'})
-    # Higher grades first; within a meeting keep race numbers ascending.
-    normalized.sort(key=lambda r: (-int(grades[r['venueCode'] + r['meetingStart']]), r['venueCode'], r['race']))
-    return target, normalized, grades
+    return target, order_races(normalized, grades), grades
 
 
 def script_json(value):

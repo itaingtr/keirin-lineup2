@@ -12,7 +12,7 @@ const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.jso
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
 const pause=()=>new Promise(resolve=>setTimeout(resolve,15));
-let pairs=0,links=0,riders=0,replays=0;
+let pairs=0,links=0,riders=0,replays=0,jumps=0;
 (async()=>{
  for(const route of ['', 'line'+day+'.html']){
   const url='https://itaingtr.github.io/keirin-lineup2/'+route;
@@ -37,6 +37,22 @@ let pairs=0,links=0,riders=0,replays=0;
   assert.equal(doc.querySelectorAll('.race-link').length,report.races);
   assert.equal(doc.querySelectorAll('.lineup .rider').length,report.riders);
   assert.equal(doc.querySelector('iframe,dialog,video,script[src*="viewer.js"]'),null);
+  const firstByVenue=new Map();for(const race of sourceRaces)if(!firstByVenue.has(race.venueCode))firstByVenue.set(race.venueCode,race);
+  const venueButtons=[...doc.querySelectorAll('#venue-nav .venue-button')];
+  assert.deepEqual(venueButtons.map(a=>a.textContent),[...firstByVenue.values()].map(r=>r.venue));
+  for(const [index,button] of venueButtons.entries()){
+   const race=[...firstByVenue.values()][index],destination=new URL(button.href);
+   assert.equal(destination.origin,new URL(url).origin);assert.equal(destination.pathname,new URL(url).pathname);
+   const target=doc.getElementById(destination.hash.slice(1));assert.ok(target);
+   assert.equal(target.querySelector('.race-link').href,race.source);
+   assert.equal(race.race,Math.min(...sourceRaces.filter(r=>r.venueCode===race.venueCode).map(r=>r.race)));
+   button.click();await pause();assert.equal(window.location.hash,destination.hash);jumps++;
+  }
+  const search=doc.getElementById('search'),selected=sourceRaces.find(r=>r.venue==='岐阜')||sourceRaces[0];
+  search.value=selected.venue;search.dispatchEvent(new window.Event('input'));await pause();
+  assert.equal(doc.querySelectorAll('#venue-nav .venue-button').length,1);
+  assert.equal(doc.querySelector('#venue-nav .venue-button').textContent,selected.venue);
+  search.value='';search.dispatchEvent(new window.Event('input'));await pause();
   for(const script of doc.querySelectorAll('script[src]')){
    const p=new URL(script.src).pathname;assert.ok(p.startsWith('/keirin-lineup2/'));
    assert.ok(fs.existsSync(path.join(publicDir,p.slice('/keirin-lineup2/'.length))));
@@ -53,6 +69,7 @@ let pairs=0,links=0,riders=0,replays=0;
   }
   for(const [i,row] of [...doc.querySelector('#rows').children].entries()){
    const race=sourceRaces[i];riders+=race.players.length;
+   assert.equal(row.id,'race-'+race.venueCode+'-'+race.race);
    const replay=row.querySelector('.video-link:not(.live-link)'),video=new URL(replay.href);
    assert.equal(video.origin,'https://my.keirin.kdreams.jp');assert.equal(video.pathname,'/stadium/digest/');
    assert.equal(video.searchParams.get('kyogijoCd'),race.venueCode);
@@ -81,5 +98,5 @@ let pairs=0,links=0,riders=0,replays=0;
   }
   assert.deepEqual(errors,[]);dom.window.close();
  }
- console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,urls:2}));
+ console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,venue_jumps:jumps,urls:2}));
 })().catch(error=>{console.error(error);process.exitCode=1;});
