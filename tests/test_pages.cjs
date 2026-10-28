@@ -12,7 +12,7 @@ const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.jso
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
 const pause=()=>new Promise(resolve=>setTimeout(resolve,15));
-let pairs=0,links=0,riders=0,replays=0,jumps=0;
+let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
 (async()=>{
  for(const route of ['', 'line'+day+'.html']){
   const url='https://itaingtr.github.io/keirin-lineup2/'+route;
@@ -57,10 +57,9 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0;
    const p=new URL(script.src).pathname;assert.ok(p.startsWith('/keirin-lineup2/'));
    assert.ok(fs.existsSync(path.join(publicDir,p.slice('/keirin-lineup2/'.length))));
   }
-  for(const a of doc.querySelectorAll('.meeting-order,.live-link')){
+  for(const a of doc.querySelectorAll('.live-link')){
    assert.equal(a.target,'_self');assert.equal(a.href,a.dataset.sourceUrl);
    assert.equal(new URL(a.href).origin,'https://www.winticket.jp');
-   if(a.matches('.meeting-order'))assert.ok(new URL(a.href).searchParams.get('playerIds'));
    links++;
   }
   for(const option of doc.querySelectorAll('#date-select option')){
@@ -70,6 +69,26 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0;
   for(const [i,row] of [...doc.querySelector('#rows').children].entries()){
    const race=sourceRaces[i];riders+=race.players.length;
    assert.equal(row.id,'race-'+race.venueCode+'-'+race.race);
+   for(const rider of row.querySelectorAll('.lineup .rider')){
+    const player=race.players.find(p=>p.no===Number(rider.querySelector('.car').textContent));
+    assert.equal(rider.querySelectorAll('.meeting-order').length,player.meetingResults.length);
+    for(const result of player.meetingResults){
+     const order=rider.querySelector('.meeting-result[data-meeting-day="'+result.meeting_day+'"] .meeting-order');
+     assert.ok(order);const historyVideo=new URL(order.href);
+     assert.equal(historyVideo.origin,'https://my.keirin.kdreams.jp');assert.equal(historyVideo.pathname,'/stadium/digest/');
+     assert.equal(historyVideo.searchParams.get('kyogijoCd'),race.venueCode);
+     assert.equal(historyVideo.searchParams.get('kaisaiDate'),result.race_date.replaceAll('-',''));
+     assert.equal(historyVideo.searchParams.get('raceNo'),String(result.race_number));
+     assert.equal(historyVideo.searchParams.get('gradeCd'),videoGrades[race.venueCode+race.meetingStart]);
+     assert.equal(historyVideo.searchParams.get('l-id'),'Highlightreel');
+     assert.equal(order.href,order.dataset.sourceUrl);assert.equal(order.target,'_blank');
+     assert.equal(order.querySelector('.meeting-rank').textContent,result.has_accident?result.accident:String(result.order));
+     assert.equal(Boolean(order.querySelector('.meeting-back')),result.back);
+     let opened;window.open=(...args)=>{opened=args;};order.click();
+     assert.deepEqual(opened,[order.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
+     historyReplays++;
+    }
+   }
    const replay=row.querySelector('.video-link:not(.live-link)'),video=new URL(replay.href);
    assert.equal(video.origin,'https://my.keirin.kdreams.jp');assert.equal(video.pathname,'/stadium/digest/');
    assert.equal(video.searchParams.get('kyogijoCd'),race.venueCode);
@@ -98,5 +117,5 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0;
   }
   assert.deepEqual(errors,[]);dom.window.close();
  }
- console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,venue_jumps:jumps,urls:2}));
+ console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,history_replay_links:historyReplays,venue_jumps:jumps,urls:2}));
 })().catch(error=>{console.error(error);process.exitCode=1;});
