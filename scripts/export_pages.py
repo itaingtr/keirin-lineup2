@@ -31,6 +31,18 @@ def page_date(page):
     return days.pop()
 
 
+def history_video_links(page):
+    old_function = "function meetingResultUrl(result){const url=new URL(result.result_url);url.searchParams.set('playerIds',result.player_id);return url.href;}"
+    new_function = "function meetingVideoUrl(result,r){return videoUrl({...r,meetingDay:result.meeting_day,race:result.race_number});}"
+    if old_function not in page and new_function not in page:
+        raise ValueError("Previous-race link renderer is missing")
+    page = page.replace(old_function, new_function)
+    page = page.replace('meetingResultUrl(result)', 'meetingVideoUrl(result,r)')
+    page = page.replace("target=\"_self\" title=\"'+escapeHtml(description)+'\" aria-label=\"'+escapeHtml(p.name+' '+description+'の競走成績を開く')+'\"", "target=\"_blank\" rel=\"noopener\" onclick=\"return openVideo(event,this.href)\" title=\"'+escapeHtml(description+'の楽天レース動画を開きます')+'\" aria-label=\"'+escapeHtml(p.name+' '+description+'の楽天レース動画を開く')+'\"")
+    page = page.replace("着順を押すと同じタブで公式の競走成績を開き、対象選手の背景を緑にします。", "着順を押すと、その日の該当レースの楽天Kドリームス動画を開きます。")
+    return page.replace('着順・ライブは同じタブで公式ページを開きます。', 'ライブは同じタブで公式ページを開きます。')
+
+
 def public_html(page,day):
     if page_date(page)!=day:
         raise ValueError('Page date mismatch')
@@ -53,6 +65,8 @@ def public_html(page,day):
         result=re.sub(r'(name="viewport" content="width=device-width,initial-scale=)[\d.]+',
                       r'\g<1>1',result,count=1)
         result=result.replace('</head>',MOBILE_STYLE+'</head>',1)
+    if day>='20261029':
+        result=history_video_links(result)
     if parse_page(result)!=parse_page(page) or '/open-web?' in result:
         raise ValueError('Do not alter race data or retain server-only links')
     return result
