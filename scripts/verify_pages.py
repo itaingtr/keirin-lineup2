@@ -14,6 +14,7 @@ def verify(site,base):
     if base.rstrip('/')+'/'!=expected:raise ValueError('Unexpected public Pages address')
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
+    if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     # A new deployment can take a short time to reach the public Pages CDN.
     stamp=hashlib.sha256(current.encode()).hexdigest()[:16]
     for attempt in range(12):
