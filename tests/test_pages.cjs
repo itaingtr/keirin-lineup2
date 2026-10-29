@@ -9,6 +9,8 @@ const html=fs.readFileSync(path.join(publicDir,'index.html'),'utf8');
 assert.equal(html,fs.readFileSync(path.join(publicDir,'line'+day+'.html'),'utf8'));
 const config=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'odds-config.json'),'utf8'));
 const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.json'),'utf8'));
+const usesRakuten=day>='20261030';
+const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
 const pause=()=>new Promise(resolve=>setTimeout(resolve,15));
@@ -32,7 +34,7 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
    window.addEventListener('error',e=>errors.push(e.error||e.message));
   }});
   const {window}=dom;const doc=window.document;
-  for(const file of ['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
+  for(const file of usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
   await pause();
   assert.equal(doc.querySelectorAll('.race-link').length,report.races);
   assert.equal(doc.querySelectorAll('.lineup .rider').length,report.riders);
@@ -44,7 +46,7 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
    const race=[...firstByVenue.values()][index],destination=new URL(button.href);
    assert.equal(destination.origin,new URL(url).origin);assert.equal(destination.pathname,new URL(url).pathname);
    const target=doc.getElementById(destination.hash.slice(1));assert.ok(target);
-   assert.equal(target.querySelector('.race-link').href,race.source);
+   assert.equal(target.querySelector('.race-link').href,usesRakuten?'https://my.keirin.kdreams.jp'+race.commentKey:race.source);
    assert.equal(race.race,Math.min(...sourceRaces.filter(r=>r.venueCode===race.venueCode).map(r=>r.race)));
    button.click();await pause();assert.equal(window.location.hash,destination.hash);jumps++;
   }
@@ -69,6 +71,16 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
   for(const [i,row] of [...doc.querySelector('#rows').children].entries()){
    const race=sourceRaces[i];riders+=race.players.length;
    assert.equal(row.id,'race-'+race.venueCode+'-'+race.race);
+   if(usesRakuten){
+    const heading=row.querySelector('.race-link');assert.equal(heading.href,'https://my.keirin.kdreams.jp'+race.commentKey);
+    assert.equal(heading.dataset.raceSource,race.source);assert.equal(heading.dataset.commentKey,race.commentKey);
+    const published=rakutenMarks.races.find(r=>r.source_url===race.source);assert.ok(published);
+    for(const rider of row.querySelectorAll('.lineup .rider')){
+     const number=Number(rider.querySelector('.car').textContent),player=published.players.find(p=>p.no===number);
+     assert.equal(rider.querySelector('.prediction-mark').textContent,player.mark);
+     assert.equal(rider.querySelector('.prediction-mark').title,'楽天Kドリームスの予想印');
+    }
+   }
    for(const rider of row.querySelectorAll('.lineup .rider')){
     const player=race.players.find(p=>p.no===Number(rider.querySelector('.car').textContent));
     assert.equal(rider.querySelectorAll('.meeting-order').length,player.meetingResults.length);
@@ -115,6 +127,7 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
     assert.equal(cell.textContent,quote.value===null?'—':quote.value>=100?String(Math.floor(quote.value)):quote.value.toFixed(1));pairs++;
    }
   }
+  if(usesRakuten){assert.doesNotMatch(doc.querySelector('main').textContent,/ウィンチケット|WINTICKET/i);assert.equal(doc.querySelector('script[src*="predictions.js"]'),null);}
   assert.deepEqual(errors,[]);dom.window.close();
  }
  console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,history_replay_links:historyReplays,venue_jumps:jumps,urls:2}));
