@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from collect_sources import collect,require
 from render_races import render,validate
 from published_card import git_read,read_published
+from rakuten_marks import CUTOVER, collect_marks, stage_marks
 
 JST=ZoneInfo('Asia/Tokyo')
 ROOT=Path(__file__).resolve().parents[1]
@@ -84,6 +85,9 @@ def main():
     import subprocess
     names=subprocess.run(['git','ls-tree','--name-only',args.previous_ref+':fallback/cards'],text=True,capture_output=True).stdout.splitlines()
     card=display_card(dataset,feed,[x for x in names if re.fullmatch(r'\d{8}',x)])
+    if target.strftime('%Y%m%d')>=CUTOVER:
+        marks=collect_marks(validate(dataset)[1],target.isoformat())
+        card['assets']['rakuten-marks.json']=stage_marks(marks,args.run_key,args.output)
     compact=target.strftime('%Y%m%d');prefix='fallback/cards/'+compact
     path=prefix+'/runs/'+args.run_key+'.json'
     require(git_read(args.previous_ref,path,optional=True) is None,'Immutable card run already exists')
