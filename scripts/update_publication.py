@@ -11,8 +11,9 @@ import subprocess
 import time
 from urllib.request import Request,urlopen
 from export_pages import export,materialize_card,page_date
-from published_card import git_read,read_published
+from published_card import git_read,read_published,parse_page
 from refresh_exacta import valid_saved
+from rakuten_marks import CUTOVER, collect_marks, validate_marks, stage_marks
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -106,6 +107,20 @@ def main():
         # Materialize newly collected cards or recover a newer saved card.
         if mode=='cards' or page_date((ROOT/'site/index.html').read_text())!=target.replace('-',''):
             materialize_card(card,ROOT/'site')
+        if target.replace('-','')>=CUTOVER:
+            current_races=parse_page((ROOT/'site/index.html').read_text())
+            marks_file=ROOT/'site'/('line'+target.replace('-','')+'.html')/'rakuten-marks.json'
+            marks=(validate_marks(json.loads(marks_file.read_text()),current_races,target)
+                   if marks_file.exists() else collect_marks(current_races,target))
+            prefix='fallback/marks/'+target.replace('-','')+'/latest.json'
+            if git_read(feed_commit or ref,prefix,optional=True) is None:
+                marks_output=args.work/'marks-update'
+                payload=stage_marks(marks,args.run_key,marks_output)
+                marks_work=args.work/'marks-publication';marks_work.mkdir(parents=True,exist_ok=True)
+                feed_commit=publish_feed(marks_output,feed_commit or ref,marks_work,repository)
+            else:
+                payload=json.dumps(marks,ensure_ascii=False,separators=(',',':'),allow_nan=False)+'\n'
+            marks_file.write_text(payload)
         git('add','--','site')
         if git('status','--porcelain','--','site'):
             git('commit','-m','Update verified public card '+target+' [skip ci]')
