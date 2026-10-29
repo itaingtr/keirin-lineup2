@@ -1,4 +1,6 @@
 from pathlib import Path
+from copy import deepcopy
+import json
 import sys
 import tempfile
 import unittest
@@ -9,11 +11,22 @@ from published_card import parse_page
 ROOT=Path(__file__).parents[1]
 
 
+def marks_for(day):
+    return json.loads((ROOT/'site'/('line'+day+'.html')/'rakuten-marks.json').read_text()) if day>='20261030' else None
+
+
+def without_marks(races):
+    result=deepcopy(races)
+    for race in result:
+        for player in race['players']:player.pop('mark')
+    return result
+
+
 class PublicPagesTests(unittest.TestCase):
     def test_flat_pages_keep_race_values_and_support_the_project_prefix(self):
         source=(ROOT/'site/index.html').read_text();day=page_date(source)
-        result=public_html(source,day)
-        self.assertEqual(parse_page(source),parse_page(result))
+        result=public_html(source,day,marks_for(day))
+        self.assertEqual(without_marks(parse_page(source)),without_marks(parse_page(result)))
         self.assertIn('<base href="/keirin-lineup2/data/'+day+'/">',result)
         self.assertIn('src="/keirin-lineup2/comments.js',result)
         self.assertIn('function webUrl(source){return source;}',result)
@@ -28,8 +41,10 @@ class PublicPagesTests(unittest.TestCase):
             self.assertIn('/itaingtr/keirin-lineup2/odds-diagnostics/',(root/'data'/day/'odds-config.json').read_text())
             self.assertTrue((root/'.nojekyll').exists())
             for raw in report['dates']:
-                self.assertEqual(parse_page((root/('line'+raw+'.html')).read_text()),
-                                 parse_page((ROOT/'site'/('line'+raw+'.html')/'index.html').read_text()))
+                self.assertEqual(without_marks(parse_page((root/('line'+raw+'.html')).read_text())),
+                                 without_marks(parse_page((ROOT/'site'/('line'+raw+'.html')/'index.html').read_text())))
+                if raw<'20261030':
+                    self.assertEqual(parse_page((root/('line'+raw+'.html')).read_text()),parse_page((ROOT/'site'/('line'+raw+'.html')/'index.html').read_text()))
 
     def test_materialization_rejects_date_regression(self):
         with tempfile.TemporaryDirectory() as folder:
