@@ -6,10 +6,12 @@ from pathlib import Path
 import re
 from published_card import parse_page
 from venues import identity
+from rakuten_marks import CUTOVER, validate_marks
+from render_races import script_json
 
 BASE='/keirin-lineup2/'
 REPOSITORY='itaingtr/keirin-lineup2'
-SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-comparison.js')
+SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-comparison.js','odds-current-rakuten.js')
 TOP_BUTTON=f'''<button type="button" class="refresh-button home-button" onclick="location.href='{BASE}'" aria-label="トップページへ">トップ</button>'''
 MOBILE_STYLE='''<style id="mobile-readability-style">
 @media(max-width:640px){
@@ -43,7 +45,30 @@ def history_video_links(page):
     return page.replace('着順・ライブは同じタブで公式ページを開きます。', 'ライブは同じタブで公式ページを開きます。')
 
 
-def public_html(page,day):
+def rakuten_page(page, day, marks):
+    races=parse_page(page)
+    target=day[:4]+'-'+day[4:6]+'-'+day[6:]
+    validate_marks(marks,races,target)
+    records={r['source_url']:{p['no']:p['mark'] for p in r['players']} for r in marks['races']}
+    for race in races:
+        for player in race['players']:
+            player['mark']=records[race['source']][player['no']]
+    page=re.sub(r'const races=(.*);\nconst body=',lambda m:'const races='+script_json(races)+';\nconst body=',page,count=1)
+    page=page.replace('function liveUrl(r)',"function rakutenRaceUrl(r){return 'https://my.keirin.kdreams.jp'+r.commentKey;}\nfunction liveUrl(r)",1)
+    old='''href="'+r.source+'" data-comment-key="'''
+    new='''href="'+rakutenRaceUrl(r)+'" data-race-source="'+r.source+'" data-comment-key="'''
+    if page.count(old)!=1:raise ValueError('Race link renderer is missing')
+    page=page.replace(old,new,1)
+    page=page.replace('<span class="prediction-mark">','<span class="prediction-mark" title="楽天Kドリームスの予想印">')
+    page=re.sub(r'<script src="[^"]*/predictions\.js[^"]*" defer></script>','',page,count=1)
+    page=page.replace('/odds-current.js','/odds-current-rakuten.js')
+    page=page.replace('予想印はウィンチケットAI予想の上位順（◎・○・▲・△）を表示しています。','予想印は楽天Kドリームスの掲載印を表示しています。')
+    page=page.replace('並び予想とライン構成はウィンチケットの各レース詳細を反映しています。','並び予想とライン構成は各レース詳細を反映しています。')
+    page=page.replace('選手成績はウィンチケット掲載の直近4か月の値です。','選手成績は直近4か月の値です。')
+    return page,races
+
+
+def public_html(page,day,marks=None):
     if page_date(page)!=day:
         raise ValueError('Page date mismatch')
     # GitHub Pages has no Worker redirect endpoint. Keep ordinary same-tab links.
@@ -67,7 +92,10 @@ def public_html(page,day):
         result=result.replace('</head>',MOBILE_STYLE+'</head>',1)
     if day>='20261029':
         result=history_video_links(result)
-    if parse_page(result)!=parse_page(page) or '/open-web?' in result:
+    expected=parse_page(page)
+    if day>=CUTOVER:
+        result,expected=rakuten_page(result,day,marks)
+    if parse_page(result)!=expected or '/open-web?' in result:
         raise ValueError('Do not alter race data or retain server-only links')
     return result
 
@@ -82,7 +110,7 @@ def materialize_card(card,site):
     dated=site/('line'+day+'.html');dated.mkdir(parents=True,exist_ok=True)
     current.write_text(card['html']);(dated/'index.html').write_text(card['html'])
     for name,body in card['assets'].items():
-        if name not in ('media.json','odds.json','odds-config.json'):
+        if name not in ('media.json','odds.json','odds-config.json','rakuten-marks.json'):
             raise ValueError('Unexpected display asset')
         (dated/name).write_text(body)
 
@@ -91,7 +119,12 @@ def export(site,output,repository=REPOSITORY):
     site,output=Path(site),Path(output)
     output.mkdir(parents=True,exist_ok=True)
     for name in SHARED:
-        (output/name).write_bytes((site/name).read_bytes())
+        if name=='odds-current-rakuten.js':
+            script=(site/'odds-current.js').read_text()
+            if 'new URL(link.href).pathname' not in script:raise ValueError('Odds race identity reader is missing')
+            (output/name).write_text(script.replace('new URL(link.href).pathname','new URL(link.dataset.raceSource || link.href).pathname'))
+        else:
+            (output/name).write_bytes((site/name).read_bytes())
     current=(site/'index.html').read_text();current_day=page_date(current)
     dates=[]
     for directory in sorted(site.iterdir()):
@@ -99,7 +132,8 @@ def export(site,output,repository=REPOSITORY):
         if not match or not (directory/'index.html').is_file():continue
         day=match[1];dates.append(day)
         page=(directory/'index.html').read_text()
-        (output/('line'+day+'.html')).write_text(public_html(page,day))
+        marks=json.loads((directory/'rakuten-marks.json').read_text()) if day>=CUTOVER else None
+        (output/('line'+day+'.html')).write_text(public_html(page,day,marks))
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
         for file in directory.glob('*.json'):
             # These are existing public display fields, never raw source backups.
@@ -108,7 +142,8 @@ def export(site,output,repository=REPOSITORY):
             endpoint='https://raw.githubusercontent.com/'+repository+'/odds-diagnostics/fallback/exacta/'+day+'/latest.json'
             (assets/'odds-config.json').write_text(json.dumps({'endpoint':endpoint},separators=(',',':')))
     if current_day not in dates:raise ValueError('Current dated page is missing')
-    page=public_html(current,current_day)
+    marks=json.loads((site/('line'+current_day+'.html')/'rakuten-marks.json').read_text()) if current_day>=CUTOVER else None
+    page=public_html(current,current_day,marks)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')
