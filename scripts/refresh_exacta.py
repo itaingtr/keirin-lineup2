@@ -1,6 +1,6 @@
 """Update display-only WINTICKET quotes; retain earlier successful observations."""
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import json
 import os
@@ -16,9 +16,22 @@ from venues import identity
 from published_card import read_published
 
 
-def should_collect(target,now):
+ODDS_SCHEDULES = ('*/15 23,0-10 * * *', '0,15,30 11 * * *')
+
+
+def should_collect(target,now,schedule=''):
     local=now.astimezone(ZoneInfo('Asia/Tokyo'))
-    return target==local.date().isoformat() and 9<=local.hour<=20
+    if target!=local.date().isoformat():return False
+    minute=local.hour*60+local.minute
+    if not schedule:return 8*60<=minute<=20*60+30
+    if schedule not in ODDS_SCHEDULES:raise ValueError('Unknown odds schedule')
+    slots=(range(8*60,20*60,15) if schedule==ODDS_SCHEDULES[0]
+           else (20*60,20*60+15,20*60+30))
+    midnight=local.replace(hour=0,minute=0,second=0,microsecond=0)
+    due=[midnight+timedelta(minutes=slot) for slot in slots if slot<=minute]
+    # Actions may start late. Keep a delayed final 20:30 slot, without
+    # permitting a stale job to collect a different race day.
+    return bool(due) and local-due[-1]<=timedelta(hours=1)
 
 
 def load_card(page):
@@ -94,15 +107,16 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--page',type=Path,required=True);p.add_argument('--previous-ref',required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--run-key',required=True)
+    p.add_argument('--schedule',default='')
     args=p.parse_args();require(re.fullmatch(r'run-\d+-\d+',args.run_key) is not None,'Invalid run key')
     saved=read_published(args.previous_ref)
     races,target=(saved[1],saved[2]) if saved else load_card(args.page)
     args.output.mkdir(parents=True,exist_ok=True)
-    if not should_collect(target,datetime.now(timezone.utc)):
-        (args.output/'report.json').write_text(json.dumps({'skipped':True,'target_date':target,'reason':'race_day_09_to_20_jst','database_writes':0}))
+    if not should_collect(target,datetime.now(timezone.utc),args.schedule):
+        (args.output/'report.json').write_text(json.dumps({'skipped':True,'target_date':target,'reason':'race_day_08_to_2030_jst','database_writes':0}))
         if os_path:=__import__('os').environ.get('GITHUB_OUTPUT'):
             with open(os_path,'a') as handle:handle.write('publish=false\n')
-        print('EXACTA SKIPPED: collection starts at 09:00 JST on the race date',flush=True)
+        print('EXACTA SKIPPED: race-day collection is 08:00-20:30 JST, every 15 minutes',flush=True)
         return
     prefix='fallback/exacta/'+target.replace('-','')
     restored=subprocess.run(['git','show',args.previous_ref+':'+prefix+'/latest.json'],text=True,capture_output=True)
