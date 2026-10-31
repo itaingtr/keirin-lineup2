@@ -74,8 +74,10 @@ def parse_marks(doc, race, observed_at):
     match = re.search(r'\b(\d+)R\s+[ＳS]級', title)
     ident = identity(race['source'])
     day = ident['date']
-    date_label = f'{int(day[:4])}年{int(day[4:6])}月{int(day[6:])}日'
-    require(match is not None and int(match[1]) == race['race'] and date_label in title, 'Prediction race/date differs')
+    title_date = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', title)
+    expected_date = (int(day[:4]), int(day[4:6]), int(day[6:]))
+    require(match is not None and int(match[1]) == race['race'] and title_date is not None
+            and tuple(map(int, title_date.groups())) == expected_date, 'Prediction race/date differs')
     classes = lambda node: node.attrs.get('class', '').split()
     tables = [t for t in doc.find_all('table') if 'racecard_table' in classes(t)
               and 'none' not in classes(t) and '直近4ヶ月の成績' in compact(t.text())]
