@@ -147,7 +147,7 @@ def parse_card(doc, url, fetched_at, *, include_odds=True):
     odds = (parse_odds(query(doc, 'FETCH_KEIRIN_RACE_ODDS', params), race['id'], url, numbers, fetched_at)
             if include_odds else {'race_key':urlsplit(url).path, 'source_url':url,
                 'provider':'winticket', 'bet_type':'exacta', 'rider_numbers':sorted(numbers),
-                'fetched_at':fetched_at, 'status':'unavailable', 'unavailable_reason':'race_day_09_jst'})
+                'fetched_at':fetched_at, 'status':'unavailable', 'unavailable_reason':'race_day_08_jst'})
     return card, odds
 
 
