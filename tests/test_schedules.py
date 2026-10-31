@@ -1,10 +1,11 @@
-from datetime import date,datetime,timezone
+from datetime import date,datetime,timedelta,timezone
 from pathlib import Path
 import sys
 import unittest
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
 from prepare_next_card import scheduled_target,can_publish,display_card
-from refresh_exacta import should_collect
+from refresh_exacta import should_collect,ODDS_SCHEDULES
+from update_publication import requested_mode
 from collect_sources import parse_card
 from test_sources import fixture,doc,URL,OBSERVED
 
@@ -16,15 +17,52 @@ class ScheduleTests(unittest.TestCase):
                           ('2026-10-24T15:15:00+00:00','30 14 * * *')]:
             self.assertEqual(scheduled_target(datetime.fromisoformat(time),cron),date(2026,10,25))
 
-    def test_odds_only_on_race_day_09_to_20(self):
-        for timestamp,allowed in [('2026-10-24T23:59:00+00:00',False),
+    def test_odds_only_on_race_day_08_to_2030(self):
+        for timestamp,allowed in [('2026-10-24T22:59:59+00:00',False),
+                                  ('2026-10-24T23:00:00+00:00',True),
                                   ('2026-10-25T00:00:00+00:00',True),
-                                  ('2026-10-25T11:59:00+00:00',True),
-                                  ('2026-10-25T12:00:00+00:00',False)]:
+                                  ('2026-10-25T11:30:59+00:00',True),
+                                  ('2026-10-25T11:31:00+00:00',False),
+                                  ('2026-10-25T11:45:00+00:00',False)]:
             now=datetime.fromisoformat(timestamp)
             self.assertEqual(should_collect('2026-10-25',now),allowed)
             self.assertFalse(should_collect('2026-10-26',now))
             self.assertFalse(should_collect('2026-10-24',now))
+
+    def test_workflow_has_51_quarter_hour_slots_and_both_card_slots(self):
+        import re
+        workflow=(Path(__file__).parents[1]/'.github/workflows/update.yml').read_text()
+        crons=re.findall(r"- cron: '([^']+)'",workflow)
+        self.assertEqual(crons,[*ODDS_SCHEDULES,'0 12 * * *','30 14 * * *'])
+        # Expand the workflow's UTC crons independently across one Japanese day.
+        first=datetime(2026,10,24,15,tzinfo=timezone.utc)
+        matched=[]
+        for offset in range(24*60):
+            instant=first+timedelta(minutes=offset)
+            for cron in crons[:2]:
+                minutes,hours,*_=cron.split()
+                minute_ok=instant.minute%15==0 if minutes=='*/15' else instant.minute in map(int,minutes.split(','))
+                utc_hours=({23,*range(11)} if hours=='23,0-10' else {int(hours)})
+                if minute_ok and instant.hour in utc_hours:
+                    self.assertTrue(should_collect('2026-10-25',instant,cron))
+                    self.assertFalse(should_collect('2026-10-24',instant,cron))
+                    self.assertFalse(should_collect('2026-10-26',instant,cron))
+                    self.assertEqual(requested_mode('schedule',cron),'odds')
+                    matched.append(offset)
+        self.assertEqual(matched,list(range(8*60,20*60+31,15)))
+        self.assertEqual(len(matched),51)
+        for cron in crons[2:]:self.assertEqual(requested_mode('schedule',cron),'cards')
+        self.assertEqual(requested_mode('push',mode='odds'),'publish')
+        self.assertEqual(requested_mode('workflow_dispatch',mode='odds'),'odds')
+        with self.assertRaises(ValueError):requested_mode('schedule','0 0-11 * * *')
+
+    def test_delayed_final_slot_keeps_the_race_day_and_has_a_limit(self):
+        last=ODDS_SCHEDULES[1]
+        self.assertFalse(should_collect('2026-10-25',datetime.fromisoformat('2026-10-25T10:59:00+00:00'),last))
+        for stamp in ('2026-10-25T11:32:00+00:00','2026-10-25T12:15:00+00:00'):
+            self.assertTrue(should_collect('2026-10-25',datetime.fromisoformat(stamp),last))
+        for stamp in ('2026-10-25T12:31:00+00:00','2026-10-25T15:05:00+00:00'):
+            self.assertFalse(should_collect('2026-10-25',datetime.fromisoformat(stamp),last))
 
     def test_never_rewrite_past_or_in_progress_card(self):
         now=datetime(2026,10,25,1,tzinfo=timezone.utc)
