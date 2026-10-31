@@ -14,8 +14,11 @@ on:
         required: false
         type: string
   schedule:
-    # Japan: odds hourly 09:00-20:00; next-day cards at 21:00 and 23:30.
-    - cron: '0 0-11 * * *'
+    # Japan: odds every 15 minutes 08:00-20:30 inclusive (51/day).
+    # UTC 23:00 belongs to the following race day in Japan.
+    - cron: '*/15 23,0-10 * * *'
+    - cron: '0,15,30 11 * * *'
+    # Next-day cards remain at 21:00 and 23:30 Japan time.
     - cron: '0 12 * * *'
     - cron: '30 14 * * *'
 permissions:
