@@ -1,6 +1,7 @@
 """Unattended collection, immutable feed publication and static page preparation."""
 import argparse
 from datetime import datetime,timezone
+from zoneinfo import ZoneInfo
 import hashlib
 import json
 import os
@@ -25,6 +26,13 @@ def requested_mode(event,schedule='',mode='publish'):
         if schedule in ('0 12 * * *','30 14 * * *'):return 'cards'
         raise ValueError('Unknown schedule')
     return mode
+
+
+def morning_recovery_date(target,now):
+    """Recover a missing card during the existing before-09:00 publish window."""
+    local=now.astimezone(ZoneInfo('Asia/Tokyo'))
+    today=local.date().isoformat()
+    return today if target<today and 8<=local.hour<9 else ''
 
 
 def git(*args,cwd=ROOT):
@@ -82,6 +90,11 @@ def main():
     saved=read_published(ref)
     if saved is None:raise ValueError('Verified initial card is missing')
     card,races,target=saved
+    recovery=(morning_recovery_date(target,datetime.now(timezone.utc))
+              if mode in ('publish','odds') else '')
+    if recovery:
+        print('Recover missing race-day card before odds collection:',recovery,flush=True)
+        mode='cards';args.date=recovery
     output=args.work/'update';publish_pages=mode!='odds';feed_commit=None
     if mode in ('cards','odds'):
         command=['python3','-u',str(ROOT/'scripts'/('prepare_next_card.py' if mode=='cards' else 'refresh_exacta.py')),
