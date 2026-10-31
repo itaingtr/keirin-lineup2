@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
 from prepare_next_card import scheduled_target,can_publish,display_card
 from refresh_exacta import should_collect,ODDS_SCHEDULES
-from update_publication import requested_mode
+from update_publication import requested_mode,morning_recovery_date
 from collect_sources import parse_card
 from test_sources import fixture,doc,URL,OBSERVED
 
@@ -63,6 +63,16 @@ class ScheduleTests(unittest.TestCase):
             self.assertTrue(should_collect('2026-10-25',datetime.fromisoformat(stamp),last))
         for stamp in ('2026-10-25T12:31:00+00:00','2026-10-25T15:05:00+00:00'):
             self.assertFalse(should_collect('2026-10-25',datetime.fromisoformat(stamp),last))
+
+    def test_morning_recovery_only_adds_a_missing_today_before_the_existing_cutoff(self):
+        for stamp,expected in [('2026-10-31T22:59:00+00:00',''),
+                               ('2026-10-31T23:00:00+00:00','2026-11-01'),
+                               ('2026-10-31T23:59:00+00:00','2026-11-01'),
+                               ('2026-11-01T00:00:00+00:00','')]:
+            now=datetime.fromisoformat(stamp)
+            self.assertEqual(morning_recovery_date('2026-10-31',now),expected)
+            self.assertFalse(morning_recovery_date('2026-11-01',now))
+            self.assertFalse(morning_recovery_date('2026-11-02',now))
 
     def test_never_rewrite_past_or_in_progress_card(self):
         now=datetime(2026,10,25,1,tzinfo=timezone.utc)
