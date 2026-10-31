@@ -25,6 +25,15 @@ def page():
 
 
 class RakutenMarksTests(unittest.TestCase):
+    def test_zero_padded_month_and_day_are_checked_numerically(self):
+        item=race()
+        item.update(source=item['source'].replace('20261022','20261101'),meetingStart='20261101')
+        for label in ('2026年11月01日','2026年11月1日'):
+            parsed=parse_marks(Document(page().replace('2026年10月22日',label)).root,item,OBSERVED)
+            self.assertEqual(len(parsed['players']),3)
+        with self.assertRaises(ValueError):
+            parse_marks(Document(page().replace('2026年10月22日','2026年11月02日')).root,item,OBSERVED)
+
     def test_marks_are_the_published_symbols_and_blanks(self):
         result=parse_marks(Document(page()).root,race(),OBSERVED)
         self.assertEqual([p['mark'] for p in result['players']],['×','注',''])
