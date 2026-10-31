@@ -12,10 +12,19 @@ import time
 from urllib.request import Request,urlopen
 from export_pages import export,materialize_card,page_date
 from published_card import git_read,read_published,parse_page
-from refresh_exacta import valid_saved
+from refresh_exacta import valid_saved,ODDS_SCHEDULES
 from rakuten_marks import CUTOVER, collect_marks, validate_marks, stage_marks
 
 ROOT=Path(__file__).resolve().parents[1]
+
+
+def requested_mode(event,schedule='',mode='publish'):
+    if event=='push':return 'publish'
+    if event=='schedule':
+        if schedule in ODDS_SCHEDULES:return 'odds'
+        if schedule in ('0 12 * * *','30 14 * * *'):return 'cards'
+        raise ValueError('Unknown schedule')
+    return mode
 
 
 def git(*args,cwd=ROOT):
@@ -66,12 +75,7 @@ def main():
     repository=os.environ.get('GITHUB_REPOSITORY','itaingtr/keirin-lineup2')
     if repository!='itaingtr/keirin-lineup2':raise ValueError('Wrong publication repository')
     if not re.fullmatch(r'run-\d+-\d+',args.run_key):raise ValueError('Invalid run key')
-    mode=args.mode
-    if args.event=='schedule':
-        if args.schedule=='0 0-11 * * *':mode='odds'
-        elif args.schedule in ('0 12 * * *','30 14 * * *'):mode='cards'
-        else:raise ValueError('Unknown schedule')
-    if args.event=='push':mode='publish'
+    mode=requested_mode(args.event,args.schedule,args.mode)
     git('config','user.name','github-actions[bot]')
     git('config','user.email','41898282+github-actions[bot]@users.noreply.github.com')
     git('fetch','origin','odds-diagnostics');ref=git('rev-parse','FETCH_HEAD')
@@ -84,7 +88,7 @@ def main():
                  '--previous-ref',ref,'--output',str(output),'--run-key',args.run_key]
         if mode=='cards':
             command+=['--mode','schedule' if args.event=='schedule' else 'manual','--schedule',args.schedule,'--date',args.date]
-        else:command+=['--page',str(ROOT/'site/index.html')]
+        else:command+=['--page',str(ROOT/'site/index.html'),'--schedule',args.schedule if args.event=='schedule' else '']
         subprocess.run(command,cwd=ROOT,check=True)
         report=json.loads((output/'report.json').read_text())
         if report.get('skipped'):
