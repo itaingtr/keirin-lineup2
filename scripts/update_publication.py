@@ -143,7 +143,8 @@ def main():
             current_races=parse_page((ROOT/'site/index.html').read_text())
             identities_file=ROOT/'site'/('line'+target.replace('-','')+'.html')/'rider-identities.json'
             identities=(validate_identities(json.loads(identities_file.read_text()),current_races,target)
-                        if identities_file.exists() else collect_identities(current_races,target,card['checked_at']))
+                        if identities_file.exists() and mode!='cards'
+                        else collect_identities(current_races,target,card['checked_at']))
             identities_file.write_text(json.dumps(identities,ensure_ascii=False,separators=(',',':'))+'\n')
         git('add','--','site')
         if git('status','--porcelain','--','site'):
