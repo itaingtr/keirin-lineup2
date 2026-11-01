@@ -15,6 +15,7 @@ from export_pages import export,materialize_card,page_date
 from published_card import git_read,read_published,parse_page
 from refresh_exacta import valid_saved,ODDS_SCHEDULES
 from rakuten_marks import CUTOVER, collect_marks, validate_marks, stage_marks
+from rider_identities import CONDITION_CUTOVER, collect_identities, validate_identities
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -138,6 +139,12 @@ def main():
             else:
                 payload=json.dumps(marks,ensure_ascii=False,separators=(',',':'),allow_nan=False)+'\n'
             marks_file.write_text(payload)
+        if target.replace('-','')>=CONDITION_CUTOVER:
+            current_races=parse_page((ROOT/'site/index.html').read_text())
+            identities_file=ROOT/'site'/('line'+target.replace('-','')+'.html')/'rider-identities.json'
+            identities=(validate_identities(json.loads(identities_file.read_text()),current_races,target)
+                        if identities_file.exists() else collect_identities(current_races,target,card['checked_at']))
+            identities_file.write_text(json.dumps(identities,ensure_ascii=False,separators=(',',':'))+'\n')
         git('add','--','site')
         if git('status','--porcelain','--','site'):
             git('commit','-m','Update verified public card '+target+' [skip ci]')
