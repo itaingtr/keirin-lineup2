@@ -18,17 +18,20 @@ def marks_for(day):
 def without_marks(races):
     result=deepcopy(races)
     for race in result:
-        for player in race['players']:player.pop('mark')
+        for player in race['players']:
+            player.pop('mark')
+            player.pop('playerId',None)
     return result
 
 
 class PublicPagesTests(unittest.TestCase):
     def test_flat_pages_keep_race_values_and_support_the_project_prefix(self):
         source=(ROOT/'site/index.html').read_text();day=page_date(source)
-        result=public_html(source,day,marks_for(day))
+        identities=json.loads((ROOT/'site'/('line'+day+'.html')/'rider-identities.json').read_text()) if day>='20261102' else None
+        result=public_html(source,day,marks_for(day),identities)
         self.assertEqual(without_marks(parse_page(source)),without_marks(parse_page(result)))
         self.assertIn('<base href="/keirin-lineup2/data/'+day+'/">',result)
-        self.assertIn('src="/keirin-lineup2/comments.js',result)
+        self.assertIn('src="/keirin-lineup2/'+('comments-passphrase.js' if day>='20261102' else 'comments.js'),result)
         self.assertIn('function webUrl(source){return source;}',result)
         self.assertNotIn('/open-web?',result)
         self.assertNotIn('value="/line',result)
