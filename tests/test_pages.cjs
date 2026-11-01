@@ -10,6 +10,7 @@ assert.equal(html,fs.readFileSync(path.join(publicDir,'line'+day+'.html'),'utf8'
 const config=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'odds-config.json'),'utf8'));
 const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.json'),'utf8'));
 const usesRakuten=day>='20261030';
+const usesConditions=day>='20261102';
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
@@ -61,7 +62,8 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
   }
   for(const a of doc.querySelectorAll('.live-link')){
    assert.equal(a.target,'_self');assert.equal(a.href,a.dataset.sourceUrl);
-   assert.equal(new URL(a.href).origin,'https://www.winticket.jp');
+   assert.equal(new URL(a.href).origin,usesConditions?'https://keirin.kdreams.jp':'https://www.winticket.jp');
+   if(usesConditions){const live=new URL(a.href);assert.equal(live.pathname,'/stadium/live/');assert.equal(live.searchParams.get('kyogijoCd'),a.closest('tr').id.split('-')[1]);}
    links++;
   }
   for(const option of doc.querySelectorAll('#date-select option')){
@@ -71,6 +73,17 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
   for(const [i,row] of [...doc.querySelector('#rows').children].entries()){
    const race=sourceRaces[i];riders+=race.players.length;
    assert.equal(row.id,'race-'+race.venueCode+'-'+race.race);
+   if(usesConditions){
+    const actions=[...row.querySelectorAll('.video-actions > a')];
+    assert.deepEqual(actions.map(a=>a.textContent),['映像','結果','ライブ']);
+    assert.ok(actions[0].classList.contains('video-link'));assert.ok(actions[1].classList.contains('result-link'));assert.ok(actions[2].classList.contains('live-link'));
+    const result=new URL(actions[1].href);assert.equal(result.origin,'https://keirin.kdreams.jp');assert.equal(result.pathname,race.commentKey);assert.equal(result.searchParams.get('pageType'),'showResult');assert.equal(actions[1].target,'_self');
+    for(const player of race.players){
+     const car=row.querySelector('.condition-car[data-player-id="'+player.playerId+'"]');assert.ok(car);assert.equal(car.type,'button');assert.equal(car.textContent,String(player.no));
+     assert.equal(car.dataset.raceId,String(race.race).padStart(2,'0')+race.venueCode+day);
+     const today=car.closest('.rider').querySelector('.condition-today');assert.ok(today);assert.equal(today.textContent,'');
+    }
+   }
    if(usesRakuten){
     const heading=row.querySelector('.race-link');assert.equal(heading.href,'https://my.keirin.kdreams.jp'+race.commentKey);
     assert.equal(heading.dataset.raceSource,race.source);assert.equal(heading.dataset.commentKey,race.commentKey);
@@ -130,5 +143,6 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
   if(usesRakuten){assert.doesNotMatch(doc.querySelector('main').textContent,/ウィンチケット|WINTICKET/i);assert.equal(doc.querySelector('script[src*="predictions.js"]'),null);}
   assert.deepEqual(errors,[]);dom.window.close();
  }
+ if(usesConditions){await require('./test_board_passphrase.cjs')();await require('./test_rider_conditions.cjs')({html,date:report.target_date});}
  console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,history_replay_links:historyReplays,venue_jumps:jumps,urls:2}));
 })().catch(error=>{console.error(error);process.exitCode=1;});
