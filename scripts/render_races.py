@@ -108,6 +108,11 @@ def validate(dataset):
                             'rawScore': score, 'period': str(period), 'mark': mark, 'stats': stats,
                             'meetingResults': validate_history(p.get('meeting_results', []),source)
                             if source_id['provider'] == 'winticket' else []})
+            if 'player_id' in p:
+                identifier=p['player_id']
+                require(isinstance(identifier,str) and re.fullmatch(r'\d{1,12}',identifier), 'Invalid rider ID')
+                require(all(x['player_id']==identifier for x in players[-1]['meetingResults']), 'Rider history ID differs')
+                players[-1]['playerId']=identifier
         normalized.append({'venue': venue, 'race': number, 'source': source, 'raceType': race_type,
                            'startTime': start_time, 'players': players, 'groups': parse_lineup(r['lineup'], numbers),
                            'averageScore': sum(p['rawScore'] for p in players) / len(players),
