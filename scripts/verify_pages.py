@@ -15,6 +15,7 @@ def verify(site,base):
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
+    if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     # A new deployment can take a short time to reach the public Pages CDN.
     stamp=hashlib.sha256(current.encode()).hexdigest()[:16]
     for attempt in range(12):
