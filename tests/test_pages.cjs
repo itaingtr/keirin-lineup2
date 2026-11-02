@@ -14,6 +14,13 @@ const usesConditions=day>='20261102';
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
+let legacyLineup;
+if(usesConditions){
+ const old=new JSDOM(fs.readFileSync(path.join(publicDir,'line20261101.html'),'utf8'),{runScripts:'dangerously',url:'https://itaingtr.github.io/keirin-lineup2/line20261101.html'});
+ const ow=old.window,od=ow.document;
+ legacyLineup={riderBasis:ow.getComputedStyle(od.querySelector('.lineup .rider')).flexBasis,lineGap:ow.getComputedStyle(od.querySelector('.lineup')).gap,withinGap:ow.getComputedStyle(od.querySelector('.line-group')).gap};
+ assert.equal(legacyLineup.riderBasis,'22px');old.window.close();
+}
 const pause=()=>new Promise(resolve=>setTimeout(resolve,15));
 let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
 (async()=>{
@@ -35,6 +42,7 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
    window.addEventListener('error',e=>errors.push(e.error||e.message));
   }});
   const {window}=dom;const doc=window.document;
+  if(usesConditions){const style=doc.createElement('style');style.textContent=fs.readFileSync(path.join(publicDir,'rider-condition.css'),'utf8');doc.head.append(style);}
   for(const file of usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
   await pause();
   assert.equal(doc.querySelectorAll('.race-link').length,report.races);
@@ -74,6 +82,11 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
    const race=sourceRaces[i];riders+=race.players.length;
    assert.equal(row.id,'race-'+race.venueCode+'-'+race.race);
    if(usesConditions){
+    const lineup=row.querySelector('.lineup'),groups=[...lineup.children];
+    assert.deepEqual(groups.map(g=>[...g.querySelectorAll('.rider .car')].map(c=>Number(c.textContent))),race.groups.map(line=>line.flatMap(unit=>unit.riders)));
+    assert.equal(window.getComputedStyle(lineup).gap,legacyLineup.lineGap);
+    for(const group of groups){assert.equal(window.getComputedStyle(group).gap,legacyLineup.withinGap);}
+    for(const rider of lineup.querySelectorAll('.rider'))assert.equal(window.getComputedStyle(rider).flexBasis,legacyLineup.riderBasis);
     const actions=[...row.querySelectorAll('.video-actions > a')];
     assert.deepEqual(actions.map(a=>a.textContent),['映像','結果','ライブ']);
     assert.ok(actions[0].classList.contains('video-link'));assert.ok(actions[1].classList.contains('result-link'));assert.ok(actions[2].classList.contains('live-link'));
