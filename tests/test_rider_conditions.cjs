@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {JSDOM}=require('jsdom');
 const source=fs.readFileSync(path.join(__dirname,'../site/rider-condition.js'),'utf8');
+const css=fs.readFileSync(path.join(__dirname,'../site/rider-condition.css'),'utf8');
 const pause=(ms=20)=>new Promise(resolve=>setTimeout(resolve,ms));
 
 async function run({html,date}){
@@ -15,7 +16,7 @@ async function run({html,date}){
  const store={posts:[
   {id:'old-1',race_key:currentKey,body:'1',created_at:date+'T00:00:00Z'},
   {id:'old-3',race_key:currentKey,body:'3',created_at:date+'T01:00:00Z'},
-  ...history.map((r,i)=>({id:'history-'+i,race_key:key(r.race_date,r.race_id,player.playerId),body:String(i?4:2),created_at:r.race_date+'T01:00:00Z'})),
+  ...history.map((r,i)=>({id:'history-'+i,race_key:key(r.race_date,r.race_id,player.playerId),body:String(i?4:-1),created_at:r.race_date+'T01:00:00Z'})),
   {id:'wrong-rider',race_key:key(date,raceId,'999999999999'),body:'5',created_at:date+'T02:00:00Z'},
   {id:'invalid',race_key:currentKey,body:'9',created_at:date+'T03:00:00Z'},
   {id:'comment',race_key:race.commentKey,body:'普通のコメント',created_at:date+'T01:00:00Z'}
@@ -31,7 +32,7 @@ async function run({html,date}){
    }
   };},
   insert(input){
-   assert.equal(input.user_id,'board-writer');assert.match(input.body,/^[1-5]$/);assert.ok(input.race_key.startsWith('condition:v1:'));
+   assert.equal(input.user_id,'board-writer');assert.match(input.body,/^(?:-2|-1|[0-5])$/);assert.ok(input.race_key.startsWith('condition:v1:'));
    return {select(){
     return {async single(){
      if(store.failed){store.failed=false;return {data:null,error:{message:'offline'}};}
@@ -44,6 +45,7 @@ async function run({html,date}){
  async function open(markup,canWrite=true){
   const dom=new JSDOM(markup,{url:'https://itaingtr.github.io/keirin-lineup2/',runScripts:'dangerously',beforeParse(w){w.matchMedia=()=>({matches:false});}});
   const w=dom.window;
+  const style=w.document.createElement('style');style.textContent=css;w.document.head.append(style);
   w.keirinBoard={client,ready:true,canWrite,user:canWrite?{id:'board-writer'}:null,requestLogin(){store.logins++;}};
   w.eval(source);await pause();return dom;
  }
@@ -53,21 +55,26 @@ async function run({html,date}){
  assert.equal(today().textContent,'3');
  for(const [i,result] of history.entries()){
   const value=car().closest('.rider').querySelector('.condition-history[data-race-id="'+result.race_id+'"]');
-  assert.equal(value.textContent,String(i?4:2));
+  assert.equal(value.textContent,String(i?4:-1));
+  assert.equal(w.getComputedStyle(value).color,i?'rgb(8, 125, 54)':'rgb(181, 137, 0)');
   assert.ok(value.closest('.meeting-order-line').querySelector('.meeting-rank'));
  }
  car().click();await pause();assert.equal(store.inserts.length,0);assert.equal(store.logins,1);assert.equal(today().textContent,'3');
  Object.assign(w.keirinBoard,{canWrite:true,user:{id:'board-writer'}});w.dispatchEvent(new w.CustomEvent('keirin-board-state'));await pause();
- car().click();car().click();assert.equal(today().textContent,'5');assert.equal(store.inserts.length,0);
+ car().click();assert.equal(today().textContent,'4');car().click();assert.equal(today().textContent,'5');assert.equal(store.inserts.length,0);
  await pause(720);assert.equal(store.inserts.length,1);assert.equal(store.inserts[0].race_key,currentKey);assert.equal(store.inserts[0].body,'5');assert.equal(today().textContent,'5');assert.equal(today().classList.contains('is-saving'),false);
  // An older public read finishing after a save must not erase the acknowledged value.
  store.holdNextRead=true;w.dispatchEvent(new w.CustomEvent('keirin-board-state'));await pause();assert.equal(typeof store.releaseRead,'function');
- car().click();assert.equal(today().textContent,'1');await pause(720);assert.equal(store.inserts.at(-1).body,'1');
- store.releaseRead();await pause();assert.equal(today().textContent,'1');
- store.failed=true;car().click();assert.equal(today().textContent,'2');await pause(720);assert.equal(today().textContent,'1');assert.match(d.querySelector('.condition-message').textContent,/保存できなかった/);
- const search=d.getElementById('search');search.value=race.venue;search.dispatchEvent(new w.Event('input'));await pause();assert.equal(today().textContent,'1');
+ car().click();assert.equal(today().textContent,'-2');assert.equal(w.getComputedStyle(today()).color,'rgb(181, 137, 0)');await pause(720);assert.equal(store.inserts.at(-1).body,'-2');
+ store.releaseRead();await pause();assert.equal(today().textContent,'-2');
+ store.failed=true;car().click();assert.equal(today().textContent,'-1');await pause(720);assert.equal(today().textContent,'-2');assert.match(d.querySelector('.condition-message').textContent,/保存できなかった/);
+ car().click();assert.equal(today().textContent,'-1');car().click();assert.equal(today().textContent,'');assert.equal(today().classList.contains('is-negative'),false);
+ await pause(720);assert.equal(store.inserts.at(-1).body,'0');assert.equal(today().textContent,'');assert.match(d.querySelector('.condition-message').textContent,/非表示/);
+ const search=d.getElementById('search');search.value=race.venue;search.dispatchEvent(new w.Event('input'));await pause();assert.equal(today().textContent,'');
  dom.window.close();
- const reopened=await open(html);assert.equal(reopened.window.document.querySelector('.condition-car[data-race-id="'+raceId+'"][data-player-id="'+player.playerId+'"]').closest('.rider').querySelector('.condition-today').textContent,'1');reopened.window.close();
+ const reopened=await open(html),reopenedCar=reopened.window.document.querySelector('.condition-car[data-race-id="'+raceId+'"][data-player-id="'+player.playerId+'"]');
+ const reopenedValue=()=>reopenedCar.closest('.rider').querySelector('.condition-today');
+ assert.equal(reopenedValue().textContent,'');
  // The next-day fixture changes the car number while preserving the official rider ID.
  const tomorrow=new Date(date+'T00:00:00Z');tomorrow.setUTCDate(tomorrow.getUTCDate()+1);const nextDate=tomorrow.toISOString().slice(0,10);
  const nextRace=JSON.parse(JSON.stringify(race)),nextPlayer=JSON.parse(JSON.stringify(player));
@@ -77,11 +84,22 @@ async function run({html,date}){
  const nextHtml=html.replace(/const races=(.*);\nconst body=/,()=> 'const races='+JSON.stringify([nextRace])+';\nconst body=').replace("const conditionDate='"+date+"';","const conditionDate='"+nextDate+"';");
  const next=await open(nextHtml),nd=next.window.document;
  const nextCar=nd.querySelector('.condition-car');assert.equal(nextCar.textContent,String(nextPlayer.no));
- assert.equal(nextCar.closest('.rider').querySelector('.condition-history[data-race-id="'+raceId+'"]').textContent,'1');
+ assert.equal(nextCar.closest('.rider').querySelector('.condition-history[data-race-id="'+raceId+'"]').textContent,'');
+ for(const [i,result] of history.entries()){
+  const value=nextCar.closest('.rider').querySelector('.condition-history[data-race-id="'+result.race_id+'"]');
+  assert.equal(value.textContent,String(i?4:-1));assert.equal(next.window.getComputedStyle(value).color,i?'rgb(8, 125, 54)':'rgb(181, 137, 0)');
+ }
  assert.equal(nextCar.closest('.rider').querySelector('.condition-today').textContent,'');
  next.window.close();
- assert.equal(store.inserts.length,2);assert.equal(store.posts.find(p=>p.id==='comment').body,'普通のコメント');
- console.log('RIDER CONDITIONS PASS: shared values, five-step cycle, batched taps, save failures, concurrent reads, reload and next-day rider matching.');
+ // Zero is a saved blank, so another cycle starts at 1 and follows all eight levels.
+ for(const value of [1,2,3,4,5,-2,-1,0,1]){
+  reopenedCar.click();assert.equal(reopenedValue().textContent,value?String(value):'');
+  if(value)assert.equal(reopened.window.getComputedStyle(reopenedValue()).color,value<0?'rgb(181, 137, 0)':'rgb(8, 125, 54)');
+ }
+ await pause(720);assert.equal(store.inserts.at(-1).body,'1');reopened.window.close();
+ assert.equal(store.inserts.length,4);assert.equal(store.posts.find(p=>p.id==='comment').body,'普通のコメント');
+ assert.equal(store.posts.find(p=>p.id==='old-3').body,'3');
+ console.log('RIDER CONDITIONS PASS: exact signed cycle, yellow negatives, green positives, persistent zero hiding today and history, batched taps and safe saves.');
 }
 module.exports=run;
 if(require.main===module){const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');const date=/const conditionDate='([^']+)'/.exec(html)[1];run({html,date}).catch(error=>{console.error(error);process.exitCode=1;});}
