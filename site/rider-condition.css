@@ -6,7 +6,6 @@
 .condition-car{appearance:none;border:0;padding:0;cursor:pointer;font-family:inherit;touch-action:manipulation}
 .condition-car.c1{border:1px solid #b9c4d0}
 .condition-car:focus-visible{outline:2px solid #155eef;outline-offset:3px}
-.lineup:has(.condition-car) .rider{flex-basis:30px}
 .meeting-order-line{display:flex;align-items:center;justify-content:center;gap:1px;min-height:14px;white-space:nowrap}
 .meeting-order-line .meeting-order{min-width:16px}
 .condition-history,.condition-today{color:#087d36;font-weight:850;font-variant-numeric:tabular-nums;text-align:center}
