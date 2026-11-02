@@ -3,6 +3,9 @@
   const root = document.getElementById('rows');
   if (!root || typeof races === 'undefined') return;
   const PREFIX = 'condition:v1:';
+  const LEVELS = [1, 2, 3, 4, 5, -2, -1, 0];
+  const validBodies = new Set(LEVELS.map(String));
+  const nextValue = value => LEVELS[(LEVELS.indexOf(value) + 1) % LEVELS.length];
   const expected = new Map();
   const dates = new Set();
   const saved = new Map();
@@ -15,7 +18,7 @@
 
   const note = document.createElement('p');
   note.className = 'condition-note';
-  note.append('車番を押すと調子が ', Object.assign(document.createElement('strong'), {textContent: '1 → 2 → 3 → 4 → 5 → 1'}), '。5が一番よい調子にゃ。緑の数字は皆で共有し、翌日の着順の横にも残るにゃ。');
+  note.append('車番を押すと調子が ', Object.assign(document.createElement('strong'), {textContent: '1 → 2 → 3 → 4 → 5'}), ' → ', Object.assign(document.createElement('strong'), {className: 'condition-negative', textContent: '-2 → -1'}), ' → 0 → 1。プラスは緑、マイナスは黄色。0は当日も翌日以降も空欄にゃ。数字は皆で共有するにゃ。');
   const status = document.createElement('span');
   status.className = 'condition-message';
   status.setAttribute('role', 'status');
@@ -40,24 +43,27 @@
   const board = () => window.keirinBoard;
   const valueFor = key => drafts.get(key)?.value ?? saved.get(key)?.value;
 
-  function message(text, error = false) {
+  function message(text, error = false, value = null) {
     status.textContent = text;
     status.classList.toggle('is-error', error);
+    status.classList.toggle('is-negative', !error && value < 0);
   }
 
   function paint() {
     for (const element of root.querySelectorAll('.condition-today, .condition-history')) {
       const key = keyFor(element.dataset.raceDate, element.dataset.raceId, element.dataset.playerId);
       const value = expected.has(key) ? valueFor(key) : undefined;
-      element.textContent = value || '';
-      element.title = value ? '調子 ' + value + ' / 5' : '未評価';
-      element.setAttribute('aria-label', value ? '調子 ' + value + ' / 5' : '調子は未評価');
+      const visible = Number.isInteger(value) && value !== 0;
+      element.textContent = visible ? String(value) : '';
+      element.title = visible ? '調子 ' + value + '（-2〜5）' : '未表示';
+      element.setAttribute('aria-label', visible ? '調子 ' + value + '（-2〜5）' : '調子は未表示');
+      element.classList.toggle('is-negative', visible && value < 0);
       element.classList.toggle('is-saving', drafts.has(key));
     }
     for (const car of root.querySelectorAll('.condition-car')) {
       const key = keyFor(car.dataset.raceDate, car.dataset.raceId, car.dataset.playerId);
       const value = valueFor(key);
-      car.setAttribute('aria-label', car.dataset.playerName + 'の調子 ' + (value || '未評価') + '。押すと' + ((value || 0) % 5 + 1));
+      car.setAttribute('aria-label', car.dataset.playerName + 'の調子 ' + (value || '未表示') + '。押すと' + nextValue(value));
     }
   }
 
@@ -78,7 +84,7 @@
           .range(offset, offset + 999);
         if (error) throw error;
         for (const item of data || []) {
-          if (!expected.has(item.race_key) || values.has(item.race_key) || !/^[1-5]$/.test(item.body)) continue;
+          if (!expected.has(item.race_key) || values.has(item.race_key) || !validBodies.has(item.body)) continue;
           values.set(item.race_key, {value: Number(item.body), createdAt: item.created_at});
         }
         if (!data || data.length < 1000) break;
@@ -115,7 +121,7 @@
         saved.set(key, {value, createdAt: data.created_at, acknowledgement: ++acknowledgement});
         if (drafts.get(key)?.revision === sentRevision) drafts.delete(key);
         paint();
-        message('調子 ' + value + ' を保存したにゃ');
+        message(value === 0 ? '調子の数字を非表示にしたにゃ' : '調子 ' + value + ' を保存したにゃ', false, value);
       } catch (_) {
         if (drafts.get(key)?.revision === sentRevision) drafts.delete(key);
         paint();
@@ -141,7 +147,7 @@
     if (!expected.has(key)) return;
     const prior = drafts.get(key);
     if (prior) clearTimeout(prior.timer);
-    const draft = {value: (valueFor(key) || 0) % 5 + 1, revision: ++revision, userId: connection.user.id};
+    const draft = {value: nextValue(valueFor(key)), revision: ++revision, userId: connection.user.id};
     draft.timer = setTimeout(() => flush(key, draft.revision), 650);
     drafts.set(key, draft);
     message('調子を保存中にゃ…');
