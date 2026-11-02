@@ -43,6 +43,6 @@ function liveUrl(r){return 'https://keirin.kdreams.jp/stadium/live/?'+new URLSea
     if page.count(old)!=1:raise ValueError('Previous condition position is missing')
     page=page.replace(old,new,1)
     page=page.replace('/comments.js?', '/comments-passphrase.js?')
-    page=page.replace('</head>','<link rel="stylesheet" href="/keirin-lineup2/rider-condition.css?v=20261102-signed"></head>',1)
+    page=page.replace('</head>','<link rel="stylesheet" href="/keirin-lineup2/rider-condition.css?v=20261102-original-lineup"></head>',1)
     page=page.replace('</body>','<script src="/keirin-lineup2/rider-condition.js?v=20261102-signed" defer></script></body>',1)
     return page,races
