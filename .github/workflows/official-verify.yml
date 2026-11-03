@@ -1,0 +1,30 @@
+name: Verify official source migration
+on:
+  push:
+    branches: [feature/kdreams-provider-20261104]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - run: python3 -m unittest discover -s tests -q
+      - name: Probe KEIRIN.JP public result fields
+        continue-on-error: true
+        run: python3 -u scripts/probe_keirin_jp.py --date 20261103 --code 45 --race 12
+      - name: Collect and verify public official display fields
+        run: python3 -u scripts/verify_official_collection.py --date 2026-11-04 --output /tmp/official-check --diagnostics
+      - name: Verify actual rendered cards
+        run: |
+          npm install --prefix /tmp/official-qa --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH=/tmp/official-qa/node_modules node tests/test_pages.cjs /tmp/official-check/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-display-verification
+          path: |
+            /tmp/official-check/dataset.json
+            /tmp/official-check/report.json
+            /tmp/official-check/odds.json

@@ -47,7 +47,7 @@ jobs:
           UPDATE_MODE: ${{ inputs.mode || 'publish' }}
           UPDATE_DATE: ${{ inputs.date }}
         run: |
-          python3 -u scripts/update_publication.py \
+          python3 -u scripts/official_publication.py \
             --event "$UPDATE_EVENT" --schedule "$UPDATE_SCHEDULE" \
             --mode "$UPDATE_MODE" --date "$UPDATE_DATE" \
             --run-key "run-${{ github.run_id }}-${{ github.run_attempt }}" \

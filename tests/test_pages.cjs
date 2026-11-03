@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const {JSDOM}=require('jsdom');const vm=require('node:vm');
 const report=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
-const root=path.resolve(__dirname,'..'),publicDir=path.join(root,'public');
+const root=path.resolve(__dirname,'..'),publicDir=report.public_dir||path.join(root,'public');
 const day=report.target_date.replaceAll('-','');
 const feed=JSON.parse(fs.readFileSync(report.local_odds_file,'utf8'));
 const expected=new Map(feed.results.filter(x=>x.ok).map(x=>[x.snapshot.race_key,x.snapshot]));
@@ -14,7 +14,11 @@ const usesConditions=day>='20261102';
 const usesRiderAppearance=day>='20261103';
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
-const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
+const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
+if(usesOfficial){assert.equal(media.provider,'kdreams');assert.ok(config.endpoint.includes('/fallback/kdreams/exacta/'));assert.doesNotMatch(html,/winticket|ウィンチケット/i);}
+const videoGrades=JSON.parse(/const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
+if(usesOfficial){assert.equal(media.provider,'kdreams');assert.ok(config.endpoint.includes('/fallback/kdreams/exacta/'));assert.doesNotMatch(html,/winticket|ウィンチケット/i);}
+const videoGrades=(.*);\n/.exec(html)[1]);
 let legacyLineup;
 if(usesConditions){
  const old=new JSDOM(fs.readFileSync(path.join(publicDir,'line20261101.html'),'utf8'),{runScripts:'dangerously',url:'https://itaingtr.github.io/keirin-lineup2/line20261101.html'});
@@ -100,7 +104,7 @@ const activeWindows=[];
      const today=car.closest('.rider').querySelector('.condition-today');assert.ok(today);assert.equal(today.textContent,'');
      if(usesRiderAppearance){
       const rider=car.closest('.rider'),period=rider.querySelector('.period'),s=rider.querySelector('.recent-s');
-      assert.equal(period.nextElementSibling,s);assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,String(player.stats[0]));
+      assert.equal(period.nextElementSibling,s);assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,usesOfficial&&player.stats[0]===0?'':String(player.stats[0]));
       const back=s.nextElementSibling.firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
       assert.equal(window.getComputedStyle(back).fontSize,'10px');assert.equal(window.getComputedStyle(back).fontWeight,'400');
       assert.equal(window.getComputedStyle(today).fontSize,'8px');assert.equal(window.getComputedStyle(today).fontWeight,'400');assert.equal(window.getComputedStyle(today).color,'rgb(211, 47, 47)');
@@ -110,7 +114,7 @@ const activeWindows=[];
     }
    }
    if(usesRakuten){
-    const heading=row.querySelector('.race-link');assert.equal(heading.href,'https://my.keirin.kdreams.jp'+race.commentKey);
+    const heading=row.querySelector('.race-link');assert.equal(heading.href,usesOfficial?race.source:'https://my.keirin.kdreams.jp'+race.commentKey);
     assert.equal(heading.dataset.raceSource,race.source);assert.equal(heading.dataset.commentKey,race.commentKey);
     const published=rakutenMarks.races.find(r=>r.source_url===race.source);assert.ok(published);
     for(const rider of row.querySelectorAll('.lineup .rider')){
@@ -133,7 +137,8 @@ const activeWindows=[];
      assert.equal(historyVideo.searchParams.get('l-id'),'Highlightreel');
      assert.equal(order.href,order.dataset.sourceUrl);assert.equal(order.target,'_blank');
      assert.equal(order.querySelector('.meeting-rank').textContent,result.has_accident?result.accident:String(result.order));
-     assert.equal(Boolean(order.querySelector('.meeting-back')),result.back);
+     assert.equal(Boolean(order.querySelector('.meeting-back:not(.meeting-start):not(.meeting-home)')),result.back);
+     if(usesOfficial){assert.equal(Boolean(order.querySelector('.meeting-start')),Boolean(result.start));assert.equal(Boolean(order.querySelector('.meeting-home')),Boolean(result.home));assert.equal(window.getComputedStyle(order.parentElement).justifyContent,'flex-start');}
      let opened;window.open=(...args)=>{opened=args;};order.click();
      assert.deepEqual(opened,[order.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
      historyReplays++;

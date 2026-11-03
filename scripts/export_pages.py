@@ -10,6 +10,7 @@ from rakuten_marks import CUTOVER, validate_marks
 from render_races import script_json
 from rider_identities import CONDITION_CUTOVER
 from rider_features import rider_features
+from official_page import official_page
 
 BASE='/keirin-lineup2/'
 REPOSITORY='itaingtr/keirin-lineup2'
@@ -57,7 +58,7 @@ def rakuten_page(page, day, marks):
         for player in race['players']:
             player['mark']=records[race['source']][player['no']]
     page=re.sub(r'const races=(.*);\nconst body=',lambda m:'const races='+script_json(races)+';\nconst body=',page,count=1)
-    page=page.replace('function liveUrl(r)',"function rakutenRaceUrl(r){return 'https://my.keirin.kdreams.jp'+r.commentKey;}\nfunction liveUrl(r)",1)
+    page=page.replace('function liveUrl(r)',"function rakutenRaceUrl(r){return r.source.includes('kdreams.jp/')?r.source:'https://my.keirin.kdreams.jp'+r.commentKey;}\nfunction liveUrl(r)",1)
     old='''href="'+r.source+'" data-comment-key="'''
     new='''href="'+rakutenRaceUrl(r)+'" data-race-source="'+r.source+'" data-comment-key="'''
     if page.count(old)!=1:raise ValueError('Race link renderer is missing')
@@ -100,6 +101,8 @@ def public_html(page,day,marks=None,identities=None):
         result,expected=rakuten_page(result,day,marks)
     if day>=CONDITION_CUTOVER:
         result,expected=rider_features(result,day,identities)
+    if all(identity(r['source'])['provider']=='kdreams' for r in expected):
+        result=official_page(result)
     if parse_page(result)!=expected or '/open-web?' in result:
         raise ValueError('Do not alter race data or retain server-only links')
     return result
@@ -115,7 +118,7 @@ def materialize_card(card,site):
     dated=site/('line'+day+'.html');dated.mkdir(parents=True,exist_ok=True)
     current.write_text(card['html']);(dated/'index.html').write_text(card['html'])
     for name,body in card['assets'].items():
-        if name not in ('media.json','odds.json','odds-config.json','rakuten-marks.json'):
+        if name not in ('media.json','odds.json','odds-config.json','rakuten-marks.json','rider-identities.json'):
             raise ValueError('Unexpected display asset')
         (dated/name).write_text(body)
 
@@ -145,7 +148,9 @@ def export(site,output,repository=REPOSITORY):
             # These are existing public display fields, never raw source backups.
             (assets/file.name).write_bytes(file.read_bytes())
         if day>='20261025':
-            endpoint='https://raw.githubusercontent.com/'+repository+'/odds-diagnostics/fallback/exacta/'+day+'/latest.json'
+            providers={identity(r['source'])['provider'] for r in parse_page(page)}
+            prefix='fallback/kdreams/exacta' if providers=={'kdreams'} else 'fallback/exacta'
+            endpoint='https://raw.githubusercontent.com/'+repository+'/odds-diagnostics/'+prefix+'/'+day+'/latest.json'
             (assets/'odds-config.json').write_text(json.dumps({'endpoint':endpoint},separators=(',',':')))
     if current_day not in dates:raise ValueError('Current dated page is missing')
     marks=json.loads((site/('line'+current_day+'.html')/'rakuten-marks.json').read_text()) if current_day>=CUTOVER else None

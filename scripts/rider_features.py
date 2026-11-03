@@ -42,7 +42,7 @@ def rider_features(page, day, identities):
     old="function liveUrl(r){ return 'https://www.winticket.jp/keirin/'+r.venueSlug+'/live'; }"
     new="""const conditionDate='"""+target+"""';
 function conditionRaceId(r){return String(r.race).padStart(2,'0')+r.venueCode+conditionDate.replaceAll('-','');}
-function resultUrl(r){return 'https://keirin.kdreams.jp'+r.commentKey+'?pageType=showResult';}
+function resultUrl(r){return (r.source.includes('kdreams.jp/')?r.source:'https://keirin.kdreams.jp'+r.commentKey)+'?pageType=showResult';}
 function liveUrl(r){return 'https://keirin.kdreams.jp/stadium/live/?'+new URLSearchParams({kyogijoCd:r.venueCode,'l-id':'Livebroadcast'}).toString();}"""
     if page.count(old)!=1:raise ValueError('Live URL renderer is missing')
     page=page.replace(old,new,1)

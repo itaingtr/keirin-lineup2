@@ -1,4 +1,4 @@
-"""Venue identities used for source validation and official WINTICKET links."""
+"""Provider-specific public race identities; archived providers remain identifiable."""
 from datetime import date, timedelta
 import re
 from urllib.parse import urlsplit
@@ -44,8 +44,18 @@ def identity(url):
         if code not in VENUES or VENUES[code][1] != slug:
             raise ValueError('Venue slug does not match source code')
         provider = 'winticket'
+    elif parsed.hostname in ('keirin.kdreams.jp','my.keirin.kdreams.jp') and not parsed.query:
+        match=re.fullmatch(r'/([a-z]+)/racedetail/(\d{2})(\d{8})(\d{2})(\d{4})/',parsed.path)
+        if not match:raise ValueError('Expected a K Dreams race card URL')
+        slug,code,start,meeting_day,number=match.groups()
+        if code not in VENUES or slug not in {VENUES[code][1],*({'iwakitaira'} if code=='13' else set())}:
+            raise ValueError('K Dreams venue slug does not match source code')
+        if not 1<=int(meeting_day)<=6:raise ValueError('Invalid K Dreams meeting day')
+        first=date.fromisoformat(f'{start[:4]}-{start[4:6]}-{start[6:]}')
+        day=(first+timedelta(days=int(meeting_day)-1)).strftime('%Y%m%d')
+        provider='kdreams'
     else:
-        raise ValueError('Only independently collected Enjoy or WINTICKET data is accepted')
+        raise ValueError('Unknown public race provider')
     if code not in VENUES or not 1 <= int(number) <= 12:
         raise ValueError('Unknown venue or invalid race number')
     return {'provider': provider, 'code': code, 'start': start, 'date': day, 'race': int(number)}

@@ -32,14 +32,14 @@ def read_published(ref):
     pointer=json.loads(raw)
     target=date.fromisoformat(pointer['target_date'])
     expected='fallback/cards/'+target.strftime('%Y%m%d')+'/runs/'+pointer['revision']+'.json'
-    if (pointer.get('schema_version')!=1 or pointer.get('provider')!='winticket'
+    if (pointer.get('schema_version')!=1 or pointer.get('provider') not in ('winticket','kdreams')
             or not re.fullmatch(r'run-\d+-\d+',pointer['revision']) or pointer['path']!=expected):
         raise ValueError('Invalid saved card pointer')
     payload=git_read(ref,expected)
     if hashlib.sha256(payload).hexdigest()!=pointer['sha256']:
         raise ValueError('Saved card checksum differs')
     card=json.loads(payload)
-    if card.get('schema_version')!=1 or card.get('provider')!='winticket' or card.get('target_date')!=target.isoformat():
+    if card.get('schema_version')!=1 or card.get('provider')!=pointer.get('provider') or card.get('target_date')!=target.isoformat():
         raise ValueError('Saved card date/provider differs')
     races=parse_page(card['html'])
     from venues import identity

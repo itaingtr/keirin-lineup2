@@ -34,6 +34,7 @@ def can_publish(target,now,previous=None):
 
 
 def display_card(dataset,feed,known_dates=()):
+    provider=dataset.get('provider','winticket')
     target,races,_=validate(dataset);compact=target.strftime('%Y%m%d')
     page=render(dataset,site=ROOT/'site')
     page,count=re.subn(r'<base href="\./"><script>.*?</script>',f'<base href="/line{compact}.html/">',page,count=1)
@@ -50,12 +51,12 @@ def display_card(dataset,feed,known_dates=()):
             page=page.replace('</select>',option+'</select>',1)
     page=page.replace("return '/open-web?to='+encodeURIComponent(source);",
                       "return '/open-web?to='+encodeURIComponent(source)+'&card="+compact+"';")
-    media={'schema_version':1,'provider':'winticket','target_date':target.isoformat(),
+    media={'schema_version':1,'provider':provider,'target_date':target.isoformat(),
            'checked_at':feed['checked_at'],'races':[{'source_url':r['source'],
            'players':[{k:p[k] for k in ('no','name','mark')} for p in r['players']]} for r in races]}
     encode=lambda value:json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False)
     feed['target_date']=target.isoformat()
-    return {'schema_version':1,'provider':'winticket','target_date':target.isoformat(),
+    return {'schema_version':1,'provider':provider,'target_date':target.isoformat(),
             'checked_at':feed['checked_at'],'html':page,
             'assets':{'media.json':encode(media),'odds-config.json':encode({'endpoint':'./odds.json'}),
                       'odds.json':encode(feed)},

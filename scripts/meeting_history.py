@@ -1,7 +1,7 @@
 """Validate only earlier days of this meeting, preserving source precision."""
 from datetime import date, timedelta
 import re
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit,parse_qsl
 
 from venues import identity, VENUES
 
@@ -13,7 +13,7 @@ def require(condition, message):
 
 def validate_history(results, source):
     ident = identity(source)
-    require(ident['provider'] == 'winticket', 'Meeting results need a WINTICKET source')
+    require(ident['provider'] in ('winticket','kdreams'), 'Unknown meeting-result card provider')
     require(isinstance(results, list), 'Expected a list of meeting results')
     start = date.fromisoformat(f"{ident['start'][:4]}-{ident['start'][4:6]}-{ident['start'][6:]}")
     target = date.fromisoformat(f"{ident['date'][:4]}-{ident['date'][4:6]}-{ident['date'][6:]}")
@@ -27,8 +27,27 @@ def validate_history(results, source):
         require(type(number) is int and 1 <= number <= 12, 'Invalid result race number')
         require(item['race_date'] == result_date.isoformat(), 'Result calendar date differs from its meeting day')
         require(item['race_id'] == f"{number:02}{ident['code']}{result_date:%Y%m%d}", 'Result race identity differs from this meeting')
-        expected_url = f"https://www.winticket.jp/keirin/{VENUES[ident['code']][1]}/raceresult/{ident['start']}{ident['code']}/{day}/{number}"
-        require(item['result_url'] == expected_url, 'Result link differs from its source race identity')
+        if ident['provider']=='winticket':
+            expected_url = f"https://www.winticket.jp/keirin/{VENUES[ident['code']][1]}/raceresult/{ident['start']}{ident['code']}/{day}/{number}"
+            require(item['result_url'] == expected_url, 'Result link differs from its source race identity')
+        else:
+            result=urlsplit(item['result_url']);pairs=parse_qsl(result.query,keep_blank_values=True);query=dict(pairs)
+            require(len(query)==len(pairs) and result.scheme=='https' and not(result.username or result.password or result.port or result.fragment), 'Invalid official result URL')
+            if item.get('provider')=='oddspark':
+                require(result.hostname in ('sp.oddspark.com','www.oddspark.com')
+                        and result.path in ('/keirin/SpRaceResultInfo.do','/keirin/RaceKekka.do')
+                        and set(query) in ({'joCd','kaisaiBi','raceNo'},{'joCode','kaisaiBi','raceNo'})
+                        and query.get('kaisaiBi')==result_date.strftime('%Y%m%d')
+                        and query.get('joCd',query.get('joCode'))==ident['code']
+                        and query.get('raceNo')==str(number), 'OddsPark result identity differs')
+            elif item.get('provider')=='kdreams':
+                code=ident['code'];slug=urlsplit(source).path.split('/')[1]
+                expected=f'/{slug}/racedetail/{code}{ident["start"]}{day:02}{number:04}/'
+                require(result.hostname in ('keirin.kdreams.jp','my.keirin.kdreams.jp')
+                        and result.path==expected and query=={'pageType':'showResult'}, 'K Dreams result identity differs')
+            else:raise ValueError('Unverified official result provider')
+            for flag in ('start','home'):
+                require(item.get(flag) is None or type(item[flag]) is bool,'Invalid official S/H flag')
         require(isinstance(item['player_id'], str) and re.fullmatch(r'\d{1,12}',item['player_id']), 'Invalid result rider identity')
         riders.add(item['player_id'])
         require(type(item['order']) is int and 0 <= item['order'] <= 9, 'Invalid result order')

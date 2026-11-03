@@ -31,13 +31,15 @@ def race_url(race):
     day = race['meetingDay']
     require(ident['code'] == race['venueCode'] and ident['start'] == race['meetingStart']
             and ident['race'] == race['race'], 'Race identity differs')
+    if ident['provider'] == 'kdreams':
+        return race['source']
     return (f"https://my.keirin.kdreams.jp/{VENUES[ident['code']][1]}/racedetail/"
             f"{ident['code']}{ident['start']}{day:02}{ident['race']:04}/")
 
 
 def check_url(url):
     p = urlsplit(url)
-    require(p.scheme == 'https' and p.hostname == 'my.keirin.kdreams.jp'
+    require(p.scheme == 'https' and p.hostname in ('my.keirin.kdreams.jp', 'keirin.kdreams.jp')
             and not (p.username or p.password or p.port or p.query or p.fragment)
             and re.fullmatch(r'/[a-z]+/racedetail/\d{16}/', p.path), 'Unexpected prediction source URL')
 

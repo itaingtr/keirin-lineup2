@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 import re
 import tempfile
+from urllib.parse import urlsplit
 from meeting_history import validate_history
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,16 +108,19 @@ def validate(dataset):
             players.append({'no': no, 'name': text(p['name'], 'rider name'), 'score': str(math.floor(score)),
                             'rawScore': score, 'period': str(period), 'mark': mark, 'stats': stats,
                             'meetingResults': validate_history(p.get('meeting_results', []),source)
-                            if source_id['provider'] == 'winticket' else []})
+                            if source_id['provider'] in ('winticket','kdreams') else []})
             if 'player_id' in p:
                 identifier=p['player_id']
                 require(isinstance(identifier,str) and re.fullmatch(r'\d{1,12}',identifier), 'Invalid rider ID')
                 require(all(x['player_id']==identifier for x in players[-1]['meetingResults']), 'Rider history ID differs')
                 players[-1]['playerId']=identifier
+            if source_id['provider']=='kdreams':
+                require(type(p.get('absent',False)) is bool,'Invalid official absence status')
+                players[-1]['absent']=p.get('absent',False)
         normalized.append({'venue': venue, 'race': number, 'source': source, 'raceType': race_type,
                            'startTime': start_time, 'players': players, 'groups': parse_lineup(r['lineup'], numbers),
                            'averageScore': sum(p['rawScore'] for p in players) / len(players),
-                           'venueCode': venue_code, 'venueSlug': VENUES[venue_code][1],
+                           'venueCode': venue_code, 'venueSlug': source.split('/')[3] if source_id['provider']=='kdreams' else VENUES[venue_code][1],
                            'meetingStart': start, 'meetingDay': int(day),
                            'commentKey': '/' + VENUES[venue_code][1] + '/racedetail/' + venue_code + start + day.zfill(2) + race_no.zfill(4) + '/'})
     return target, order_races(normalized, grades), grades
@@ -158,8 +162,14 @@ def render(dataset, site=None, template=None):
               'HEADER': f'<header><div class="eyebrow">KEIRIN · {target:%Y.%m.%d}</div><h1>{label} S級戦｜並び・選手一覧</h1><p class="intro">{summary}</p></header>',
               'DATE_OPTIONS': ''.join(options), 'COUNT': f'{len(races)} / {len(races)} レース',
               'RACES': script_json(races), 'VIDEO_GRADES': script_json(grades), 'BASE': './', 'PROVIDER_NAME': 'エンジョイ' if dataset.get('provider') == 'enjoy' else 'ウィンチケット', 'STATS_NOTE': 'S/B・決まり手はエンジョイ掲載の現級集計値で、他サイトと集計期間が異なる場合があります。' if dataset.get('provider') == 'enjoy' else '選手成績はウィンチケット掲載の直近4か月の値です。予想印のない選手は空欄です。'}
+    if dataset.get('provider')=='kdreams':
+        values['PROVIDER_NAME']='楽天Kドリームス'
+        values['STATS_NOTE']='選手成績は楽天Kドリームス掲載の直近4か月の値です。'
     # Substitute in one pass so data resembling a placeholder cannot alter the template.
-    return re.sub(r'@@([A-Z_]+)@@', lambda m: values[m[1]], template)
+    page=re.sub(r'@@([A-Z_]+)@@', lambda m: values[m[1]], template)
+    if dataset.get('provider')=='kdreams':
+        page=page.replace('予想印は楽天KドリームスAI予想の上位順（◎・○・▲・△）を表示しています。','予想印は楽天Kドリームスの掲載印を表示しています。')
+    return page
 
 
 def write_pages(dataset, site, *, allow_replace=False):

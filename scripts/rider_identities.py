@@ -19,7 +19,8 @@ def existing_id(player):
 
 
 def validate_identities(data, races, target):
-    require(data.get('schema_version') == 1 and data.get('provider') == 'winticket'
+    providers={identity(r['source'])['provider'] for r in races}
+    require(len(providers)==1 and data.get('schema_version') == 1 and data.get('provider') in providers
             and data.get('target_date') == target, 'Wrong rider identity date/provider')
     rows = data.get('races', [])
     mapped = {row['source_url']: row for row in rows}
@@ -53,6 +54,7 @@ def collect_identities(races, target, observed_at, reader=fetch):
         observed = observed_at
         if not all(ids.values()):
             ident = identity(race['source'])
+            require(ident['provider']=='winticket','Official cards require verified rider IDs; no legacy-provider fallback')
             day = int(urlsplit(race['source']).path.rstrip('/').split('/')[-2])
             params = {'cupId': ident['start'] + ident['code'], 'index': day, 'raceNumber': ident['race']}
             doc, observed = reader(race['source'], [])
@@ -79,5 +81,7 @@ def collect_identities(races, target, observed_at, reader=fetch):
                         'players': [{'no': p['no'], 'name': p['name'], 'period': str(p['period']),
                                      'player_id': ids[p['no']]} for p in race['players']]})
         print('RIDER IDENTITIES', race['venue'], race['race'], 'R verified', flush=True)
-    return validate_identities({'schema_version': 1, 'provider': 'winticket',
+    providers={identity(r['source'])['provider'] for r in races}
+    require(len(providers)==1,'Mixed rider identity providers')
+    return validate_identities({'schema_version': 1, 'provider': providers.pop(),
                                 'target_date': target, 'races': records}, races, target)
