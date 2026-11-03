@@ -1,0 +1,14 @@
+name: Verify public official provider structure
+on:
+  push:
+    branches: [feature/official-source-probe-20261104]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect only public display fields without database writes
+        run: python3 -u scripts/probe_official_sources.py --date 20261104 --code 45 --race 12
