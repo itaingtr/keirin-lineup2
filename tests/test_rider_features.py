@@ -7,11 +7,25 @@ import unittest
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
 from export_pages import public_html
 from published_card import parse_page
+from rider_features import rider_appearance
 
 ROOT=Path(__file__).parents[1]
 
 
 class RiderFeaturesTests(unittest.TestCase):
+    def test_s_moves_only_for_new_appearance_without_changing_race_data(self):
+        directory=ROOT/'site/line20261102.html'
+        source=(directory/'index.html').read_text()
+        marks=json.loads((directory/'rakuten-marks.json').read_text())
+        identities=json.loads((directory/'rider-identities.json').read_text())
+        archived=public_html(source,'20261102',marks,identities)
+        self.assertNotIn('rider-appearance-style',archived)
+        self.assertIn('''<div class="rider"><span class="recent-s">''',archived)
+        updated=rider_appearance(archived)
+        self.assertIn('''<span class="period">'+p.period+'</span><span class="recent-s">'+p.stats[0]+'</span><div class="stats">''',updated)
+        self.assertEqual(parse_page(archived),parse_page(updated))
+        self.assertIn('top:27px',updated);self.assertIn('top:62px',updated)
+
     def test_new_controls_preserve_results_and_add_verified_official_ids(self):
         directory=ROOT/'site/line20261102.html'
         source=(directory/'index.html').read_text()
