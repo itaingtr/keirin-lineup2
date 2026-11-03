@@ -4,6 +4,30 @@ from render_races import script_json
 from published_card import parse_page
 from rider_identities import validate_identities
 
+APPEARANCE_CUTOVER = '20261103'
+APPEARANCE_STYLE = '''<style id="rider-appearance-style">
+.lineup .stat-b,.lineup .stat-b-zero{font-size:10px;font-weight:400}
+.lineup .meeting-back{font-weight:400}
+.lineup .meeting-time{font-size:8px}
+.lineup .condition-history,.lineup .condition-today,
+.lineup .condition-history.is-negative,.lineup .condition-today.is-negative{color:#d32f2f;font-size:8px;font-weight:400}
+.condition-note strong,.condition-note .condition-negative{color:#d32f2f;font-weight:400}
+.condition-message:not(.is-error){color:#d32f2f}
+.table-wrap .contest-pair::before,.table-wrap .contest-pair::after{top:27px}
+.table-wrap .lineup-odds-visible .contest-pair::before,.table-wrap .lineup-odds-visible .contest-pair::after{top:62px}
+</style>'''
+
+
+def rider_appearance(page):
+    s='''<span class="recent-s">'+p.stats[0]+'</span>'''
+    period='''<span class="period">'+p.period+'</span>'''
+    if page.count(s)!=1 or page.count(period)!=1 or len(re.findall(r'<body\b[^>]*>',page))!=1:
+        raise ValueError('Rider appearance renderer differs')
+    page=page.replace(s,'',1).replace(period,period+s,1)
+    page=re.sub(r'<body\b','<body data-rider-appearance="red"',page,count=1)
+    page=page.replace('</head>',APPEARANCE_STYLE+'</head>',1)
+    return page.replace('rider-condition.js?v=20261102-signed','rider-condition.js?v=20261103-appearance')
+
 
 def rider_features(page, day, identities):
     target=day[:4]+'-'+day[4:6]+'-'+day[6:]
@@ -45,4 +69,5 @@ function liveUrl(r){return 'https://keirin.kdreams.jp/stadium/live/?'+new URLSea
     page=page.replace('/comments.js?', '/comments-passphrase.js?')
     page=page.replace('</head>','<link rel="stylesheet" href="/keirin-lineup2/rider-condition.css?v=20261102-original-lineup"></head>',1)
     page=page.replace('</body>','<script src="/keirin-lineup2/rider-condition.js?v=20261102-signed" defer></script></body>',1)
+    if day>=APPEARANCE_CUTOVER:page=rider_appearance(page)
     return page,races
