@@ -11,4 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Inspect only public display fields without database writes
-        run: python3 -u scripts/probe_official_sources.py --date 20261104 --code 45 --race 12
+        run: python3 -u scripts/probe_official_sources.py --date 20261104 --code 45 --race 12 --desktop
