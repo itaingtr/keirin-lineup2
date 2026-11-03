@@ -20,7 +20,7 @@ def item(node):
 def inspect(url):
     try:
         with urlopen(Request(url,headers={'User-Agent':'KeirinLineup2/1.0'}),timeout=25) as response:
-            if urlsplit(response.url).hostname!='sp.oddspark.com':raise ValueError('Unexpected public source redirect')
+            if urlsplit(response.url).hostname not in ('sp.oddspark.com','www.oddspark.com'):raise ValueError('Unexpected public source redirect')
             raw=response.read(6_000_001)
             if len(raw)>6_000_000:raise ValueError('Source too large')
             page=raw.decode(response.headers.get_content_charset() or 'utf-8')
@@ -41,9 +41,13 @@ def inspect(url):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--date',required=True);p.add_argument('--code',required=True);p.add_argument('--race',type=int,required=True)
+    p=argparse.ArgumentParser();p.add_argument('--date',required=True);p.add_argument('--code',required=True);p.add_argument('--race',type=int,required=True);p.add_argument('--desktop',action='store_true')
     a=p.parse_args();previous=(datetime.strptime(a.date,'%Y%m%d')-timedelta(days=1)).strftime('%Y%m%d')
     def url(endpoint,code,day,race=None):return 'https://sp.oddspark.com/keirin/'+endpoint+'?'+urlencode({'joCd':code,'kaisaiBi':day,**({'raceNo':race} if race else {})})
+    if a.desktop:
+        for route,day in [('RaceList.do',a.date),('RaceKekka.do',previous)]:
+            inspect('https://www.oddspark.com/keirin/'+route+'?'+urlencode({'joCode':a.code,'kaisaiBi':day,'raceNo':a.race}))
+        return
     for value in [url('SpRaceInfo.do',a.code,a.date,a.race),url('SpRaceList.do',a.code,previous),
                   url('SpRaceInfo.do',a.code,previous,a.race),url('SpRaceResultInfo.do',a.code,previous,a.race),
                   url('SpRaceInfo.do','85','20260913',1)]:inspect(value)
