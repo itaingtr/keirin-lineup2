@@ -18,7 +18,8 @@
 
   const note = document.createElement('p');
   note.className = 'condition-note';
-  note.append('車番を押すと調子が ', Object.assign(document.createElement('strong'), {textContent: '1 → 2 → 3 → 4 → 5'}), ' → ', Object.assign(document.createElement('strong'), {className: 'condition-negative', textContent: '-2 → -1'}), ' → 0 → 1。プラスは緑、マイナスは黄色。0は当日も翌日以降も空欄にゃ。数字は皆で共有するにゃ。');
+  const appearance = document.body.dataset.riderAppearance === 'red' ? '調子の数字は赤。' : 'プラスは緑、マイナスは黄色。';
+  note.append('車番を押すと調子が ', Object.assign(document.createElement('strong'), {textContent: '1 → 2 → 3 → 4 → 5'}), ' → ', Object.assign(document.createElement('strong'), {className: 'condition-negative', textContent: '-2 → -1'}), ' → 0 → 1。' + appearance + '0は当日も翌日以降も空欄にゃ。数字は皆で共有するにゃ。');
   const status = document.createElement('span');
   status.className = 'condition-message';
   status.setAttribute('role', 'status');
