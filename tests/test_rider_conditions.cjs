@@ -5,6 +5,9 @@ const css=fs.readFileSync(path.join(__dirname,'../site/rider-condition.css'),'ut
 const pause=(ms=20)=>new Promise(resolve=>setTimeout(resolve,ms));
 
 async function run({html,date}){
+ const instances=[];
+ const redAppearance=html.includes('data-rider-appearance="red"');
+ const ratingColor=value=>redAppearance?'rgb(211, 47, 47)':value<0?'rgb(181, 137, 0)':'rgb(8, 125, 54)';
  const original=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
  const race=original.find(r=>r.players.some(p=>p.meetingResults.length>=2));
  assert.ok(race,'A real saved card with prior days is required');
@@ -43,12 +46,14 @@ async function run({html,date}){
   }
  };}};
  async function open(markup,canWrite=true){
-  const dom=new JSDOM(markup,{url:'https://itaingtr.github.io/keirin-lineup2/',runScripts:'dangerously',beforeParse(w){w.matchMedia=()=>({matches:false});}});
+  const styled=markup.replace(/<link\b[^>]*href="[^"]*\/rider-condition\.css[^"]*"[^>]*>/,()=>'<style>'+css+'</style>');
+  const dom=new JSDOM(styled,{url:'https://itaingtr.github.io/keirin-lineup2/',runScripts:'dangerously',beforeParse(w){w.matchMedia=()=>({matches:false});}});
+  instances.push(dom);
   const w=dom.window;
-  const style=w.document.createElement('style');style.textContent=css;w.document.head.append(style);
   w.keirinBoard={client,ready:true,canWrite,user:canWrite?{id:'board-writer'}:null,requestLogin(){store.logins++;}};
   w.eval(source);await pause();return dom;
  }
+ try{
  const dom=await open(html,false),w=dom.window,d=w.document;
  const car=()=>d.querySelector('.condition-car[data-race-id="'+raceId+'"][data-player-id="'+player.playerId+'"]');
  const today=()=>car().closest('.rider').querySelector('.condition-today');
@@ -56,7 +61,8 @@ async function run({html,date}){
  for(const [i,result] of history.entries()){
   const value=car().closest('.rider').querySelector('.condition-history[data-race-id="'+result.race_id+'"]');
   assert.equal(value.textContent,String(i?4:-1));
-  assert.equal(w.getComputedStyle(value).color,i?'rgb(8, 125, 54)':'rgb(181, 137, 0)');
+  assert.equal(w.getComputedStyle(value).color,ratingColor(i?4:-1));
+  if(redAppearance){assert.equal(w.getComputedStyle(value).fontSize,'8px');assert.equal(w.getComputedStyle(value).fontWeight,'400');}
   assert.ok(value.closest('.meeting-order-line').querySelector('.meeting-rank'));
  }
  car().click();await pause();assert.equal(store.inserts.length,0);assert.equal(store.logins,1);assert.equal(today().textContent,'3');
@@ -65,7 +71,7 @@ async function run({html,date}){
  await pause(720);assert.equal(store.inserts.length,1);assert.equal(store.inserts[0].race_key,currentKey);assert.equal(store.inserts[0].body,'5');assert.equal(today().textContent,'5');assert.equal(today().classList.contains('is-saving'),false);
  // An older public read finishing after a save must not erase the acknowledged value.
  store.holdNextRead=true;w.dispatchEvent(new w.CustomEvent('keirin-board-state'));await pause();assert.equal(typeof store.releaseRead,'function');
- car().click();assert.equal(today().textContent,'-2');assert.equal(w.getComputedStyle(today()).color,'rgb(181, 137, 0)');await pause(720);assert.equal(store.inserts.at(-1).body,'-2');
+ car().click();assert.equal(today().textContent,'-2');assert.equal(w.getComputedStyle(today()).color,ratingColor(-2));await pause(720);assert.equal(store.inserts.at(-1).body,'-2');
  store.releaseRead();await pause();assert.equal(today().textContent,'-2');
  store.failed=true;car().click();assert.equal(today().textContent,'-1');await pause(720);assert.equal(today().textContent,'-2');assert.match(d.querySelector('.condition-message').textContent,/保存できなかった/);
  car().click();assert.equal(today().textContent,'-1');car().click();assert.equal(today().textContent,'');assert.equal(today().classList.contains('is-negative'),false);
@@ -87,19 +93,23 @@ async function run({html,date}){
  assert.equal(nextCar.closest('.rider').querySelector('.condition-history[data-race-id="'+raceId+'"]').textContent,'');
  for(const [i,result] of history.entries()){
   const value=nextCar.closest('.rider').querySelector('.condition-history[data-race-id="'+result.race_id+'"]');
-  assert.equal(value.textContent,String(i?4:-1));assert.equal(next.window.getComputedStyle(value).color,i?'rgb(8, 125, 54)':'rgb(181, 137, 0)');
+  assert.equal(value.textContent,String(i?4:-1));assert.equal(next.window.getComputedStyle(value).color,ratingColor(i?4:-1));
  }
  assert.equal(nextCar.closest('.rider').querySelector('.condition-today').textContent,'');
  next.window.close();
  // Zero is a saved blank, so another cycle starts at 1 and follows all eight levels.
  for(const value of [1,2,3,4,5,-2,-1,0,1]){
   reopenedCar.click();assert.equal(reopenedValue().textContent,value?String(value):'');
-  if(value)assert.equal(reopened.window.getComputedStyle(reopenedValue()).color,value<0?'rgb(181, 137, 0)':'rgb(8, 125, 54)');
+  if(value)assert.equal(reopened.window.getComputedStyle(reopenedValue()).color,ratingColor(value));
+  if(redAppearance){assert.equal(reopened.window.getComputedStyle(reopenedValue()).fontSize,'8px');assert.equal(reopened.window.getComputedStyle(reopenedValue()).fontWeight,'400');}
  }
- await pause(720);assert.equal(store.inserts.at(-1).body,'1');reopened.window.close();
+ await pause(720);assert.equal(store.inserts.at(-1).body,'1');
+ if(redAppearance){assert.match(reopened.window.document.querySelector('.condition-note').textContent,/調子の数字は赤/);}
+ reopened.window.close();
  assert.equal(store.inserts.length,4);assert.equal(store.posts.find(p=>p.id==='comment').body,'普通のコメント');
  assert.equal(store.posts.find(p=>p.id==='old-3').body,'3');
- console.log('RIDER CONDITIONS PASS: exact signed cycle, yellow negatives, green positives, persistent zero hiding today and history, batched taps and safe saves.');
+ console.log('RIDER CONDITIONS PASS: signed cycle, expected colors and typography, zero hiding today and history, batched taps and safe saves.');
+ }finally{for(const instance of instances)if(instance.window.document)instance.window.close();}
 }
 module.exports=run;
 if(require.main===module){const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');const date=/const conditionDate='([^']+)'/.exec(html)[1];run({html,date}).catch(error=>{console.error(error);process.exitCode=1;});}
