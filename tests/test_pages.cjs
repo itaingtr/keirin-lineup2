@@ -11,6 +11,7 @@ const config=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'odds-con
 const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.json'),'utf8'));
 const usesRakuten=day>='20261030';
 const usesConditions=day>='20261102';
+const usesRiderAppearance=day>='20261103';
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
@@ -23,11 +24,13 @@ if(usesConditions){
 }
 const pause=()=>new Promise(resolve=>setTimeout(resolve,15));
 let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
+const activeWindows=[];
 (async()=>{
  for(const route of ['', 'line'+day+'.html']){
   const url='https://itaingtr.github.io/keirin-lineup2/'+route;
   const errors=[];
-  const dom=new JSDOM(html,{url,runScripts:'dangerously',beforeParse(window){
+  const styledHtml=usesConditions?html.replace(/<link\b[^>]*href="[^"]*\/rider-condition\.css[^"]*"[^>]*>/,()=>'<style>'+fs.readFileSync(path.join(publicDir,'rider-condition.css'),'utf8')+'</style>'):html;
+  const dom=new JSDOM(styledHtml,{url,runScripts:'dangerously',beforeParse(window){
    window.matchMedia=()=>({matches:false});
    window.fetch=async input=>{
     const u=new URL(String(input),window.document.baseURI);
@@ -41,8 +44,8 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
    };
    window.addEventListener('error',e=>errors.push(e.error||e.message));
   }});
+  activeWindows.push(dom.window);
   const {window}=dom;const doc=window.document;
-  if(usesConditions){const style=doc.createElement('style');style.textContent=fs.readFileSync(path.join(publicDir,'rider-condition.css'),'utf8');doc.head.append(style);}
   for(const file of usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
   await pause();
   assert.equal(doc.querySelectorAll('.race-link').length,report.races);
@@ -95,6 +98,15 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
      const car=row.querySelector('.condition-car[data-player-id="'+player.playerId+'"]');assert.ok(car);assert.equal(car.type,'button');assert.equal(car.textContent,String(player.no));
      assert.equal(car.dataset.raceId,String(race.race).padStart(2,'0')+race.venueCode+day);
      const today=car.closest('.rider').querySelector('.condition-today');assert.ok(today);assert.equal(today.textContent,'');
+     if(usesRiderAppearance){
+      const rider=car.closest('.rider'),period=rider.querySelector('.period'),s=rider.querySelector('.recent-s');
+      assert.equal(period.nextElementSibling,s);assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,String(player.stats[0]));
+      const back=s.nextElementSibling.firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
+      assert.equal(window.getComputedStyle(back).fontSize,'10px');assert.equal(window.getComputedStyle(back).fontWeight,'400');
+      assert.equal(window.getComputedStyle(today).fontSize,'8px');assert.equal(window.getComputedStyle(today).fontWeight,'400');assert.equal(window.getComputedStyle(today).color,'rgb(211, 47, 47)');
+      for(const flag of rider.querySelectorAll('.meeting-back')){assert.equal(window.getComputedStyle(flag).fontSize,'8px');assert.equal(window.getComputedStyle(flag).fontWeight,'400');}
+      for(const timing of rider.querySelectorAll('.meeting-time'))assert.equal(window.getComputedStyle(timing).fontSize,'8px');
+     }
     }
    }
    if(usesRakuten){
@@ -158,4 +170,4 @@ let pairs=0,links=0,riders=0,replays=0,jumps=0,historyReplays=0;
  }
  if(usesConditions){await require('./test_board_passphrase.cjs')();await require('./test_rider_conditions.cjs')({html,date:report.target_date});}
  console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,history_replay_links:historyReplays,venue_jumps:jumps,urls:2}));
-})().catch(error=>{console.error(error);process.exitCode=1;});
+})().catch(error=>{for(const window of activeWindows)if(window.document)window.close();console.error(error);process.exitCode=1;});
