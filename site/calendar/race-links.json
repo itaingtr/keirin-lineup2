@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-04T10:23:59.194002+00:00",
+  "index_date": "2026-11-04",
+  "days": [
+    {
+      "date": "2026-10-21",
+      "href": "/keirin-lineup2/line20261021.html",
+      "sha256": "7af0531093f57e8a55f82bbbee623c79e5c8cc6d429960dc2b880e9803427e3e",
+      "venues": [
+        {
+          "code": "36",
+          "name": "小田原",
+          "last_race": 12,
+          "meeting_start": "2026-10-20",
+          "href": "/keirin-lineup2/line20261021.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/odawara/racecard/2026102036/2/12"
+        },
+        {
+          "code": "48",
+          "name": "四日市",
+          "last_race": 12,
+          "meeting_start": "2026-10-21",
+          "href": "/keirin-lineup2/line20261021.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/yokkaichi/racecard/2026102148/1/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-22",
+      "href": "/keirin-lineup2/line20261022.html",
+      "sha256": "50f8b3d8344c11ddfa00d33662257b224f6c9a8f0c5baffcb59ed14a5ecfa2bc",
+      "venues": [
+        {
+          "code": "87",
+          "name": "熊本",
+          "last_race": 12,
+          "meeting_start": "2026-10-22",
+          "href": "/keirin-lineup2/line20261022.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/kumamoto/racecard/2026102287/1/12"
+        },
+        {
+          "code": "36",
+          "name": "小田原",
+          "last_race": 12,
+          "meeting_start": "2026-10-20",
+          "href": "/keirin-lineup2/line20261022.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/odawara/racecard/2026102036/3/12"
+        },
+        {
+          "code": "48",
+          "name": "四日市",
+          "last_race": 12,
+          "meeting_start": "2026-10-21",
+          "href": "/keirin-lineup2/line20261022.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/yokkaichi/racecard/2026102148/2/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "href": "/keirin-lineup2/line20261023.html",
+      "sha256": "b18cc34a6e0b2575b9b27a1173abf6c0e1963111c44e023ec6dc20bd41187358",
+      "venues": [
+        {
+          "code": "87",
+          "name": "熊本",
+          "last_race": 12,
+          "meeting_start": "2026-10-22",
+          "href": "/keirin-lineup2/line20261023.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/kumamoto/racecard/2026102287/2/12"
+        },
+        {
+          "code": "48",
+          "name": "四日市",
+          "last_race": 12,
+          "meeting_start": "2026-10-21",
+          "href": "/keirin-lineup2/line20261023.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/yokkaichi/racecard/2026102148/3/12"
+        },
+        {
+          "code": "53",
+          "name": "奈良",
+          "last_race": 12,
+          "meeting_start": "2026-10-23",
+          "href": "/keirin-lineup2/line20261023.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/nara/racecard/2026102353/1/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-24",
+      "href": "/keirin-lineup2/line20261024.html",
+      "sha256": "8295f2bc8fd1ae7c5df436ee1c60765b6faaa83b44bbb42f296bb6dde5b34b39",
+      "venues": [
+        {
+          "code": "87",
+          "name": "熊本",
+          "last_race": 12,
+          "meeting_start": "2026-10-22",
+          "href": "/keirin-lineup2/line20261024.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/kumamoto/racecard/2026102287/3/12"
+        },
+        {
+          "code": "53",
+          "name": "奈良",
+          "last_race": 12,
+          "meeting_start": "2026-10-23",
+          "href": "/keirin-lineup2/line20261024.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/nara/racecard/2026102353/2/12"
+        },
+        {
+          "code": "73",
+          "name": "小松島",
+          "last_race": 12,
+          "meeting_start": "2026-10-24",
+          "href": "/keirin-lineup2/line20261024.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/komatsushima/racecard/2026102473/1/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-25",
+      "href": "/keirin-lineup2/line20261025.html",
+      "sha256": "1417331b86c3d3e71b42f00dc21c22a960e2b0594b566335af173a2625329ce2",
+      "venues": [
+        {
+          "code": "87",
+          "name": "熊本",
+          "last_race": 12,
+          "meeting_start": "2026-10-22",
+          "href": "/keirin-lineup2/line20261025.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/kumamoto/racecard/2026102287/4/12"
+        },
+        {
+          "code": "53",
+          "name": "奈良",
+          "last_race": 12,
+          "meeting_start": "2026-10-23",
+          "href": "/keirin-lineup2/line20261025.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/nara/racecard/2026102353/3/12"
+        },
+        {
+          "code": "73",
+          "name": "小松島",
+          "last_race": 12,
+          "meeting_start": "2026-10-24",
+          "href": "/keirin-lineup2/line20261025.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/komatsushima/racecard/2026102473/2/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-26",
+      "href": "/keirin-lineup2/line20261026.html",
+      "sha256": "0aa3e68a3582df5df12473eef82ba8fa66a46a10ceb4ccaf853a43270ec921fb",
+      "venues": [
+        {
+          "code": "27",
+          "name": "京王閣",
+          "last_race": 12,
+          "meeting_start": "2026-10-26",
+          "href": "/keirin-lineup2/line20261026.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/keiokaku/racecard/2026102627/1/12"
+        },
+        {
+          "code": "36",
+          "name": "小田原",
+          "last_race": 12,
+          "meeting_start": "2026-10-26",
+          "href": "/keirin-lineup2/line20261026.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/odawara/racecard/2026102636/1/12"
+        },
+        {
+          "code": "73",
+          "name": "小松島",
+          "last_race": 12,
+          "meeting_start": "2026-10-24",
+          "href": "/keirin-lineup2/line20261026.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/komatsushima/racecard/2026102473/3/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "href": "/keirin-lineup2/line20261027.html",
+      "sha256": "a5f8ac6daed70703acc33299e612bac88281753d6edf2027b89cedb1f3196f60",
+      "venues": [
+        {
+          "code": "27",
+          "name": "京王閣",
+          "last_race": 12,
+          "meeting_start": "2026-10-26",
+          "href": "/keirin-lineup2/line20261027.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/keiokaku/racecard/2026102627/2/12"
+        },
+        {
+          "code": "36",
+          "name": "小田原",
+          "last_race": 12,
+          "meeting_start": "2026-10-26",
+          "href": "/keirin-lineup2/line20261027.html",
+          "anchored": false,
+          "source": "https://www.winticket.jp/keirin/odawara/racecard/2026102636/2/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-28",
+      "href": "/keirin-lineup2/line20261028.html",
+      "sha256": "eee6ab52583a44f67bcff095499d1270bd519e5f9924f4bdda4a7821c3c5bce2",
+      "venues": [
+        {
+          "code": "36",
+          "name": "小田原",
+          "last_race": 12,
+          "meeting_start": "2026-10-26",
+          "href": "/keirin-lineup2/line20261028.html#race-36-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/odawara/racecard/2026102636/3/12"
+        },
+        {
+          "code": "43",
+          "name": "岐阜",
+          "last_race": 12,
+          "meeting_start": "2026-10-28",
+          "href": "/keirin-lineup2/line20261028.html#race-43-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/gifu/racecard/2026102843/1/12"
+        },
+        {
+          "code": "27",
+          "name": "京王閣",
+          "last_race": 12,
+          "meeting_start": "2026-10-26",
+          "href": "/keirin-lineup2/line20261028.html#race-27-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/keiokaku/racecard/2026102627/3/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-29",
+      "href": "/keirin-lineup2/line20261029.html",
+      "sha256": "f7673411fb6d685855410bbc81689b73a6570e36646d62d4e6efe5693fe0c90a",
+      "venues": [
+        {
+          "code": "43",
+          "name": "岐阜",
+          "last_race": 12,
+          "meeting_start": "2026-10-28",
+          "href": "/keirin-lineup2/line20261029.html#race-43-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/gifu/racecard/2026102843/2/12"
+        },
+        {
+          "code": "12",
+          "name": "青森",
+          "last_race": 12,
+          "meeting_start": "2026-10-29",
+          "href": "/keirin-lineup2/line20261029.html#race-12-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/aomori/racecard/2026102912/1/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "href": "/keirin-lineup2/line20261030.html",
+      "sha256": "2d901fa68b54bfae8d5ddbb3f6688a0927c9e89721f4faa607949c22f9e0de36",
+      "venues": [
+        {
+          "code": "43",
+          "name": "岐阜",
+          "last_race": 12,
+          "meeting_start": "2026-10-28",
+          "href": "/keirin-lineup2/line20261030.html#race-43-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/gifu/racecard/2026102843/3/12"
+        },
+        {
+          "code": "21",
+          "name": "弥彦",
+          "last_race": 12,
+          "meeting_start": "2026-10-30",
+          "href": "/keirin-lineup2/line20261030.html#race-21-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/yahiko/racecard/2026103021/1/12"
+        },
+        {
+          "code": "12",
+          "name": "青森",
+          "last_race": 12,
+          "meeting_start": "2026-10-29",
+          "href": "/keirin-lineup2/line20261030.html#race-12-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/aomori/racecard/2026102912/2/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-31",
+      "href": "/keirin-lineup2/line20261031.html",
+      "sha256": "fd0c8d4db81631fae52a0ca9124bd54b485f2437be130e1f455024615540e942",
+      "venues": [
+        {
+          "code": "63",
+          "name": "防府",
+          "last_race": 12,
+          "meeting_start": "2026-10-31",
+          "href": "/keirin-lineup2/line20261031.html#race-63-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/hofu/racecard/2026103163/1/12"
+        },
+        {
+          "code": "21",
+          "name": "弥彦",
+          "last_race": 12,
+          "meeting_start": "2026-10-30",
+          "href": "/keirin-lineup2/line20261031.html#race-21-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/yahiko/racecard/2026103021/2/12"
+        },
+        {
+          "code": "12",
+          "name": "青森",
+          "last_race": 12,
+          "meeting_start": "2026-10-29",
+          "href": "/keirin-lineup2/line20261031.html#race-12-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/aomori/racecard/2026102912/3/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-01",
+      "href": "/keirin-lineup2/line20261101.html",
+      "sha256": "a4ba7649423f24c848ac63c092803846d66e59dd92458f9afadc1a9a85f54eb3",
+      "venues": [
+        {
+          "code": "63",
+          "name": "防府",
+          "last_race": 12,
+          "meeting_start": "2026-10-31",
+          "href": "/keirin-lineup2/line20261101.html#race-63-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/hofu/racecard/2026103163/2/12"
+        },
+        {
+          "code": "21",
+          "name": "弥彦",
+          "last_race": 12,
+          "meeting_start": "2026-10-30",
+          "href": "/keirin-lineup2/line20261101.html#race-21-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/yahiko/racecard/2026103021/3/12"
+        },
+        {
+          "code": "83",
+          "name": "久留米",
+          "last_race": 12,
+          "meeting_start": "2026-11-01",
+          "href": "/keirin-lineup2/line20261101.html#race-83-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/kurume/racecard/2026110183/1/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-02",
+      "href": "/keirin-lineup2/line20261102.html",
+      "sha256": "a7afe4bfab2d5847ae33e24d819a287fa419ead5c00f057af2e90b722f69ac6f",
+      "venues": [
+        {
+          "code": "63",
+          "name": "防府",
+          "last_race": 12,
+          "meeting_start": "2026-10-31",
+          "href": "/keirin-lineup2/line20261102.html#race-63-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/hofu/racecard/2026103163/3/12"
+        },
+        {
+          "code": "83",
+          "name": "久留米",
+          "last_race": 12,
+          "meeting_start": "2026-11-01",
+          "href": "/keirin-lineup2/line20261102.html#race-83-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/kurume/racecard/2026110183/2/12"
+        },
+        {
+          "code": "45",
+          "name": "豊橋",
+          "last_race": 12,
+          "meeting_start": "2026-11-02",
+          "href": "/keirin-lineup2/line20261102.html#race-45-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/toyohashi/racecard/2026110245/1/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-03",
+      "href": "/keirin-lineup2/line20261103.html",
+      "sha256": "761d61915de9129245300df2c348bcf6ee0d185c73667242af1fa91125ecb5e0",
+      "venues": [
+        {
+          "code": "63",
+          "name": "防府",
+          "last_race": 12,
+          "meeting_start": "2026-10-31",
+          "href": "/keirin-lineup2/line20261103.html#race-63-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/hofu/racecard/2026103163/4/12"
+        },
+        {
+          "code": "12",
+          "name": "青森",
+          "last_race": 12,
+          "meeting_start": "2026-11-03",
+          "href": "/keirin-lineup2/line20261103.html#race-12-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/aomori/racecard/2026110312/1/12"
+        },
+        {
+          "code": "83",
+          "name": "久留米",
+          "last_race": 12,
+          "meeting_start": "2026-11-01",
+          "href": "/keirin-lineup2/line20261103.html#race-83-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/kurume/racecard/2026110183/3/12"
+        },
+        {
+          "code": "45",
+          "name": "豊橋",
+          "last_race": 12,
+          "meeting_start": "2026-11-02",
+          "href": "/keirin-lineup2/line20261103.html#race-45-12",
+          "anchored": true,
+          "source": "https://www.winticket.jp/keirin/toyohashi/racecard/2026110245/2/12"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-04",
+      "href": "/keirin-lineup2/line20261104.html",
+      "sha256": "f85bd83578a97345fd40ed15fdda3b68db3b2f550d9fc1cd25761c70d5a4fefb",
+      "venues": [
+        {
+          "code": "25",
+          "name": "大宮",
+          "last_race": 12,
+          "meeting_start": "2026-11-04",
+          "href": "/keirin-lineup2/line20261104.html#race-25-12",
+          "anchored": true,
+          "source": "https://keirin.kdreams.jp/omiya/racedetail/2520261104010012/"
+        },
+        {
+          "code": "12",
+          "name": "青森",
+          "last_race": 12,
+          "meeting_start": "2026-11-03",
+          "href": "/keirin-lineup2/line20261104.html#race-12-12",
+          "anchored": true,
+          "source": "https://keirin.kdreams.jp/aomori/racedetail/1220261103020012/"
+        },
+        {
+          "code": "45",
+          "name": "豊橋",
+          "last_race": 12,
+          "meeting_start": "2026-11-02",
+          "href": "/keirin-lineup2/line20261104.html#race-45-12",
+          "anchored": true,
+          "source": "https://keirin.kdreams.jp/toyohashi/racedetail/4520261102030012/"
+        }
+      ]
+    }
+  ],
+  "verification": "local-export"
+}

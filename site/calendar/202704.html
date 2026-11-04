@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf8fc">
+  <title>2027年4月の開催カレンダー｜競輪ラインナップ</title>
+  <link rel="stylesheet" href="./calendar.css">
+  <script src="./calendar.js" defer></script>
+</head>
+<body data-calendar-month="2027-04">
+  <main>
+    <header class="page-header">
+      <div><p class="eyebrow">KEIRIN LINEUP</p><h1>開催カレンダー</h1></div>
+      <a class="top-link" href="/keirin-lineup2/">出走表へ <span aria-hidden="true">↗</span></a>
+    </header>
+    <p class="intro">ひと月の開催を、ひと目で見られるにゃ。</p>
+    <nav class="month-nav" aria-label="表示月の選択">
+      <button id="prev" type="button" aria-label="前の月" disabled>‹</button>
+      <div class="month-title"><h2 id="month-title">読み込み中</h2><label class="month-picker">月を選ぶ <select id="month-select" aria-label="表示する月" disabled></select><span aria-hidden="true">⌄</span></label></div>
+      <button id="next" type="button" aria-label="次の月" disabled>›</button>
+      <button id="this-month" type="button" disabled>今月</button>
+    </nav>
+    <ul class="legend" aria-label="開催の色分け">
+      <li><i class="gp"></i>GP</li><li><i class="pink"></i>G1・G2</li><li><i class="purple"></i>G3</li>
+      <li><span class="f1-colors" aria-hidden="true"><i class="blue"></i><i class="yellow"></i><i class="green"></i><i class="orange"></i></span>F1</li>
+    </ul>
+    <div class="calendar-caption"><span>日付 → その日の出走表</span><span>下線のある場名 → その場の最終掲載レース</span></div>
+    <p id="status" role="status">公式の開催日程を読み込み中にゃ。</p>
+    <div id="calendar" class="calendar" aria-labelledby="month-title" aria-busy="true"></div>
+    <button id="retry" type="button" hidden>もう一度読み込む</button>
+    <noscript><p>カレンダーの表示には JavaScript を有効にしてにゃ。</p></noscript>
+    <footer>
+      <p>GP・G1・G2・G3・F1 の開催予定を載せているにゃ。F2 は対象外にゃ。</p>
+      <p>出走表は掲載済みの S級戦だけにゃ。リンクのない開催は未掲載にゃ。開催中止・順延など、最新情報は <a id="official-link" href="https://keirin.jp/pc/raceschedule">KEIRIN.JP</a> で確認してにゃ。</p>
+      <p id="checked-at"></p>
+    </footer>
+  </main>
+</body>
+</html>
