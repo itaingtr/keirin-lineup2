@@ -442,7 +442,17 @@ def public_structure(url, read=fetch):
         value=node.attrs.get('href','')+' '+node.attrs.get('onclick','')
         if 'athlete' in value and len(athlete)<20:
             athlete.append({'tag':node.tag,'text':compact(node.text())[:80],'attrs':dict(node.attrs)})
-    lineup=[{'class':n.attrs.get('class',''),'children':[{'tag':c.tag,'class':c.attrs.get('class',''),'text':compact(c.text())[:50]} for c in n.children if isinstance(c,Node)]} for n in doc.find_all('div') if 'line_position' in classes(n)]
+    def lineup_node(node, depth=0):
+        # Keep only public display structure, sufficient to distinguish a
+        # vertical competing-position wrapper from consecutive normal riders.
+        item={'tag':node.tag,'class':node.attrs.get('class',''),
+              'text':compact(node.text())[:80],
+              'attrs':{k:v[:180] for k,v in node.attrs.items()
+                       if k in ('style','title','alt','aria-label') or k.startswith('data-position')}}
+        if depth<5:
+            item['children']=[lineup_node(c,depth+1) for c in node.children if isinstance(c,Node)][:30]
+        return item
+    lineup=[lineup_node(n) for n in doc.find_all('div') if 'line_position' in classes(n)]
     return {'provider':PROVIDER,'url':url,'observed_at':observed,
             'title':next((n.text().strip() for n in doc.find_all('title')),''),
             'canonicals':[n.attrs.get('href','') for n in doc.find_all('link') if n.attrs.get('rel')=='canonical'],

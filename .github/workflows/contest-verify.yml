@@ -1,0 +1,22 @@
+name: Verify K Dreams contest structure
+on:
+  push:
+    branches: [feature/contest-aomori-20261105]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read public Aomori race lineup structure
+        run: |
+          python3 -u scripts/kdreams_provider.py --probe 'https://keirin.kdreams.jp/aomori/racedetail/1220261103030012/'
+          python3 - <<'PY'
+          import sys,json
+          sys.path.insert(0,'scripts')
+          from kdreams_provider import fetch,parse_lineup
+          doc,stamp=fetch('https://keirin.kdreams.jp/aomori/racedetail/1220261103030012/')
+          print('ACTUAL LINEUP',parse_lineup(doc,list(range(1,8))),stamp)
+          PY
