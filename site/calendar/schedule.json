@@ -1,8 +1,12 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-11-04T10:05:00.098Z",
+  "checked_at": "2026-11-04T11:04:44.085096+00:00",
   "monthly_coverage": [
-    "2026-11"
+    "2026-11",
+    "2026-12",
+    "2027-01",
+    "2027-02",
+    "2027-03"
   ],
   "grade_years": [
     2026,
@@ -10,20 +14,36 @@
   ],
   "sources": [
     {
+      "url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=10",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=11",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
       "url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
-    },
-    {
-      "url": "https://keirin.jp/sp/raceschedule",
-      "observed_at": "2026-11-04T10:05:00.098Z"
-    },
-    {
-      "url": "https://keirin.jp/pc/raceschedule?scyy=2026&scym=10",
-      "observed_at": "2026-11-04T10:35:24.155874+00:00"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     }
   ],
   "meetings": [
@@ -391,6 +411,28 @@
       "observed_at": "2026-11-04T10:05:00.098Z"
     },
     {
+      "id": "36-2026-12-01-F1",
+      "code": "36",
+      "venue": "小田原",
+      "grade": "F1",
+      "start": "2026-12-01",
+      "end": "2026-12-03",
+      "title": "日刊スポーツ杯争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "48-2026-12-01-F1",
+      "code": "48",
+      "venue": "四日市",
+      "grade": "F1",
+      "start": "2026-12-01",
+      "end": "2026-12-03",
+      "title": "前検日コメならウィンチケット杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
       "id": "86-2026-12-03-G3",
       "code": "86",
       "venue": "別府",
@@ -398,8 +440,63 @@
       "start": "2026-12-03",
       "end": "2026-12-06",
       "title": "オランダ王国友好杯",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "26-2026-12-04-F1",
+      "code": "26",
+      "venue": "西武園",
+      "grade": "F1",
+      "start": "2026-12-04",
+      "end": "2026-12-06",
+      "title": "東京スポーツ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "55-2026-12-05-F1",
+      "code": "55",
+      "venue": "和歌山",
+      "grade": "F1",
+      "start": "2026-12-05",
+      "end": "2026-12-07",
+      "title": "テレ和歌杯スピチャンスカパー賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "81-2026-12-07-F1",
+      "code": "81",
+      "venue": "小倉",
+      "grade": "F1",
+      "start": "2026-12-07",
+      "end": "2026-12-09",
+      "title": "スポーツ報知杯×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "24-2026-12-08-F1",
+      "code": "24",
+      "venue": "宇都宮",
+      "grade": "F1",
+      "start": "2026-12-08",
+      "end": "2026-12-10",
+      "title": "日刊スポーツＮＥＷＳ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "31-2026-12-10-F1",
+      "code": "31",
+      "venue": "松戸",
+      "grade": "F1",
+      "start": "2026-12-10",
+      "end": "2026-12-12",
+      "title": "スピードチャンネル・スカパー杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "85-2026-12-10-G3",
@@ -409,8 +506,74 @@
       "start": "2026-12-10",
       "end": "2026-12-13",
       "title": "九十九島賞争奪戦",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "62-2026-12-12-F1",
+      "code": "62",
+      "venue": "広島",
+      "grade": "F1",
+      "start": "2026-12-12",
+      "end": "2026-12-14",
+      "title": "Ｓ山陽Ｃ／スポニチ杯／ＣＴＣ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "53-2026-12-13-F1",
+      "code": "53",
+      "venue": "奈良",
+      "grade": "F1",
+      "start": "2026-12-13",
+      "end": "2026-12-15",
+      "title": "スピードチャンネル・スカパー杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "36-2026-12-14-F1",
+      "code": "36",
+      "venue": "小田原",
+      "grade": "F1",
+      "start": "2026-12-14",
+      "end": "2026-12-16",
+      "title": "Ｊ：ＣＯＭカップ争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "47-2026-12-15-F1",
+      "code": "47",
+      "venue": "松阪",
+      "grade": "F1",
+      "start": "2026-12-15",
+      "end": "2026-12-17",
+      "title": "ＷＪＣ×ＨＰＣＪＣ霜ふりＷＴ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "83-2026-12-16-F1",
+      "code": "83",
+      "venue": "久留米",
+      "grade": "F1",
+      "start": "2026-12-16",
+      "end": "2026-12-18",
+      "title": "楽天Ｋドリームス杯×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "28-2026-12-18-F1",
+      "code": "28",
+      "venue": "立川",
+      "grade": "F1",
+      "start": "2026-12-18",
+      "end": "2026-12-20",
+      "title": "関東Ｃ・ＨＰＣＪＣ・サンスポ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "34-2026-12-19-G3",
@@ -420,8 +583,74 @@
       "start": "2026-12-19",
       "end": "2026-12-22",
       "title": "桜花賞・海老澤清杯",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "45-2026-12-19-F1",
+      "code": "45",
+      "venue": "豊橋",
+      "grade": "F1",
+      "start": "2026-12-19",
+      "end": "2026-12-21",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "87-2026-12-21-F1",
+      "code": "87",
+      "venue": "熊本",
+      "grade": "F1",
+      "start": "2026-12-21",
+      "end": "2026-12-23",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "56-2026-12-23-F1",
+      "code": "56",
+      "venue": "岸和田",
+      "grade": "F1",
+      "start": "2026-12-23",
+      "end": "2026-12-25",
+      "title": "西日本Ｃスピチャン・スカパー杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "61-2026-12-23-F1",
+      "code": "61",
+      "venue": "玉野",
+      "grade": "F1",
+      "start": "2026-12-23",
+      "end": "2026-12-25",
+      "title": "競輪データならＢｅｔｉｍｏ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "23-2026-12-25-F1",
+      "code": "23",
+      "venue": "取手",
+      "grade": "F1",
+      "start": "2026-12-25",
+      "end": "2026-12-27",
+      "title": "レジェンドカップ・サンスポ賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "35-2026-12-25-F1",
+      "code": "35",
+      "venue": "平塚",
+      "grade": "F1",
+      "start": "2026-12-25",
+      "end": "2026-12-27",
+      "title": "ＲＣ×ＨＰＣＪＣ×平塚ナナ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "13-2026-12-28-GP",
@@ -431,8 +660,96 @@
       "start": "2026-12-28",
       "end": "2026-12-30",
       "title": "ＫＥＩＲＩＮグランプリ２０２６",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "84-2026-12-28-F1",
+      "code": "84",
+      "venue": "武雄",
+      "grade": "F1",
+      "start": "2026-12-28",
+      "end": "2026-12-30",
+      "title": "オッズパーク杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "42-2026-12-30-F1",
+      "code": "42",
+      "venue": "名古屋",
+      "grade": "F1",
+      "start": "2026-12-30",
+      "end": "2027-01-01",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2026&scym=12",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "38-2026-12-31-F1",
+      "code": "38",
+      "venue": "静岡",
+      "grade": "F1",
+      "start": "2026-12-31",
+      "end": "2027-01-02",
+      "title": "ＣＴＣなら３分前まで買える杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "56-2026-12-31-F1",
+      "code": "56",
+      "venue": "岸和田",
+      "grade": "F1",
+      "start": "2026-12-31",
+      "end": "2027-01-02",
+      "title": "ニッカン・コム杯ＳＤ賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "23-2027-01-01-F1",
+      "code": "23",
+      "venue": "取手",
+      "grade": "F1",
+      "start": "2027-01-01",
+      "end": "2027-01-03",
+      "title": "サテライト水戸Ｃ・スポニチ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "62-2027-01-01-F1",
+      "code": "62",
+      "venue": "広島",
+      "grade": "F1",
+      "start": "2027-01-01",
+      "end": "2027-01-03",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "43-2027-01-03-F1",
+      "code": "43",
+      "venue": "岐阜",
+      "grade": "F1",
+      "start": "2027-01-03",
+      "end": "2027-01-05",
+      "title": "スポーツ報知杯　ＨＰＣＪＣ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "87-2027-01-03-F1",
+      "code": "87",
+      "venue": "熊本",
+      "grade": "F1",
+      "start": "2027-01-03",
+      "end": "2027-01-05",
+      "title": "オッズパーク協賛矢村正杯争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "28-2027-01-04-G3",
@@ -442,8 +759,30 @@
       "start": "2027-01-04",
       "end": "2027-01-07",
       "title": "鳳凰賞典レース",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "84-2027-01-06-F1",
+      "code": "84",
+      "venue": "武雄",
+      "grade": "F1",
+      "start": "2027-01-06",
+      "end": "2027-01-08",
+      "title": "日本名輪会Ｃ第２９回井上茂徳杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "44-2027-01-07-F1",
+      "code": "44",
+      "venue": "大垣",
+      "grade": "F1",
+      "start": "2027-01-07",
+      "end": "2027-01-09",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "55-2027-01-09-G3",
@@ -453,8 +792,52 @@
       "start": "2027-01-09",
       "end": "2027-01-12",
       "title": "和歌山グランプリ",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "61-2027-01-09-F1",
+      "code": "61",
+      "venue": "玉野",
+      "grade": "F1",
+      "start": "2027-01-09",
+      "end": "2027-01-11",
+      "title": "桃太郎杯争奪戦＆チャリロト杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "23-2027-01-11-F1",
+      "code": "23",
+      "venue": "取手",
+      "grade": "F1",
+      "start": "2027-01-11",
+      "end": "2027-01-13",
+      "title": "Ｓしおさい鹿島杯・東スポ賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "85-2027-01-12-F1",
+      "code": "85",
+      "venue": "佐世保",
+      "grade": "F1",
+      "start": "2027-01-12",
+      "end": "2027-01-14",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "73-2027-01-13-F1",
+      "code": "73",
+      "venue": "小松島",
+      "grade": "F1",
+      "start": "2027-01-13",
+      "end": "2027-01-15",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "25-2027-01-14-G3",
@@ -464,8 +847,52 @@
       "start": "2027-01-14",
       "end": "2027-01-17",
       "title": "東日本発祥倉茂記念杯",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "81-2027-01-15-F1",
+      "code": "81",
+      "venue": "小倉",
+      "grade": "F1",
+      "start": "2027-01-15",
+      "end": "2027-01-17",
+      "title": "濱田賞×スピチャン×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "56-2027-01-17-F1",
+      "code": "56",
+      "venue": "岸和田",
+      "grade": "F1",
+      "start": "2027-01-17",
+      "end": "2027-01-19",
+      "title": "サテライト湖南コスモスカップ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "42-2027-01-18-F1",
+      "code": "42",
+      "venue": "名古屋",
+      "grade": "F1",
+      "start": "2027-01-18",
+      "end": "2027-01-20",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "24-2027-01-19-F1",
+      "code": "24",
+      "venue": "宇都宮",
+      "grade": "F1",
+      "start": "2027-01-19",
+      "end": "2027-01-21",
+      "title": "ＨＰＣＪＣ杯・Ｋドリームス杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "13-2027-01-21-G3",
@@ -475,8 +902,63 @@
       "start": "2027-01-21",
       "end": "2027-01-24",
       "title": "チャリロト杯・いわき金杯争奪戦",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "63-2027-01-21-F1",
+      "code": "63",
+      "venue": "防府",
+      "grade": "F1",
+      "start": "2027-01-21",
+      "end": "2027-01-23",
+      "title": "スポーツ報知杯／山口放送杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "22-2027-01-23-F1",
+      "code": "22",
+      "venue": "前橋",
+      "grade": "F1",
+      "start": "2027-01-23",
+      "end": "2027-01-25",
+      "title": "ＪＴＢぐんま記念",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "43-2027-01-24-F1",
+      "code": "43",
+      "venue": "岐阜",
+      "grade": "F1",
+      "start": "2027-01-24",
+      "end": "2027-01-26",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "34-2027-01-25-F1",
+      "code": "34",
+      "venue": "川崎",
+      "grade": "F1",
+      "start": "2027-01-25",
+      "end": "2027-01-27",
+      "title": "Ｆ１・ジャパンカップ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "24-2027-01-27-F1",
+      "code": "24",
+      "venue": "宇都宮",
+      "grade": "F1",
+      "start": "2027-01-27",
+      "end": "2027-01-29",
+      "title": "東京スポーツ新聞社杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "61-2027-01-28-G3",
@@ -486,8 +968,74 @@
       "start": "2027-01-28",
       "end": "2027-01-31",
       "title": "玉藻杯争覇戦　ｉｎ玉野",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "83-2027-01-28-F1",
+      "code": "83",
+      "venue": "久留米",
+      "grade": "F1",
+      "start": "2027-01-28",
+      "end": "2027-01-30",
+      "title": "戸上守杯×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "31-2027-01-29-F1",
+      "code": "31",
+      "venue": "松戸",
+      "grade": "F1",
+      "start": "2027-01-29",
+      "end": "2027-01-31",
+      "title": "ＤＭＭ競輪×チャリチャンカップ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=01",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "45-2027-01-31-F1",
+      "code": "45",
+      "venue": "豊橋",
+      "grade": "F1",
+      "start": "2027-01-31",
+      "end": "2027-02-02",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "26-2027-02-01-F1",
+      "code": "26",
+      "venue": "西武園",
+      "grade": "F1",
+      "start": "2027-02-01",
+      "end": "2027-02-03",
+      "title": "関東カップ　報知金杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "73-2027-02-01-F1",
+      "code": "73",
+      "venue": "小松島",
+      "grade": "F1",
+      "start": "2027-02-01",
+      "end": "2027-02-03",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "53-2027-02-03-F1",
+      "code": "53",
+      "venue": "奈良",
+      "grade": "F1",
+      "start": "2027-02-03",
+      "end": "2027-02-05",
+      "title": "名輪会Ｃ荒木実賞ＣＴＣ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "38-2027-02-04-G3",
@@ -497,8 +1045,85 @@
       "start": "2027-02-04",
       "end": "2027-02-07",
       "title": "たちあおい賞争奪戦",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "47-2027-02-04-F1",
+      "code": "47",
+      "venue": "松阪",
+      "grade": "F1",
+      "start": "2027-02-04",
+      "end": "2027-02-06",
+      "title": "ミツイバウ記念杯　ＷＴ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "83-2027-02-05-F1",
+      "code": "83",
+      "venue": "久留米",
+      "grade": "F1",
+      "start": "2027-02-05",
+      "end": "2027-02-07",
+      "title": "ＣＴＣ３分前杯×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "56-2027-02-07-F1",
+      "code": "56",
+      "venue": "岸和田",
+      "grade": "F1",
+      "start": "2027-02-07",
+      "end": "2027-02-09",
+      "title": "日本名輪会Ｃ石田雄彦記念杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "26-2027-02-08-F1",
+      "code": "26",
+      "venue": "西武園",
+      "grade": "F1",
+      "start": "2027-02-08",
+      "end": "2027-02-10",
+      "title": "サンケイスポーツ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "48-2027-02-08-F1",
+      "code": "48",
+      "venue": "四日市",
+      "grade": "F1",
+      "start": "2027-02-08",
+      "end": "2027-02-10",
+      "title": "ＷＮＲ　伊勢茶杯　中日スポ賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "35-2027-02-10-F1",
+      "code": "35",
+      "venue": "平塚",
+      "grade": "F1",
+      "start": "2027-02-10",
+      "end": "2027-02-12",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "63-2027-02-10-F1",
+      "code": "63",
+      "venue": "防府",
+      "grade": "F1",
+      "start": "2027-02-10",
+      "end": "2027-02-12",
+      "title": "スポニチ金杯争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "53-2027-02-11-G3",
@@ -508,8 +1133,85 @@
       "start": "2027-02-11",
       "end": "2027-02-14",
       "title": "春日賞争覇戦",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "22-2027-02-13-F1",
+      "code": "22",
+      "venue": "前橋",
+      "grade": "F1",
+      "start": "2027-02-13",
+      "end": "2027-02-15",
+      "title": "スポーツニッポン杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "38-2027-02-14-F1",
+      "code": "38",
+      "venue": "静岡",
+      "grade": "F1",
+      "start": "2027-02-14",
+      "end": "2027-02-16",
+      "title": "推しに出会える！イケメン選手杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "61-2027-02-14-F1",
+      "code": "61",
+      "venue": "玉野",
+      "grade": "F1",
+      "start": "2027-02-14",
+      "end": "2027-02-16",
+      "title": "けいりんラブ！ラブリン杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "56-2027-02-15-F1",
+      "code": "56",
+      "venue": "岸和田",
+      "grade": "F1",
+      "start": "2027-02-15",
+      "end": "2027-02-17",
+      "title": "前検日コメならウィンチケット杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "44-2027-02-16-F1",
+      "code": "44",
+      "venue": "大垣",
+      "grade": "F1",
+      "start": "2027-02-16",
+      "end": "2027-02-18",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "28-2027-02-17-F1",
+      "code": "28",
+      "venue": "立川",
+      "grade": "F1",
+      "start": "2027-02-17",
+      "end": "2027-02-19",
+      "title": "東京スポーツ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "31-2027-02-17-F1",
+      "code": "31",
+      "venue": "松戸",
+      "grade": "F1",
+      "start": "2027-02-17",
+      "end": "2027-02-19",
+      "title": "ジャパンカップ×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "62-2027-02-20-G1",
@@ -518,9 +1220,53 @@
       "grade": "G1",
       "start": "2027-02-20",
       "end": "2027-02-23",
-      "title": "第４２回読売新聞社杯全日本選抜競輪",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "title": "読売新聞社杯全日本選抜競輪",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "81-2027-02-20-F1",
+      "code": "81",
+      "venue": "小倉",
+      "grade": "F1",
+      "start": "2027-02-20",
+      "end": "2027-02-22",
+      "title": "日刊スポーツ杯×ラブリン杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "44-2027-02-21-F1",
+      "code": "44",
+      "venue": "大垣",
+      "grade": "F1",
+      "start": "2027-02-21",
+      "end": "2027-02-23",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "13-2027-02-22-F1",
+      "code": "13",
+      "venue": "いわき平",
+      "grade": "F1",
+      "start": "2027-02-22",
+      "end": "2027-02-24",
+      "title": "日刊スポ杯・コム杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "61-2027-02-24-F1",
+      "code": "61",
+      "venue": "玉野",
+      "grade": "F1",
+      "start": "2027-02-24",
+      "end": "2027-02-26",
+      "title": "高松市議会議長杯＆屋島杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "25-2027-02-25-G3",
@@ -530,8 +1276,8 @@
       "start": "2027-02-25",
       "end": "2027-02-28",
       "title": "施設整備等協賛競輪",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "83-2027-02-25-G3",
@@ -541,8 +1287,52 @@
       "start": "2027-02-25",
       "end": "2027-02-28",
       "title": "施設整備協賛Ｇ３ナイター",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=02",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "55-2027-02-28-F1",
+      "code": "55",
+      "venue": "和歌山",
+      "grade": "F1",
+      "start": "2027-02-28",
+      "end": "2027-03-02",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "63-2027-03-01-F1",
+      "code": "63",
+      "venue": "防府",
+      "grade": "F1",
+      "start": "2027-03-01",
+      "end": "2027-03-03",
+      "title": "第５６回　毛利賞争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "86-2027-03-01-F1",
+      "code": "86",
+      "venue": "別府",
+      "grade": "F1",
+      "start": "2027-03-01",
+      "end": "2027-03-03",
+      "title": "ジャパンカップ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "34-2027-03-04-F1",
+      "code": "34",
+      "venue": "川崎",
+      "grade": "F1",
+      "start": "2027-03-04",
+      "end": "2027-03-06",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "42-2027-03-04-G3",
@@ -551,9 +1341,64 @@
       "grade": "G3",
       "start": "2027-03-04",
       "end": "2027-03-07",
-      "title": "G3",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "title": "G3開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "51-2027-03-05-F1",
+      "code": "51",
+      "venue": "福井",
+      "grade": "F1",
+      "start": "2027-03-05",
+      "end": "2027-03-07",
+      "title": "サンケイスポーツ杯争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "85-2027-03-06-F1",
+      "code": "85",
+      "venue": "佐世保",
+      "grade": "F1",
+      "start": "2027-03-06",
+      "end": "2027-03-08",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "56-2027-03-08-F1",
+      "code": "56",
+      "venue": "岸和田",
+      "grade": "F1",
+      "start": "2027-03-08",
+      "end": "2027-03-10",
+      "title": "第２回井上薫杯・Ｓ大阪カップ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "35-2027-03-09-F1",
+      "code": "35",
+      "venue": "平塚",
+      "grade": "F1",
+      "start": "2027-03-09",
+      "end": "2027-03-11",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "75-2027-03-09-F1",
+      "code": "75",
+      "venue": "松山",
+      "grade": "F1",
+      "start": "2027-03-09",
+      "end": "2027-03-11",
+      "title": "豊明＆デイリー杯×ウィンチケ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "51-2027-03-11-G3",
@@ -563,8 +1408,74 @@
       "start": "2027-03-11",
       "end": "2027-03-14",
       "title": "不死鳥杯　福井アリーナ賞",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "13-2027-03-12-F1",
+      "code": "13",
+      "venue": "いわき平",
+      "grade": "F1",
+      "start": "2027-03-12",
+      "end": "2027-03-14",
+      "title": "名輪会Ｃ・阿部道杯・スポニチ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "22-2027-03-13-F1",
+      "code": "22",
+      "venue": "前橋",
+      "grade": "F1",
+      "start": "2027-03-13",
+      "end": "2027-03-15",
+      "title": "日本トーターグリーンドームＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "34-2027-03-14-F1",
+      "code": "34",
+      "venue": "川崎",
+      "grade": "F1",
+      "start": "2027-03-14",
+      "end": "2027-03-16",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "42-2027-03-15-F1",
+      "code": "42",
+      "venue": "名古屋",
+      "grade": "F1",
+      "start": "2027-03-15",
+      "end": "2027-03-17",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "23-2027-03-16-F1",
+      "code": "23",
+      "venue": "取手",
+      "grade": "F1",
+      "start": "2027-03-16",
+      "end": "2027-03-18",
+      "title": "デイリースポーツ杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "85-2027-03-17-F1",
+      "code": "85",
+      "venue": "佐世保",
+      "grade": "F1",
+      "start": "2027-03-17",
+      "end": "2027-03-19",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "44-2027-03-19-G2",
@@ -573,9 +1484,75 @@
       "grade": "G2",
       "start": "2027-03-19",
       "end": "2027-03-22",
-      "title": "第１１回ウィナーズカップ",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "title": "ウィナーズカップ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "26-2027-03-20-F1",
+      "code": "26",
+      "venue": "西武園",
+      "grade": "F1",
+      "start": "2027-03-20",
+      "end": "2027-03-22",
+      "title": "デイリースポーツ賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "62-2027-03-20-F1",
+      "code": "62",
+      "venue": "広島",
+      "grade": "F1",
+      "start": "2027-03-20",
+      "end": "2027-03-22",
+      "title": "F1開催",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "48-2027-03-23-F1",
+      "code": "48",
+      "venue": "四日市",
+      "grade": "F1",
+      "start": "2027-03-23",
+      "end": "2027-03-25",
+      "title": "ＣＴＣ杯　中日スポーツ賞",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "74-2027-03-23-F1",
+      "code": "74",
+      "venue": "高知",
+      "grade": "F1",
+      "start": "2027-03-23",
+      "end": "2027-03-25",
+      "title": "山崎勲杯・日刊スポーツ杯争奪戦",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "24-2027-03-25-F1",
+      "code": "24",
+      "venue": "宇都宮",
+      "grade": "F1",
+      "start": "2027-03-25",
+      "end": "2027-03-27",
+      "title": "スポーツニッポン杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "84-2027-03-26-F1",
+      "code": "84",
+      "venue": "武雄",
+      "grade": "F1",
+      "start": "2027-03-26",
+      "end": "2027-03-28",
+      "title": "日本名輪会Ｃ佐々木昭彦杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "61-2027-03-27-G3",
@@ -585,8 +1562,30 @@
       "start": "2027-03-27",
       "end": "2027-03-30",
       "title": "瀬戸の王子杯争奪戦",
-      "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2026",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "28-2027-03-29-F1",
+      "code": "28",
+      "venue": "立川",
+      "grade": "F1",
+      "start": "2027-03-29",
+      "end": "2027-03-31",
+      "title": "日刊スポーツ・ニッカンコム杯",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
+    },
+    {
+      "id": "81-2027-03-29-F1",
+      "code": "81",
+      "venue": "小倉",
+      "grade": "F1",
+      "start": "2027-03-29",
+      "end": "2027-03-31",
+      "title": "九州スポーツ杯×ＨＰＣＪＣ",
+      "source_url": "https://keirin.jp/sp/raceschedule?scyy=2027&scym=03",
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "84-2027-04-01-G3",
@@ -597,7 +1596,7 @@
       "end": "2027-04-04",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "38-2027-04-09-G3",
@@ -608,7 +1607,7 @@
       "end": "2027-04-11",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "74-2027-04-15-G3",
@@ -619,7 +1618,7 @@
       "end": "2027-04-18",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "61-2027-04-23-G1",
@@ -630,7 +1629,7 @@
       "end": "2027-04-25",
       "title": "第５回オールガールズクラシック",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "38-2027-04-27-G3",
@@ -641,7 +1640,7 @@
       "end": "2027-04-29",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "35-2027-04-30-G1",
@@ -652,7 +1651,7 @@
       "end": "2027-05-05",
       "title": "第８１回日本選手権競輪",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "48-2027-05-08-G3",
@@ -663,7 +1662,7 @@
       "end": "2027-05-11",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "86-2027-05-13-G3",
@@ -674,7 +1673,7 @@
       "end": "2027-05-16",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "24-2027-05-29-G3",
@@ -685,7 +1684,7 @@
       "end": "2027-06-01",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "23-2027-06-03-G3",
@@ -696,7 +1695,7 @@
       "end": "2027-06-06",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "26-2027-06-10-G3",
@@ -707,7 +1706,7 @@
       "end": "2027-06-13",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "63-2027-06-10-G3",
@@ -718,7 +1717,7 @@
       "end": "2027-06-13",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "56-2027-06-15-G1",
@@ -729,7 +1728,7 @@
       "end": "2027-06-20",
       "title": "第７８回高松宮記念杯競輪・第５回パールカップ",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "83-2027-06-26-G3",
@@ -740,7 +1739,7 @@
       "end": "2027-06-29",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "73-2027-07-01-G3",
@@ -751,7 +1750,7 @@
       "end": "2027-07-04",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "25-2027-07-08-G3",
@@ -762,7 +1761,7 @@
       "end": "2027-07-11",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "87-2027-07-13-G3",
@@ -773,7 +1772,7 @@
       "end": "2027-07-15",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "47-2027-07-16-G2",
@@ -784,7 +1783,7 @@
       "end": "2027-07-19",
       "title": "第２３回サマーナイトフェスティバル",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "22-2027-07-24-G3",
@@ -795,7 +1794,7 @@
       "end": "2027-07-27",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "46-2027-07-31-G3",
@@ -806,7 +1805,7 @@
       "end": "2027-08-03",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "24-2027-08-05-G3",
@@ -817,7 +1816,7 @@
       "end": "2027-08-08",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "13-2027-08-06-G1",
@@ -828,7 +1827,7 @@
       "end": "2027-08-08",
       "title": "第３回毎日新聞社杯女子オールスター競輪",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "43-2027-08-10-G1",
@@ -839,7 +1838,7 @@
       "end": "2027-08-15",
       "title": "第７０回オールスター競輪",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "45-2027-08-16-G3",
@@ -850,7 +1849,7 @@
       "end": "2027-08-18",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "61-2027-08-21-G3",
@@ -861,7 +1860,7 @@
       "end": "2027-08-24",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "53-2027-08-26-G3",
@@ -872,7 +1871,7 @@
       "end": "2027-08-29",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "45-2027-09-02-G3",
@@ -883,7 +1882,7 @@
       "end": "2027-09-05",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "56-2027-09-09-G3",
@@ -894,7 +1893,7 @@
       "end": "2027-09-12",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "12-2027-09-17-G1",
@@ -905,7 +1904,7 @@
       "end": "2027-09-20",
       "title": "第３６回寛仁親王牌・世界選手権記念トーナメント",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "11-2027-09-25-G3",
@@ -916,7 +1915,7 @@
       "end": "2027-09-28",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "87-2027-09-30-G3",
@@ -927,7 +1926,7 @@
       "end": "2027-10-03",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "21-2027-10-08-G2",
@@ -938,7 +1937,7 @@
       "end": "2027-10-11",
       "title": "第４３回共同通信社杯競輪",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "86-2027-10-16-G3",
@@ -949,7 +1948,7 @@
       "end": "2027-10-19",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "27-2027-10-21-G3",
@@ -960,7 +1959,7 @@
       "end": "2027-10-24",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "48-2027-10-31-G3",
@@ -971,7 +1970,7 @@
       "end": "2027-11-03",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "63-2027-11-06-G3",
@@ -982,7 +1981,7 @@
       "end": "2027-11-09",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "27-2027-11-11-G3",
@@ -993,7 +1992,7 @@
       "end": "2027-11-14",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "81-2027-11-18-G1",
@@ -1004,7 +2003,7 @@
       "end": "2027-11-23",
       "title": "第６９回朝日新聞社杯競輪祭・第５回競輪祭女子王座戦",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "31-2027-12-02-G3",
@@ -1015,7 +2014,7 @@
       "end": "2027-12-05",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "38-2027-12-09-G3",
@@ -1026,7 +2025,7 @@
       "end": "2027-12-12",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "62-2027-12-16-G3",
@@ -1037,7 +2036,7 @@
       "end": "2027-12-19",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "85-2027-12-23-G3",
@@ -1048,7 +2047,7 @@
       "end": "2027-12-26",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "28-2027-12-28-GP",
@@ -1059,7 +2058,7 @@
       "end": "2027-12-30",
       "title": "ＫＥＩＲＩＮグランプリ２０２７",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "28-2028-01-04-G3",
@@ -1070,7 +2069,7 @@
       "end": "2028-01-07",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "55-2028-01-09-G3",
@@ -1081,7 +2080,7 @@
       "end": "2028-01-12",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "26-2028-01-15-G3",
@@ -1092,7 +2091,7 @@
       "end": "2028-01-18",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "13-2028-01-22-G3",
@@ -1103,7 +2102,7 @@
       "end": "2028-01-25",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "71-2028-01-29-G3",
@@ -1114,7 +2113,7 @@
       "end": "2028-02-01",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "23-2028-02-03-G3",
@@ -1125,7 +2124,7 @@
       "end": "2028-02-06",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "62-2028-02-03-G3",
@@ -1136,7 +2135,7 @@
       "end": "2028-02-06",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "34-2028-02-10-G1",
@@ -1147,7 +2146,7 @@
       "end": "2028-02-13",
       "title": "第４３回読売新聞社杯全日本選抜競輪",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "36-2028-02-19-G3",
@@ -1158,7 +2157,7 @@
       "end": "2028-02-22",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "38-2028-02-26-G3",
@@ -1169,7 +2168,7 @@
       "end": "2028-02-29",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "44-2028-03-02-G3",
@@ -1180,7 +2179,7 @@
       "end": "2028-03-05",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "75-2028-03-09-G3",
@@ -1191,7 +2190,7 @@
       "end": "2028-03-12",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "51-2028-03-17-G2",
@@ -1202,7 +2201,7 @@
       "end": "2028-03-20",
       "title": "第１２回ウィナーズカップ",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     },
     {
       "id": "42-2028-03-25-G3",
@@ -1213,7 +2212,7 @@
       "end": "2028-03-28",
       "title": "G3",
       "source_url": "https://keirin.jp/pc/graderaceschedule?scyy=2027",
-      "observed_at": "2026-11-04T10:05:00.098Z"
+      "observed_at": "2026-11-04T11:04:44.085096+00:00"
     }
   ]
 }

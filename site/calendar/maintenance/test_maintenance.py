@@ -4,12 +4,28 @@ import json
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).parent))
-from update_schedule import grade_period, period
+from update_schedule import collect, grade_period, period
 from update_links import build
 
 class CalendarMaintenanceTests(unittest.TestCase):
+    def test_verified_month_horizon_and_unexpected_month(self):
+        def html(month):
+            return (f'<select name="cmdYearval"><option value="2026" selected>2026</option></select>'
+                    f'<select name="cmdDayval"><option value="{month}" selected>{month}</option></select>')
+        def reader(url):
+            if '/pc/' in url:
+                return '2026年度 開催日程' if '2026' in url else '開催日程 年選択'
+            return html('10' if 'scym=10' in url else '11')
+        row = {'id': 'test', 'start': '2026-11-01', 'end': '2026-11-03', 'code': '25', 'grade': 'F1'}
+        with patch('update_schedule.parse_month', return_value=[row]), patch('update_schedule.parse_grades', return_value=[]):
+            result = collect(date(2026, 11, 4), reader)
+            self.assertEqual(result['monthly_coverage'], ['2026-10', '2026-11'])
+        with self.assertRaises(ValueError):
+            collect(date(2026, 11, 4), lambda _: html('09'))
+
     def test_official_month_and_year_boundaries(self):
         self.assertEqual(period('12/30(水)～01/01(金)', date(2027, 1, 1)), (date(2026, 12, 30), date(2027, 1, 1)))
         self.assertEqual(grade_period('第８１回日本選手権競輪平塚(30～05/05)', 5, 2027), ('35', date(2027, 4, 30), date(2027, 5, 5)))

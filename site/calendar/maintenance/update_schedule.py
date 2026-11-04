@@ -218,7 +218,22 @@ def collect(today, reader=fetch):
     for offset in range(19):
         month = month_shift(start, offset)
         url = HOST+f'/sp/raceschedule?scyy={month.year}&scym={month.month:02}'
-        rows = parse_month(reader(url), month, url, checked)
+        html = reader(url)
+        # KEIRIN.JP clamps an unannounced month to the last selectable month.
+        # Accept that boundary only after that exact month was fully validated.
+        selects = {s.attrs.get('name'): s for s in Document(html).root.find('select')}
+        years = [n.attrs.get('value') for n in selects.get('cmdYearval', Node()).find('option') if 'selected' in n.attrs]
+        months = [n.attrs.get('value') for n in selects.get('cmdDayval', Node()).find('option') if 'selected' in n.attrs]
+        if years and months and years[0] != '0' and months[0] != '0':
+            returned = date(int(years[0]), int(months[0]), 1)
+            options = [n.attrs.get('value') for n in selects['cmdDayval'].find('option')]
+            if (month > today.replace(day=1) and coverage
+                    and returned.strftime('%Y-%m') == coverage[-1]
+                    and returned == month_shift(month, -1)
+                    and returned.year == month.year and f'{month.month:02}' not in options):
+                parse_month(html, returned, url, checked)
+                break
+        rows = parse_month(html, month, url, checked)
         if rows is None:
             require(month > today.replace(day=1), 'Current official month is unavailable')
             break
