@@ -4,6 +4,7 @@
   const root = document.getElementById('rows');
   if (!root) return;
   const numberFirst = root.dataset.oddsPrimary === 'number';
+  const contestOdds = document.body.dataset.contestOdds === 'true';
   const panelStatuses = new WeakMap();
   const initialRows = new WeakSet(), summaryTimes = new WeakMap();
   const initialEnabled = root.hasAttribute('data-initial-odds') && Boolean(window.keirinExacta);
@@ -12,15 +13,51 @@
   const showInitial = initialEnabled && pageDate && pageDate.slice(1).join('-') <= today;
   let initialPayload = null;
 
+  function lineRelationships(raceRow) {
+    const relationships = [];
+    const number = node => Number(node.querySelector('.car')?.textContent);
+    for (const group of raceRow.querySelectorAll('.lineup .line-group')) {
+      if (!contestOdds) {
+        // Archived pages retain their original rule for uncertain neighbors.
+        const cars = [...group.querySelectorAll('.car')];
+        for (let index = 0; index < cars.length - 1; index++) {
+          if (cars[index].closest('.contest-pair') || cars[index + 1].closest('.contest-pair')) continue;
+          const first = Number(cars[index].textContent), second = Number(cars[index + 1].textContent);
+          relationships.push({first, second, owner: first});
+        }
+        continue;
+      }
+      let previous = null;
+      for (const unit of group.children) {
+        if (unit.classList.contains('contest-pair')) {
+          const contenders = [...unit.querySelectorAll('.rider')].map(number);
+          if (previous !== null) {
+            // Both contenders follow the same rider. Place each alternative
+            // at the next visible boundary without inventing a relation
+            // between the contenders themselves: 1(73) => 1-7, then 1-3.
+            let owner = previous;
+            for (const second of contenders) {
+              relationships.push({first: previous, second, owner});
+              owner = second;
+            }
+          }
+          // A rider after a contested position has no unique predecessor.
+          previous = null;
+        } else if (unit.classList.contains('rider')) {
+          const second = number(unit);
+          if (previous !== null) relationships.push({first: previous, second, owner: previous});
+          previous = second;
+        }
+      }
+    }
+    return relationships;
+  }
+
   function linePairs(raceRow, normal) {
     const quotes = new Map([...normal.querySelectorAll('td[data-combination]')]
       .map(cell => [cell.dataset.combination, cell]));
     const pairs = [];
-    for (const group of raceRow.querySelectorAll('.lineup .line-group')) {
-      const cars = [...group.querySelectorAll('.car')];
-      for (let index = 0; index < cars.length - 1; index++) {
-        if (cars[index].closest('.contest-pair') || cars[index + 1].closest('.contest-pair')) continue;
-        const first = Number(cars[index].textContent), second = Number(cars[index + 1].textContent);
+    for (const {first, second, owner} of lineRelationships(raceRow)) {
         const pair = document.createElement('span');
         pair.className = 'exacta-line-pair';
         pair.dataset.linePair = first + '-' + second;
@@ -34,8 +71,7 @@
           value.dataset.pairCombination = combination;
           pair.append(value);
         }
-        if (pair.children.length === 2) pairs.push({first, pair});
-      }
+        if (pair.children.length === 2) pairs.push({first, owner, pair});
     }
     return pairs;
   }
@@ -73,13 +109,13 @@
       rider.prepend(band);
       bands.set(number, band);
     }
-    for (const {first, pair} of linePairs(row, normal)) {
+    for (const {owner, pair} of linePairs(row, normal)) {
       if ([...pair.children].every(value => value.classList.contains('exacta-unavailable'))) continue;
       for (const value of pair.children) {
         if (value.classList.contains('exacta-unavailable')) value.textContent = '';
         value.title += ' 保存値：' + savedAt;
       }
-      bands.get(first)?.append(pair);
+      bands.get(owner)?.append(pair);
     }
     row.querySelector('.lineup')?.classList.add('lineup-odds-visible');
   }
@@ -146,7 +182,7 @@
         cell.classList.add('exacta-pair-heading');
       }
     }
-    for (const {first, pair} of linePairs(raceRow, normal)) headerByCar.get(first).append(pair);
+    for (const {owner, pair} of linePairs(raceRow, normal)) headerByCar.get(owner).append(pair);
     normal.dataset.oddsOrder = 'number';
     lineup.dataset.oddsOrder = 'lineup';
     lineup.dataset.axisOrder = order.join('-');

@@ -21,6 +21,7 @@ from venues import identity
 from keirin_jp_provider import enrich_cards, check_url as check_official_url, program_url
 from kdreams_history import enrich_start_flags
 from rider_details import collect_details, details_from_dataset, stage_details, validate_details
+from lineup_refresh import refresh_lineups
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -203,6 +204,12 @@ def main():
         target = card['target_date']
         stage_card(card, args.run_key, output, ref)
     official_card(card, races)
+    lineups_refreshed=False
+    if not collected and mode=='publish' and 'data-contest-odds="true"' not in card['html']:
+        require(now.astimezone(JST).date().isoformat()<=target,'Refusing to refresh archived lineups')
+        card,races=refresh_lineups(card)
+        stage_card(card,args.run_key,output,ref)
+        lineups_refreshed=True
     publish_pages = mode != 'odds' or collected
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
@@ -217,7 +224,7 @@ def main():
             print('All K Dreams odds reads failed; previous successful feed is unchanged', flush=True)
     if publish_pages:
         source = (ROOT / 'site/index.html').read_text()
-        materialize = (collected or page_date(source) != target.replace('-', '')
+        materialize = (collected or lineups_refreshed or page_date(source) != target.replace('-', '')
                        or any(identity(r['source'])['provider'] != PROVIDER for r in parse_page(source)))
         if materialize:
             materialize_card(card, ROOT / 'site')
@@ -261,7 +268,7 @@ def main():
             git('push', 'origin', 'HEAD:main')
     report.update({'mode': mode, 'publish_pages': publish_pages, 'feed_commit': feed_commit,
                    'source_commit': git('rev-parse', 'HEAD'), 'source_providers': card['summary'].get('source_providers',[PROVIDER]),
-                   'provider_migration': migration, 'odds': odds_stats})
+                   'provider_migration': migration, 'lineups_refreshed':lineups_refreshed, 'odds': odds_stats})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:

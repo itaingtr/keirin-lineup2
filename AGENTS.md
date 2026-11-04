@@ -1,3 +1,9 @@
+# Verified contested lineups and pair odds
+
+- K Dreams marks competing riders using separate bracket_open/bracket_close icons. Preserve them as contest units (1(73)/26/54), reject missing/nested/unclosed markers or unbracketed competition labels, and retain every car exactly once. Do not flatten 7 and3 into a normal successive line.
+- Current/future verified cards opt in with body data-contest-odds=true. Use the original22px rider columns, contest padding0 5px/margin0 .75px and archived line gaps. A 1(73) compact odds band shows17/71 after1 and13/31 after7 (the7/3 boundary), never73/37. The full exacta matrices still retain every valid pair and the original prices/timestamps. Unmarked archived pages retain the prior compact-odds behavior.
+- The one-time current-card repair reads only current K card lineups after complete car/name/period verification. Append a new checksummed card run with lineup_sources receipts, preserve old runs and all saved rider scores/stats/history/marks/IDs/details/odds, and update only the current top/date. Future nightly cards use the fixed parser. No DB writes, no edits to the independent calendar task.
+
 # Calendar handoff and public link index
 
 - Read CALENDAR_HANDOFF.md for the daily storage/publication contract. The user authorizes a separate calendar task to create/edit site/calendar/index.html and its static assets; the earlier no-calendar-files reminder applied only to the navigation-button task.

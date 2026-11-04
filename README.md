@@ -1,5 +1,7 @@
 # keirin-lineup2
 
+競りは `1(73)/26/54` のようにカッコで表示します。競りの小さいオッズは先頭と各競り選手の組合せで、17/71、13/31の順です。競り同士の73/37にはしません。取得元のカッコを検証し、直前までの選手幅とライン間隔を維持します。
+
 日程カレンダー担当への保存先・自動公開・日別直リンクの引き継ぎは [CALENDAR_HANDOFF.md](CALENDAR_HANDOFF.md) にまとめています。カレンダーの原稿は `site/calendar/`、公開用の日付一覧は `/keirin-lineup2/calendar/dates.json` です。
 
 公開先は https://itaingtr.github.io/keirin-lineup2/ です。GPTログインは不要で、`line20261025.html` のような日付ページも同じ場所に置きます。トップと最新日付ページのHTMLは同一です。

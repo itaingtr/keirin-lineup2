@@ -1,22 +1,57 @@
-name: Verify K Dreams contest structure
+name: Verify actual contested lineups and odds
 on:
   push:
     branches: [feature/contest-aomori-20261105]
 permissions:
   contents: read
 jobs:
-  probe:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - name: Read public Aomori race lineup structure
+      - run: python3 -m unittest discover -s tests -q
+      - name: Verify current source lineups without changing saved data
         run: |
-          python3 -u scripts/kdreams_provider.py --probe 'https://keirin.kdreams.jp/aomori/racedetail/1220261103030012/'
+          git fetch origin odds-diagnostics
           python3 - <<'PY'
-          import sys,json
+          import json,shutil,sys
+          from copy import deepcopy
+          from pathlib import Path
           sys.path.insert(0,'scripts')
-          from kdreams_provider import fetch,parse_lineup
-          doc,stamp=fetch('https://keirin.kdreams.jp/aomori/racedetail/1220261103030012/')
-          print('ACTUAL LINEUP',parse_lineup(doc,list(range(1,8))),stamp)
+          from published_card import read_published,git_read,parse_page
+          from update_publication import git
+          from lineup_refresh import refresh_lineups
+          from export_pages import export,materialize_card
+          ref=git('rev-parse','FETCH_HEAD')
+          card,old,target=read_published(ref)
+          updated,races=refresh_lineups(card)
+          stripped=deepcopy(races)
+          for a,b in zip(stripped,old):a['groups']=b['groups']
+          assert stripped==old and updated['assets']==card['assets']
+          aomori=next(r for r in races if r['venueCode']=='12' and r['race']==12)
+          assert aomori['groups']==[[{'type':'riders','riders':[1]},{'type':'contest','riders':[7,3]}],[{'type':'riders','riders':[2,6]}],[{'type':'riders','riders':[5,4]}]]
+          work=Path('/tmp/contest-check');work.mkdir();shutil.copytree('site',work/'site')
+          materialize_card(updated,work/'site')
+          report=export(work/'site',work/'public')
+          day=target.replace('-','')
+          raw=git_read(ref,'fallback/kdreams/exacta/'+day+'/latest.json',optional=True)
+          (work/'odds.json').write_bytes(raw if raw is not None else card['assets']['odds.json'].encode())
+          report.update({'public_dir':str(work/'public'),'local_odds_file':str(work/'odds.json')})
+          (work/'report.json').write_text(json.dumps(report))
+          (work/'lineups.json').write_text(json.dumps(updated['lineup_sources'],ensure_ascii=False))
+          print('CONTEST SOURCE VERIFIED',target,aomori['groups'],json.dumps(report))
           PY
+      - name: Verify brackets, existing geometry and compact odds relationships
+        run: |
+          npm install --prefix /tmp/contest-qa --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH=/tmp/contest-qa/node_modules node tests/test_pages.cjs /tmp/contest-check/report.json
+          NODE_PATH=/tmp/contest-qa/node_modules node tests/test_contest_odds.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contested-lineup-receipts
+          path: |
+            /tmp/contest-check/report.json
+            /tmp/contest-check/lineups.json
+            /tmp/contest-check/odds.json

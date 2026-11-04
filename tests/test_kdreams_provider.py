@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from kdreams_provider import parse_card,parse_schedule,parse_exacta,collect_cards,collect_quote,race_identity,public_structure,MissingLineup,parse_result_flags,collect_result_flags
+from kdreams_provider import parse_card,parse_schedule,parse_exacta,collect_cards,collect_quote,race_identity,public_structure,MissingLineup,parse_result_flags,collect_result_flags,parse_lineup
 from source_http import Document
 
 URL='https://keirin.kdreams.jp/kochi/racedetail/7420261017020006/'
@@ -42,7 +42,50 @@ def result_table():
     return '<table class="result_table">'+rows+'</table>'
 
 
+# Public lineup structure observed on Aomori 2026-11-05 12R. Parentheses
+# are separate sibling icons, not a wrapper around the two competing cars.
+CONTEST_OPEN='<span class="icon_p bracket_open">(</span>'
+CONTEST_CLOSE='<span class="icon_p bracket_close">)</span>'
+CONTEST_SEVEN='<span class="icon_p"><span class="p007">7</span><span class="p113">競り</span></span>'
+CONTEST_THREE='<span class="icon_p"><span class="p003">3</span><span class="p113">競り</span></span>'
+LINE_SPACE='<span class="icon_p space"></span>'
+
+
+def contested_lineup():
+    def rider(number,role):
+        return '<span class="icon_p"><span class="p00'+str(number)+'">'+str(number)+'</span><span class="'+role+'"></span></span>'
+    return '<div class="line_position"><span class="icon_p"><span class="p000">←</span></span>'+rider(1,'p201')+CONTEST_OPEN+CONTEST_SEVEN+CONTEST_THREE+CONTEST_CLOSE+LINE_SPACE+rider(2,'p202')+rider(6,'p105')+LINE_SPACE+rider(5,'p206')+rider(4,'p105')+LINE_SPACE*4+'</div>'
+
+
 class KdreamsProviderTests(unittest.TestCase):
+    def test_actual_competing_sibling_icons_preserve_one_position_and_source_order(self):
+        value=parse_lineup(Document(contested_lineup()).root,list(range(1,8)))
+        self.assertEqual(value,'1(73)/26/54')
+        from render_races import parse_lineup as normalize_lineup
+        self.assertEqual(normalize_lineup(value,list(range(1,8)))[0],
+                         [{'type':'riders','riders':[1]},{'type':'contest','riders':[7,3]}])
+
+    def test_legacy_multi_car_icon_still_represents_a_competing_position(self):
+        old='<span class="icon_p"><span class="p007">7</span><span class="p003">3</span></span>'
+        markup=contested_lineup().replace(CONTEST_OPEN+CONTEST_SEVEN+CONTEST_THREE+CONTEST_CLOSE,old)
+        self.assertEqual(parse_lineup(Document(markup).root,list(range(1,8))),'1(73)/26/54')
+
+    def test_broken_competing_markers_are_rejected_instead_of_flattened(self):
+        source=contested_lineup()
+        malformed=[source.replace(CONTEST_OPEN,''),source.replace(CONTEST_CLOSE,''),
+                   source.replace(CONTEST_OPEN,CONTEST_OPEN*2),source.replace(CONTEST_CLOSE,CONTEST_CLOSE*2),
+                   source.replace(CONTEST_OPEN,CONTEST_CLOSE+CONTEST_OPEN),
+                   source.replace(CONTEST_OPEN,'').replace(CONTEST_CLOSE,''),
+                   source.replace(CONTEST_THREE,LINE_SPACE+CONTEST_THREE),
+                   source.replace(CONTEST_THREE,CONTEST_SEVEN)]
+        for markup in malformed:
+            with self.subTest(markup=markup),self.assertRaises(ValueError):
+                parse_lineup(Document(markup).root,list(range(1,8)))
+        with self.assertRaisesRegex(ValueError,'at least two'):
+            parse_lineup(Document(source.replace(CONTEST_THREE,'')).root,[1,2,4,5,6,7])
+        with self.assertRaisesRegex(ValueError,'at least two'):
+            parse_lineup(Document(source.replace(CONTEST_SEVEN,'').replace(CONTEST_THREE,'')).root,[1,2,4,5,6])
+
     def test_venue_spellings_and_tottori_are_not_relabelled(self):
         ident=race_identity('https://keirin.kdreams.jp/iwakitaira/racedetail/1320261017010001/')
         self.assertEqual(ident['code'],'13')

@@ -153,18 +153,47 @@ def parse_lineup(doc, numbers):
     positions = [n for n in doc.find_all('div') if 'line_position' in classes(n)]
     if len(positions) != 1:
         raise MissingLineup('K Dreams lineup not published')
-    groups, units = [], []
+    groups, units, competing = [], [], None
     for node in positions[0].children:
         if not isinstance(node, Node):
             continue
-        if 'space' in classes(node):
+        tokens = set(classes(node))
+        riders = [int(token[1:]) for child in node.find_all() for token in classes(child) if re.fullmatch(r'p00[1-9]', token)]
+        opening, closing = 'bracket_open' in tokens, 'bracket_close' in tokens
+        if opening or closing:
+            require('icon_p' in tokens and 'space' not in tokens and not riders and not (opening and closing),
+                    'Invalid K Dreams competing-position marker')
+            if opening:
+                require(competing is None, 'Nested K Dreams competing positions are invalid')
+                competing = []
+            else:
+                require(competing is not None, 'K Dreams competing position closes without opening')
+                require(len(competing) >= 2, 'K Dreams competing position needs at least two riders')
+                units.append('(' + ''.join(map(str, competing)) + ')')
+                competing = None
+            continue
+        if 'space' in tokens:
+            require(competing is None, 'K Dreams line break inside a competing position')
             if units:
                 groups.append(''.join(units)); units = []
             continue
-        riders = [int(token[1:]) for child in node.find_all() for token in classes(child) if re.fullmatch(r'p00[1-9]', token)]
         if riders:
-            require('icon_p' in classes(node), 'Unexpected K Dreams lineup structure')
-            units.append('(' + ''.join(map(str, riders)) + ')' if len(riders) > 1 else str(riders[0]))
+            require('icon_p' in tokens, 'Unexpected K Dreams lineup structure')
+            require(not any(set(classes(c)) & {'bracket_open', 'bracket_close'} for c in node.find_all()),
+                    'Nested K Dreams competing-position markers are invalid')
+            if competing is not None:
+                require(len(riders) == 1, 'Nested K Dreams competing rider groups are invalid')
+                competing.extend(riders)
+            else:
+                # Older cards can put both riders in one icon. Current cards
+                # use separate icons between bracket_open/bracket_close. An
+                # isolated p113 (競り) icon must never be flattened silently.
+                require(len(riders) > 1 or not any('p113' in classes(c) for c in node.find_all()),
+                        'K Dreams competing rider lacks position brackets')
+                units.append('(' + ''.join(map(str, riders)) + ')' if len(riders) > 1 else str(riders[0]))
+        elif competing is not None:
+            raise ValueError('Unexpected K Dreams node inside a competing position')
+    require(competing is None, 'K Dreams competing position is not closed')
     if units:
         groups.append(''.join(units))
     if not groups:

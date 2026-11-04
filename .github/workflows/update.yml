@@ -59,6 +59,7 @@ jobs:
         run: |
           npm install --prefix /tmp/lineup2-qa --no-audit --no-fund jsdom@26.1.0
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_pages.cjs /tmp/lineup2-publication/report.json
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5

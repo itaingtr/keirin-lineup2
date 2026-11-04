@@ -37,6 +37,8 @@ def display_card(dataset,feed,known_dates=()):
     provider=dataset.get('provider','winticket')
     target,races,_=validate(dataset);compact=target.strftime('%Y%m%d')
     page=render(dataset,site=ROOT/'site')
+    if provider=='kdreams':
+        page=re.sub(r'<body\b','<body data-contest-odds="true"',page,count=1)
     page,count=re.subn(r'<base href="\./"><script>.*?</script>',f'<base href="/line{compact}.html/">',page,count=1)
     require(count==1,'Unexpected page base')
     for asset in ('predictions.js','comments.css','comments.js','odds-current.js','odds-comparison.js'):
