@@ -17,6 +17,10 @@ def verify(site,base):
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     if (site/'data'/day/'rider-details.json').exists():files.append('data/'+day+'/rider-details.json')
+    # Calendar files are public build outputs, including the generated daily
+    # link index before a separate calendar UI is supplied.
+    if (site/'calendar').is_dir():
+        files.extend(p.relative_to(site).as_posix() for p in sorted((site/'calendar').rglob('*')) if p.is_file())
     # A new deployment can take a short time to reach the public Pages CDN.
     stamp=hashlib.sha256(current.encode()).hexdigest()[:16]
     for attempt in range(12):

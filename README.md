@@ -1,5 +1,7 @@
 # keirin-lineup2
 
+日程カレンダー担当への保存先・自動公開・日別直リンクの引き継ぎは [CALENDAR_HANDOFF.md](CALENDAR_HANDOFF.md) にまとめています。カレンダーの原稿は `site/calendar/`、公開用の日付一覧は `/keirin-lineup2/calendar/dates.json` です。
+
 公開先は https://itaingtr.github.io/keirin-lineup2/ です。GPTログインは不要で、`line20261025.html` のような日付ページも同じ場所に置きます。トップと最新日付ページのHTMLは同一です。
 
 誰か1人の期別を押すと、そのレース全員の期別の真下に県名の先頭2文字と年齢を表示し、もう一度どの期別を押しても全員分を閉じます。開閉は表示だけの操作です。「更新」「トップ」の横の「日程」は /keirin-lineup2/calendar/index.html へ移動します。カレンダー本体は別作業です。着順の左端はあがりタイムの十の位に合わせ、選手幅やライン間隔は維持します。

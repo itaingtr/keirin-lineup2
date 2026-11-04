@@ -12,6 +12,7 @@ from rider_identities import CONDITION_CUTOVER
 from rider_features import rider_features
 from official_page import official_page
 from rider_details_page import apply_details
+from calendar_export import export_calendar
 
 BASE='/keirin-lineup2/'
 REPOSITORY='itaingtr/keirin-lineup2'
@@ -171,11 +172,13 @@ def export(site,output,repository=REPOSITORY):
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')
+    calendar=export_calendar(site,output,dates,current_day,BASE)
     (output/'.nojekyll').write_text('')
     races=parse_page(page)
     return {'target_date':current_day[:4]+'-'+current_day[4:6]+'-'+current_day[6:],
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
-            'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0}
+            'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
+            'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days'])}
 
 
 if __name__=='__main__':

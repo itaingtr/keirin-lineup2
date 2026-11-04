@@ -19,6 +19,15 @@ const detailsPath=path.join(publicDir,'data',day,'rider-details.json');
 const riderDetails=fs.existsSync(detailsPath)?JSON.parse(fs.readFileSync(detailsPath,'utf8')):null;
 if(usesOfficial){assert.equal(media.provider,'kdreams');assert.ok(config.endpoint.includes('/fallback/kdreams/exacta/'));assert.doesNotMatch(html,/winticket|ウィンチケット/i);}
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
+const calendarIndex=JSON.parse(fs.readFileSync(path.join(publicDir,'calendar/dates.json'),'utf8'));
+assert.equal(calendarIndex.current_date,report.target_date);
+assert.equal(calendarIndex.current_href,'/keirin-lineup2/line'+day+'.html');
+assert.deepEqual(calendarIndex.days.map(d=>d.date.replaceAll('-','')),report.dates);
+for(const entry of calendarIndex.days){
+ const destination=new URL(entry.href,'https://itaingtr.github.io');
+ assert.equal(destination.pathname,'/keirin-lineup2/line'+entry.date.replaceAll('-','')+'.html');
+ assert.ok(fs.existsSync(path.join(publicDir,path.basename(destination.pathname))));
+}
 let legacyLineup;
 if(usesConditions){
  const old=new JSDOM(fs.readFileSync(path.join(publicDir,'line20261101.html'),'utf8'),{runScripts:'dangerously',url:'https://itaingtr.github.io/keirin-lineup2/line20261101.html'});
@@ -64,6 +73,13 @@ const activeWindows=[];
   assert.equal(doc.querySelectorAll('.lineup .rider').length,report.riders);
   assert.equal(doc.querySelector('iframe,dialog,video,script[src*="viewer.js"]'),null);
   const firstByVenue=new Map();for(const race of sourceRaces)if(!firstByVenue.has(race.venueCode))firstByVenue.set(race.venueCode,race);
+  const linkedDay=calendarIndex.days.find(d=>d.date===report.target_date);assert.ok(linkedDay);
+  assert.equal(linkedDay.race_count,report.races);
+  for(const venue of linkedDay.venues){
+   const race=firstByVenue.get(venue.code),link=new URL(venue.href,url);assert.ok(race);
+   assert.equal(venue.first_race,race.race);assert.equal(link.pathname,'/keirin-lineup2/line'+day+'.html');
+   const target=doc.getElementById(link.hash.slice(1));assert.ok(target);assert.equal(target.id,'race-'+race.venueCode+'-'+race.race);
+  }
   const venueButtons=[...doc.querySelectorAll('#venue-nav .venue-button')];
   assert.deepEqual(venueButtons.map(a=>a.textContent),[...firstByVenue.values()].map(r=>r.venue));
   for(const [index,button] of venueButtons.entries()){

@@ -1,3 +1,9 @@
+# Calendar handoff and public link index
+
+- Read CALENDAR_HANDOFF.md for the daily storage/publication contract. The user authorizes a separate calendar task to create/edit site/calendar/index.html and its static assets; the earlier no-calendar-files reminder applied only to the navigation-button task.
+- export_pages copies site/calendar/ to public/calendar/ and generates calendar/dates.json from actually exported date pages. dates.json is reserved/generated, not a hand-maintained source. No placeholder calendar UI is supplied by the handoff task.
+- Use days[].href for date links and venues[].href for the first published S-class race at each venue. Keep full /keirin-lineup2/ paths. current_date is the latest top-page card, possibly tomorrow after21JST; missingdatesmeanunpublished, notconfirmedno-racing. Calendar publicindex changes onlywithpagepublication, notodds-only updates. Preserve all old HTML and source data; no new DB calls or schedulers.
+
 # Latest race-wide profile toggle and calendar link
 
 - Any rider's period button opens prefecture/age for every member of that same race. Pressing any period in the open race closes every member. State is keyed by source race URL, with unique per-rider aria-controls IDs; searching preserves each race's state. Other races stay independent. This supersedes the previous per-rider toggle.
