@@ -117,8 +117,10 @@ def parse_month(html, month, url, observed):
             'Official schedule returned a different month')
     venue, grade, pending, output, venues_seen = None, None, None, [], set()
     for cell in root.find('td'):
-        if cell.has_class('border_width0') and cell.text in NAMES:
-            venue = NAMES[cell.text]; venues_seen.add(venue)
+        if cell.has_class('border_width0'):
+            name = next((name for name in NAMES if cell.text.startswith(name)), None)
+            if name:
+                venue = NAMES[name]; venues_seen.add(venue)
         if cell.has_class('grade'):
             grades = [n.attrs.get('alt') for n in cell.find('img')]
             require(len(grades) == 1 and grades[0] in (*GRADES, 'F2'), 'Unknown schedule grade')
