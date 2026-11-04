@@ -11,6 +11,7 @@ from source_http import cells
 from official_odds import blank_feed, refresh, should_collect
 from official_publication import build_card, encode
 from keirin_jp_provider import enrich_cards
+from kdreams_history import enrich_start_flags
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,7 +84,7 @@ def verify_collection(target, output, *, source_site=ROOT / 'site', collector=co
         if quote_collector is collect_quote:
             quote_collector = lambda race: collect_quote(race, read=read)
     try:
-        dataset = enrich_cards(collector(target))
+        dataset = enrich_start_flags(enrich_cards(collector(target)))
     except Exception:
         if diagnostics:
             read.describe_last()

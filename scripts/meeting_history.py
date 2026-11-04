@@ -53,6 +53,8 @@ def validate_history(results, source):
             else:raise ValueError('Unverified official result provider')
             for flag in ('start','home'):
                 require(item.get(flag) is None or type(item[flag]) is bool,'Invalid official S/H flag')
+            if 'car_number' in item:
+                require(type(item['car_number']) is int and 1<=item['car_number']<=9,'Invalid official historical car')
         require(isinstance(item['player_id'], str) and re.fullmatch(r'\d{1,12}',item['player_id']), 'Invalid result rider identity')
         riders.add(item['player_id'])
         require(type(item['order']) is int and 0 <= item['order'] <= 9, 'Invalid result order')

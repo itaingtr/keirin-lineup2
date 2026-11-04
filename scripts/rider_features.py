@@ -3,6 +3,7 @@ import re
 from render_races import script_json
 from published_card import parse_page
 from rider_identities import validate_identities
+from venues import identity
 
 APPEARANCE_CUTOVER = '20261103'
 APPEARANCE_STYLE = '''<style id="rider-appearance-style">
@@ -42,9 +43,11 @@ def rider_features(page, day, identities):
     old="function liveUrl(r){ return 'https://www.winticket.jp/keirin/'+r.venueSlug+'/live'; }"
     new="""const conditionDate='"""+target+"""';
 function conditionRaceId(r){return String(r.race).padStart(2,'0')+r.venueCode+conditionDate.replaceAll('-','');}
-function resultUrl(r){return (r.source.includes('kdreams.jp/')?r.source:'https://keirin.kdreams.jp'+r.commentKey)+'?pageType=showResult';}
+function resultUrl(r){return 'https://keirin.kdreams.jp'+r.commentKey+'?pageType=showResult';}
 function liveUrl(r){return 'https://keirin.kdreams.jp/stadium/live/?'+new URLSearchParams({kyogijoCd:r.venueCode,'l-id':'Livebroadcast'}).toString();}"""
     if page.count(old)!=1:raise ValueError('Live URL renderer is missing')
+    if all(identity(r['source'])['provider']=='kdreams' for r in races):
+        new=new.replace("'https://keirin.kdreams.jp'+r.commentKey+'?pageType=showResult'", "r.source+'?pageType=showResult'")
     page=page.replace(old,new,1)
     old='>▶ 映像を見る</a><a class="video-link live-link"'
     new='''>映像</a><a class="video-link result-link" href="'+escapeHtml(resultUrl(r))+'" data-source-url="'+resultUrl(r)+'" target="_self" title="楽天Kドリームスのこのレースの結果を開きます">結果</a><a class="video-link live-link"'''

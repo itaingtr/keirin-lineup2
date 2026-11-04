@@ -13,6 +13,7 @@ import unicodedata
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qsl, urlencode, urlsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
+from zoneinfo import ZoneInfo
 
 from venues import identity
 from meeting_history import validate_history
@@ -129,7 +130,8 @@ def parse_results(payload, code, day, number, meeting_start, entries):
         if re.fullmatch(r'[1-9]', rank):
             order, accident = int(rank), ''
         else:
-            require(rank in ('欠', '欠場', '失', '失格', '落', '落車', '棄', '棄権', '故', '故障'), 'Unknown official rank label')
+            require(re.fullmatch(r'[欠場失格落車棄権故障再入]{1,4}',rank) is not None,
+                    'Unknown official rank label: '+repr(rank)+' '+code+' '+day+' '+str(number)+'R')
             order, accident = 0, rank
         flags = compact(row.get('BH', ''))
         require(flags in ('', 'H', 'B', 'HB', 'BH'), 'Unknown official H/B value')
@@ -138,6 +140,7 @@ def parse_results(payload, code, day, number, meeting_start, entries):
         actual_day = datetime.strptime(day, '%Y%m%d').date()
         start_day = datetime.strptime(meeting_start, '%Y%m%d').date()
         output[identifier] = {'provider': PROVIDER, 'player_id': identifier,
+            'car_number':int(car),
             'race_id': f'{number:02}{code}{day}', 'meeting_day': (actual_day - start_day).days + 1,
             'race_number': number, 'race_date': actual_day.isoformat(), 'result_url': result_url(code, day, number),
             'order': order, 'display_type': 0, 'has_accident': bool(accident), 'accident': accident,
@@ -201,9 +204,16 @@ class OfficialClient:
             self.receipts.append({'provider': PROVIDER, 'url': program_url(code, day), 'observed_at': observed, 'kind': 'entries'})
         return self.card_cache[key]
 
-    def results(self, code, day, number, meeting_start, entries):
+    def results(self, code, day, number, meeting_start, entries, *, allow_pending=False):
         data, observed = self._json(code, day, number, 'JSJ012')
-        output = parse_results(data, code, day, number, meeting_start, entries)
+        try:
+            output = ({} if allow_pending and isinstance(data,dict) and not data.get('tyakujyunItemSubData')
+                      else parse_results(data, code, day, number, meeting_start, entries))
+        except ValueError:
+            print('OFFICIAL RESULT DISPLAY',code,day,number,json.dumps([
+                {k:r.get(k) for k in ('syaban','sensyuRegistNo','tyaku','agari','BH','kojinStateItemSubData')}
+                for r in data.get('tyakujyunItemSubData',[])],ensure_ascii=False),flush=True)
+            raise
         url = result_url(code, day, number)
         self.receipts.append({'provider': PROVIDER, 'url': url, 'observed_at': observed, 'kind': 'results'})
         for result in output.values():
@@ -250,7 +260,10 @@ def enrich_cards(dataset, client=None):
                 matching = {p['player_id'] for p in entries.values()} & current.keys()
                 if not matching:
                     continue
-                history = client.results(code, day, number, start, entries)
+                today=datetime.now(ZoneInfo('Asia/Tokyo')).date()
+                pending=last>today and day==today.strftime('%Y%m%d')
+                history = (client.results(code, day, number, start, entries,allow_pending=True) if pending
+                           else client.results(code, day, number, start, entries))
                 for identifier in matching:
                     require(identifier not in seen, 'Rider appears in multiple official races on one day')
                     seen.add(identifier)

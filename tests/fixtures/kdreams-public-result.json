@@ -1,0 +1,283 @@
+{
+  "source_url": "https://keirin.kdreams.jp/toyohashi/racedetail/4520261102020012/?pageType=showResult",
+  "observed_at": "2026-11-04T07:29:52.466613+00:00",
+  "headers": [
+    "予想",
+    "着順",
+    "車番",
+    "選手名",
+    "着差",
+    "上り",
+    "決まり手",
+    "S/B",
+    "勝敗因"
+  ],
+  "rows": [
+    [
+      {
+        "class": "tip",
+        "text": "◎"
+      },
+      {
+        "class": "",
+        "text": "1"
+      },
+      {
+        "class": "num",
+        "text": "2"
+      },
+      {
+        "class": "rider",
+        "text": "深谷知広"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": "11.0"
+      },
+      {
+        "class": "",
+        "text": "捲"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ],
+    [
+      {
+        "class": "tip",
+        "text": "○"
+      },
+      {
+        "class": "",
+        "text": "2"
+      },
+      {
+        "class": "num",
+        "text": "4"
+      },
+      {
+        "class": "rider",
+        "text": "雨谷一樹"
+      },
+      {
+        "class": "",
+        "text": "1車身"
+      },
+      {
+        "class": "",
+        "text": "11.0"
+      },
+      {
+        "class": "",
+        "text": "ク"
+      },
+      {
+        "class": "",
+        "text": "S"
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ],
+    [
+      {
+        "class": "tip",
+        "text": "×"
+      },
+      {
+        "class": "",
+        "text": "3"
+      },
+      {
+        "class": "num",
+        "text": "1"
+      },
+      {
+        "class": "rider",
+        "text": "片岡迪之"
+      },
+      {
+        "class": "",
+        "text": "9車身"
+      },
+      {
+        "class": "",
+        "text": "11.8"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ],
+    [
+      {
+        "class": "tip",
+        "text": "△"
+      },
+      {
+        "class": "",
+        "text": "4"
+      },
+      {
+        "class": "num",
+        "text": "7"
+      },
+      {
+        "class": "rider",
+        "text": "橋本宇宙"
+      },
+      {
+        "class": "",
+        "text": "1/2車輪"
+      },
+      {
+        "class": "",
+        "text": "12.1"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": "B"
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ],
+    [
+      {
+        "class": "tip",
+        "text": "注"
+      },
+      {
+        "class": "",
+        "text": "5"
+      },
+      {
+        "class": "num",
+        "text": "3"
+      },
+      {
+        "class": "rider",
+        "text": "中井太祐"
+      },
+      {
+        "class": "",
+        "text": "1/2車輪"
+      },
+      {
+        "class": "",
+        "text": "11.5"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ],
+    [
+      {
+        "class": "tip",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": "6"
+      },
+      {
+        "class": "num",
+        "text": "5"
+      },
+      {
+        "class": "rider",
+        "text": "武田豊樹"
+      },
+      {
+        "class": "",
+        "text": "1/8車輪"
+      },
+      {
+        "class": "",
+        "text": "11.7"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ],
+    [
+      {
+        "class": "tip",
+        "text": "▲"
+      },
+      {
+        "class": "",
+        "text": "7"
+      },
+      {
+        "class": "num",
+        "text": "6"
+      },
+      {
+        "class": "rider",
+        "text": "山崎泰己"
+      },
+      {
+        "class": "",
+        "text": "2車身"
+      },
+      {
+        "class": "",
+        "text": "11.9"
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "",
+        "text": ""
+      },
+      {
+        "class": "comment",
+        "text": ""
+      }
+    ]
+  ]
+}

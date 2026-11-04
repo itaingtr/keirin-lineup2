@@ -37,4 +37,5 @@ def official_page(page):
     page = re.sub(r'<body\b', '<body data-official-results="true"', page, count=1)
     page = page.replace('Sの数値は印の上、選手名の下は期別、B、逃、捲、差、マの順で表示しています。', '選手名の下は期別、S、B、逃、捲、差、マの順です。Sが0のときは空欄です。')
     page = page.replace('（Bはバック取得）', '（S・H・Bは取得元で確認できたフラグ）')
+    page=page.replace('と個人あがりを古い順に表示。','と個人あがりを古い順に表示。今場所成績・H/Bと選手IDはKEIRIN.JP、Sは楽天の結果を照合しています。')
     return page.replace('</head>', OFFICIAL_RESULTS_STYLE + '</head>', 1)

@@ -58,7 +58,10 @@ def rakuten_page(page, day, marks):
         for player in race['players']:
             player['mark']=records[race['source']][player['no']]
     page=re.sub(r'const races=(.*);\nconst body=',lambda m:'const races='+script_json(races)+';\nconst body=',page,count=1)
-    page=page.replace('function liveUrl(r)',"function rakutenRaceUrl(r){return r.source.includes('kdreams.jp/')?r.source:'https://my.keirin.kdreams.jp'+r.commentKey;}\nfunction liveUrl(r)",1)
+    url_function="function rakutenRaceUrl(r){return 'https://my.keirin.kdreams.jp'+r.commentKey;}"
+    if all(identity(r['source'])['provider']=='kdreams' for r in races):
+        url_function='function rakutenRaceUrl(r){return r.source;}'
+    page=page.replace('function liveUrl(r)',url_function+'\nfunction liveUrl(r)',1)
     old='''href="'+r.source+'" data-comment-key="'''
     new='''href="'+rakutenRaceUrl(r)+'" data-race-source="'+r.source+'" data-comment-key="'''
     if page.count(old)!=1:raise ValueError('Race link renderer is missing')

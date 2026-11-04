@@ -18,7 +18,8 @@ from render_races import validate
 from rider_identities import collect_identities, validate_identities
 from update_publication import git, morning_recovery_date, publish_feed, requested_mode
 from venues import identity
-from keirin_jp_provider import enrich_cards, check_url as check_official_url
+from keirin_jp_provider import enrich_cards, check_url as check_official_url, program_url
+from kdreams_history import enrich_start_flags
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -82,7 +83,19 @@ def build_card(dataset, checked_at, known_dates=()):
             if source:
                 require(source.get('provider')=='keirin.jp' and source.get('race_number')==race['race'], 'Wrong registration identity source')
                 check_official_url(source['url'])
+                require(source['url']==program_url(race['venueCode'],target.replace('-','')),'Registration source date/venue differs')
                 require(any(s['provider']==source['provider'] and s['url']==source['url'] and s['observed_at']==source['observed_at'] for s in history_sources),'Registration identity lacks observation receipt')
+            for result in player['meetingResults']:
+                require(result.get('provider')=='keirin.jp','Active prior results require official records')
+                require(any(s['provider']=='keirin.jp' and s['url']==result['result_url'] and s['observed_at']==result.get('observed_at') for s in history_sources),'Prior result lacks observation receipt')
+                if result.get('start') is not None:
+                    flag_url=result.get('start_source_url','')
+                    parsed=urlsplit(flag_url)
+                    flag_identity=identity(parsed._replace(query='').geturl())
+                    require(parsed.query=='pageType=showResult' and flag_identity['provider']==PROVIDER
+                            and flag_identity['code']==race['venueCode'] and flag_identity['race']==result['race_number']
+                            and flag_identity['date']==result['race_date'].replace('-',''),'S flag source race differs')
+                    require(any(s['provider']==PROVIDER and s['url']==flag_url and s['observed_at']==result.get('start_observed_at') for s in history_sources),'S flag lacks observation receipt')
     feed = blank_feed(races, target, checked_at)
     card = display_card(dataset, feed, known_dates)
     marks = {'schema_version': 1, 'provider': PROVIDER, 'target_date': target,
@@ -177,7 +190,7 @@ def main():
         require(can_replace(collection_date, now, target, migration=migration),
                 'Refusing a past/in-progress card rewrite or date regression')
         from kdreams_provider import collect_cards
-        dataset = enrich_cards(collect_cards(collection_date.isoformat()))
+        dataset = enrich_start_flags(enrich_cards(collect_cards(collection_date.isoformat())))
         names = git('ls-tree', '--name-only', ref + ':fallback/cards').splitlines()
         card, races = build_card(dataset, datetime.now(timezone.utc).isoformat(),
                                  [name for name in names if re.fullmatch(r'\d{8}', name)])
