@@ -13,7 +13,13 @@ jobs:
       - run: python3 -m unittest discover -s tests -q
       - name: Probe KEIRIN.JP public result fields
         continue-on-error: true
-        run: python3 -u scripts/probe_keirin_jp.py --date 20261103 --code 45 --race 12
+        run: python3 -u scripts/probe_keirin_jp.py --date 20261103 --code 45 --race 12 --stats
+      - name: Inspect current official identities
+        continue-on-error: true
+        run: python3 -u scripts/probe_keirin_jp.py --date 20261104 --code 45 --race 12 --stats
+      - name: Inspect K Dreams official prior result flags
+        continue-on-error: true
+        run: python3 -u scripts/kdreams_provider.py --probe 'https://keirin.kdreams.jp/toyohashi/racedetail/4520261102020012/?pageType=showResult'
       - name: Collect and verify public official display fields
         run: python3 -u scripts/verify_official_collection.py --date 2026-11-04 --output /tmp/official-check --diagnostics
       - name: Verify actual rendered cards

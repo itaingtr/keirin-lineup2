@@ -41,6 +41,7 @@ def main():
     parser.add_argument('--date', required=True)
     parser.add_argument('--code', required=True)
     parser.add_argument('--race', type=int, required=True)
+    parser.add_argument('--stats', action='store_true')
     args = parser.parse_args()
     datetime.strptime(args.date, '%Y%m%d')
     if not re.fullmatch(r'\d{2}', args.code) or not 1 <= args.race <= 12:
@@ -82,7 +83,7 @@ def main():
     if not isinstance(payload, dict):
         raise ValueError('Official result is not an object')
     fields = ('tyaku', 'syaban', 'sensyuRegistNo', 'sensyuName', 'sotugyouki',
-              'agari', 'BH', 'S', 'H', 'B', 'kimarite', 'kojinStateItemSubData')
+              'agari', 'BH', 'S', 'H', 'B', 'inLineJyuni', 'kimarite', 'kojinStateItemSubData')
     rows = payload.get('tyakujyunItemSubData', [])
     if not isinstance(rows, list):
         raise ValueError('Official result rows are unavailable')
@@ -90,11 +91,30 @@ def main():
         'provider': 'keirin.jp', 'date': args.date, 'code': args.code, 'race': args.race,
         'observed_at': datetime.now(timezone.utc).isoformat(),
         'program_fields': sorted(data),
-        'program_identity': {k: data.get(k) for k in ('joName', 'selKaisai', 'naibuKeirinCd')},
+        'program_identity': {k: data.get(k) for k in ('joName', 'selKaisai', 'selKjyoCd', 'naibuKeirinCd')},
+        'program_race_fields': sorted(races[args.race - 1]),
+        'program_details': [{k: v for k, v in row.items() if not k.lower().startswith(('enc', 'token', 'cookie'))}
+                            for row in (data.get('C0201racedtl') or [])[:2]] if isinstance(data.get('C0201racedtl'), list) else None,
         'result_fields': sorted(payload),
         'row_fields': sorted(set().union(*(set(row) for row in rows))) if rows else [],
         'rows': [{k: row[k] for k in fields if k in row} for row in rows],
     }, ensure_ascii=False), flush=True)
+    if args.stats:
+        stats_url = 'https://keirin.jp/pc/json?' + urlencode({'type': 'JSJ002', 'encp': navigation})
+        stats = json.loads(read(stats_url, program_url))
+        info = stats.get('raceInfo')
+        if not isinstance(info, list):
+            raise ValueError('Official current-card statistics are unavailable')
+        output = []
+        for race in info:
+            fields = ('syaban', 'sensyuRegistNo', 'sensyuName', 'sotugyouki', 'ketujyouTuikaHojyu')
+            players = race.get('sensyuTypeInfo', [])
+            output.append({'raceNo': race.get('raceNo'), 'shumokuName': race.get('shumokuName'),
+                           'row_fields': sorted(set().union(*(set(row) for row in players))) if players else [],
+                           'players': [{k: row[k] for k in fields if k in row} for row in players]})
+        print('KEIRIN JP PUBLIC CARD ' + json.dumps({'provider': 'keirin.jp', 'date': args.date,
+              'code': args.code, 'observed_at': datetime.now(timezone.utc).isoformat(),
+              'fields': sorted(stats), 'races': output}, ensure_ascii=False), flush=True)
 
 
 if __name__ == '__main__':

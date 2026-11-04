@@ -119,8 +119,8 @@ const activeWindows=[];
     const published=rakutenMarks.races.find(r=>r.source_url===race.source);assert.ok(published);
     for(const rider of row.querySelectorAll('.lineup .rider')){
      const number=Number(rider.querySelector('.car').textContent),player=published.players.find(p=>p.no===number);
-     assert.equal(rider.querySelector('.prediction-mark').textContent,player.mark);
-     assert.equal(rider.querySelector('.prediction-mark').title,'楽天Kドリームスの予想印');
+     const actualPlayer=race.players.find(p=>p.no===number);assert.equal(rider.querySelector('.prediction-mark').textContent,usesOfficial&&actualPlayer.absent?'欠':player.mark);
+     assert.equal(rider.querySelector('.prediction-mark').title,usesOfficial&&actualPlayer.absent?'楽天Kドリームス掲載の欠場':'楽天Kドリームスの予想印');
     }
    }
    for(const rider of row.querySelectorAll('.lineup .rider')){

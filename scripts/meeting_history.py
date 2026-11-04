@@ -45,6 +45,11 @@ def validate_history(results, source):
                 expected=f'/{slug}/racedetail/{code}{ident["start"]}{day:02}{number:04}/'
                 require(result.hostname in ('keirin.kdreams.jp','my.keirin.kdreams.jp')
                         and result.path==expected and query=={'pageType':'showResult'}, 'K Dreams result identity differs')
+            elif item.get('provider')=='keirin.jp':
+                require(result.hostname in ('keirin.jp','www.keirin.jp')
+                        and result.path=='/pc/dfw/dataplaza/guest/raceresult'
+                        and query=={'KCD':ident['code'],'KBI':result_date.strftime('%Y%m%d'),'RNO':str(number)},
+                        'KEIRIN.JP result identity differs')
             else:raise ValueError('Unverified official result provider')
             for flag in ('start','home'):
                 require(item.get(flag) is None or type(item[flag]) is bool,'Invalid official S/H flag')

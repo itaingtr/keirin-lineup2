@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from kdreams_provider import parse_card,parse_schedule,parse_exacta,collect_cards,collect_quote,race_identity,public_structure,MissingLineup
+from kdreams_provider import parse_card,parse_schedule,parse_exacta,collect_cards,collect_quote,race_identity,public_structure,MissingLineup,parse_result_flags,collect_result_flags
 from source_http import Document
 
 URL='https://keirin.kdreams.jp/kochi/racedetail/7420261017020006/'
@@ -32,6 +32,14 @@ def matrix():
 
 def calendar():
     return '<div class="raceinfo_table"><table><tr><td>高知競輪</td><td><i class="gr2"></i><a href="'+URL+'">6R</a></td></tr></table></div>'
+
+
+def result_table():
+    labels=['予想','着順','車番','選手名','着差','上り','決まり手','S／B','勝敗因']
+    rows='<tr>'+''.join('<th>'+value+'</th>' for value in labels)+'</tr>'
+    for n,rank,flags in [(1,2,'S'),(2,1,'B'),(3,3,'')]:
+        rows+='<tr>'+''.join('<td>'+value+'</td>' for value in ['',str(rank),str(n),'選手'+str(n),'','11.'+str(n),'',flags,''])+'</tr>'
+    return '<table class="result_table">'+rows+'</table>'
 
 
 class KdreamsProviderTests(unittest.TestCase):
@@ -63,6 +71,11 @@ class KdreamsProviderTests(unittest.TestCase):
             with self.assertRaises(ValueError):parse_card(Document(wrong).root,URL,MEETING)
         with self.assertRaises(ValueError):parse_schedule(Document(calendar()).root,'https://keirin.kdreams.jp/racecard/2026/10/19/','2026-10-19')
         with self.assertRaises(MissingLineup):parse_card(Document(card(False)).root,URL,MEETING)
+
+    def test_known_non_s_classes_skip_before_rider_or_lineup_parsing(self):
+        for kind in ('Ａ級予選','A級特選','Ｌ級予選','L級予選','ガールズ一般','チャレンジ一般'):
+            markup=card(False).replace('Ｓ級予選',kind).replace('racecard_table','not_a_card')
+            self.assertIsNone(parse_card(Document(markup).root,URL,MEETING))
 
     def test_collect_cards_never_requests_odds_and_omits_unpublished_meeting(self):
         calls=[]
@@ -104,6 +117,15 @@ class KdreamsProviderTests(unittest.TestCase):
         markup=card().replace('href="https://keirin.kdreams.jp/athlete/detail/015101/"','').replace('href="https://keirin.kdreams.jp/athlete/detail/015102/"','').replace('href="https://keirin.kdreams.jp/athlete/detail/015103/"','')+matrix()
         quote=collect_quote(race,lambda url:(Document(markup).root,STAMP))
         self.assertEqual(quote['status'],'snapshot')
+
+    def test_result_s_b_flags_match_the_source_card_rider_and_keep_observation(self):
+        url=URL+'?pageType=showResult'
+        report=collect_result_flags(URL,lambda requested:(Document(card()+result_table()).root,STAMP))
+        self.assertEqual(report['source_url'],url);self.assertEqual(report['observed_at'],STAMP)
+        self.assertEqual(report['results'][0],{'no':1,'name':'選手1','period':101,'rank':2,'agari':'11.1','s':True,'b':False,'player_id':'015101'})
+        self.assertTrue(report['results'][1]['b']);self.assertFalse(report['results'][2]['s'])
+        for wrong in [result_table().replace('>選手1<','>別人<'),result_table().replace('>S<','>H<'),result_table().replace('>11.1<','>不明<')]:
+            with self.assertRaises(ValueError):parse_result_flags(Document(card()+wrong).root,url)
 
 
 if __name__=='__main__':unittest.main()

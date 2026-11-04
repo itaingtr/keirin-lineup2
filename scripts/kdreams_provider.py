@@ -243,7 +243,7 @@ def parse_card(doc, url, meeting):
     title = _title(doc, url)
     kind = re.search(r'\b(\d+)R\s+([ＳS]級[^|]+?)\s*\|', title)
     if not kind:
-        if re.search(r'\d+R\s+[ＡAＬL]級', title):
+        if re.search(r'\d+R\s+(?:[ＡAＬL]級|ガールズ|チャレンジ)', title):
             return None
         raise ValueError('Unrecognized K Dreams race class')
     players = parse_players(doc)
@@ -347,6 +347,65 @@ def collect_quote(race, read=fetch):
     return quote
 
 
+def parse_result_flags(doc, url):
+    """Read published S/B from the result table and verify its rider identities."""
+    if isinstance(doc, str):
+        doc = Document(doc).root
+    _title(doc, url)
+    players = {p['no']: p for p in parse_players(doc)}
+    required = ('着順', '車番', '選手名', '上り', 'S/B')
+    candidates = []
+    for table in doc.find_all('table'):
+        for row in table.find_all('tr'):
+            values = cells(row)
+            labels = [compact(c.text()) for c in values]
+            if all(label in labels for label in required) and all(c.tag == 'th' for c in values):
+                candidates.append((table, labels))
+    require(len(candidates) == 1, 'Expected one published K Dreams result table')
+    table, labels = candidates[0]
+    indexes = {}
+    for key in required:
+        require(labels.count(key) == 1, 'Ambiguous K Dreams result column')
+        indexes[key] = labels.index(key)
+    results = []
+    seen = set()
+    for row in table.find_all('tr'):
+        values = cells(row)
+        if not any(c.tag == 'td' for c in values):
+            continue
+        require(len(values) == len(labels), 'Incomplete K Dreams result row')
+        number = compact(values[indexes['車番']].text())
+        require(re.fullmatch(r'[1-9]', number), 'Invalid K Dreams result car')
+        number = int(number)
+        require(number in players and number not in seen, 'K Dreams result car differs from card')
+        seen.add(number)
+        player = players[number]
+        require(compact(values[indexes['選手名']].text()) == player['name'], 'K Dreams result rider differs from card')
+        rank = compact(values[indexes['着順']].text())
+        agari = compact(values[indexes['上り']].text())
+        flags = compact(values[indexes['S/B']].text())
+        require(re.fullmatch(r'[1-9]', rank) or rank in ('落','失','欠','棄','故','除','落再','落棄','故再','故棄'), 'Unknown K Dreams result placing')
+        require(not agari or re.fullmatch(r'\d{1,2}\.\d', agari), 'Invalid K Dreams individual agari')
+        require(flags in ('','S','B','SB','BS'), 'Unknown K Dreams S/B result flags')
+        result = {'no': number, 'name': player['name'], 'period': player['period'],
+                  'rank': int(rank) if rank.isdigit() else rank, 'agari': agari or None,
+                  's': 'S' in flags, 'b': 'B' in flags}
+        if player.get('player_id'):
+            result['player_id'] = player['player_id']
+        results.append(result)
+    require(seen == set(players), 'K Dreams result riders are incomplete')
+    return sorted(results, key=lambda item: item['no'])
+
+
+def collect_result_flags(source, read=fetch):
+    """Return source-timed public result evidence; no persistence or H inference."""
+    source = canonical_source(source)
+    url = source + '?' + urlencode({'pageType': 'showResult'})
+    doc, observed = _doc_read(url, read)
+    return {'provider': PROVIDER, 'source_url': url, 'observed_at': observed,
+            'results': parse_result_flags(doc, url)}
+
+
 def public_structure(url, read=fetch):
     """Small public structural evidence for Actions diagnostics; never raw HTML."""
     check_url(url)
@@ -364,7 +423,11 @@ def public_structure(url, read=fetch):
                 headers.append([compact(c.text())[:100] for c in values][:22])
             if any(c.tag=='td' for c in values) and len(samples)<3:
                 samples.append([{'class':c.attrs.get('class',''),'text':compact(c.text())[:100],
-                                 'links':[{'href':a.attrs.get('href',''),'onclick':a.attrs.get('onclick','')} for a in list(c.find_all('a'))[:2]]} for c in values[:22]])
+                                 'links':[{'href':a.attrs.get('href',''),'onclick':a.attrs.get('onclick','')} for a in list(c.find_all('a'))[:2]],
+                                 'items':[{'text':compact(item.text())[:100], 'attrs':dict(item.attrs),
+                                           'children':[{'tag':n.tag,'text':compact(n.text())[:70],'attrs':dict(n.attrs)}
+                                                       for n in list(item.find_all())[:12]]}
+                                          for item in list(c.find_all('li'))[:4]]} for c in values[:22]])
         tables.append({'class':table.attrs.get('class',''),'id':table.attrs.get('id',''),
                        'row_count':len(rows),'headers':headers[:6],'samples':samples})
     athlete=[]
