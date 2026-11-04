@@ -127,8 +127,16 @@ def parse_results(payload, code, day, number, meeting_start, entries):
                 and compact(row['sotugyouki']) == str(expected['period']), 'Official result rider differs')
         seen.add(identifier)
         rank = compact(row['tyaku'])
+        states=[compact(s.get('kojinState','')) for s in row.get('kojinStateItemSubData',[])
+                if isinstance(s,dict) and compact(s.get('kojinState',''))]
+        accident_name=''
         if re.fullmatch(r'[1-9]', rank):
             order, accident = int(rank), ''
+        elif not rank:
+            short={'落車棄権':'落','故障棄権':'故','落車再入':'落','故障再入':'故',
+                   '失格':'失','欠場':'欠','欠車':'欠','棄権':'棄'}
+            require(len(states)==1 and states[0] in short,'Unranked official result needs its accident status')
+            order,accident,accident_name=0,short[states[0]],states[0]
         else:
             require(re.fullmatch(r'[欠場失格落車棄権故障再入]{1,4}',rank) is not None,
                     'Unknown official rank label: '+repr(rank)+' '+code+' '+day+' '+str(number)+'R')
@@ -144,7 +152,7 @@ def parse_results(payload, code, day, number, meeting_start, entries):
             'race_id': f'{number:02}{code}{day}', 'meeting_day': (actual_day - start_day).days + 1,
             'race_number': number, 'race_date': actual_day.isoformat(), 'result_url': result_url(code, day, number),
             'order': order, 'display_type': 0, 'has_accident': bool(accident), 'accident': accident,
-            'accident_name': accident, 'final_half_record': timing, 'start': None,
+            'accident_name': accident_name or accident, 'final_half_record': timing, 'start': None,
             'home': 'H' in flags, 'back': 'B' in flags}
     missing = set(p['player_id'] for p in entries.values()) - seen
     require(all(p['absent'] for p in entries.values() if p['player_id'] in missing), 'Incomplete official result riders')

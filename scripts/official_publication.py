@@ -105,7 +105,7 @@ def build_card(dataset, checked_at, known_dates=()):
                   'players': [{'no': p['no'], 'name': p['name'], 'period': p['period'], 'mark': p['mark']}
                               for p in r['players']]} for r in races]}
     validate_marks(marks, races, target)
-    # All IDs must have been independently present on these official cards.
+    # All IDs must have been independently verified on the official entry list.
     # collect_identities rejects absent official IDs instead of contacting WINTICKET.
     identities = collect_identities(races, target, checked_at)
     for row in identities['races']:

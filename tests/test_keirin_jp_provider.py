@@ -61,6 +61,19 @@ class OfficialJpTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_results({'tyakujyunItemSubData': FIXTURE['result'][:-1]}, '45', '20261103', 12, '20261102', entries)
 
+    def test_empty_rank_requires_the_actual_official_accident_state(self):
+        entries=self.cards('20261103')[12]['players']
+        rows=deepcopy(FIXTURE['result'])
+        rows[0].update({'tyaku':'','agari':'','kojinStateItemSubData':[{'kojinState':'落車棄権','kojinStateClass':'','tyakuNote':''}]})
+        saved=parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries)['014534']
+        self.assertEqual(saved['order'],0)
+        self.assertTrue(saved['has_accident'])
+        self.assertEqual(saved['accident'],'落')
+        self.assertEqual(saved['accident_name'],'落車棄権')
+        self.assertEqual(saved['final_half_record'],'')
+        rows[0]['kojinStateItemSubData']=[]
+        with self.assertRaises(ValueError):parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries)
+
     def test_public_navigation_requires_the_requested_date_and_venue(self):
         data = {'C0201data': {'selKaisai': '20261103', 'selKjyoCd': '45', 'C0201race': [{'encParaR': 'public-navigation'}]}}
         page = "jsonData['PC0201'] = " + json.dumps(data) + ';'
