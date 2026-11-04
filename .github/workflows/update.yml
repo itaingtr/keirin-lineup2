@@ -38,7 +38,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Validate the independent collector and public export
-        run: python3 -m unittest discover -s tests -v
+        run: |
+          python3 -m unittest discover -s tests -v
+          node --check tests/test_pages.cjs
       - name: Prepare the requested update without a database write
         id: update
         env:

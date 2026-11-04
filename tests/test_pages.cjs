@@ -16,9 +16,7 @@ const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'d
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
 if(usesOfficial){assert.equal(media.provider,'kdreams');assert.ok(config.endpoint.includes('/fallback/kdreams/exacta/'));assert.doesNotMatch(html,/winticket|ウィンチケット/i);}
-const videoGrades=JSON.parse(/const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
-if(usesOfficial){assert.equal(media.provider,'kdreams');assert.ok(config.endpoint.includes('/fallback/kdreams/exacta/'));assert.doesNotMatch(html,/winticket|ウィンチケット/i);}
-const videoGrades=(.*);\n/.exec(html)[1]);
+const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
 let legacyLineup;
 if(usesConditions){
  const old=new JSDOM(fs.readFileSync(path.join(publicDir,'line20261101.html'),'utf8'),{runScripts:'dangerously',url:'https://itaingtr.github.io/keirin-lineup2/line20261101.html'});
@@ -62,7 +60,7 @@ const activeWindows=[];
    const race=[...firstByVenue.values()][index],destination=new URL(button.href);
    assert.equal(destination.origin,new URL(url).origin);assert.equal(destination.pathname,new URL(url).pathname);
    const target=doc.getElementById(destination.hash.slice(1));assert.ok(target);
-   assert.equal(target.querySelector('.race-link').href,usesRakuten?'https://my.keirin.kdreams.jp'+race.commentKey:race.source);
+   assert.equal(target.querySelector('.race-link').href,usesOfficial?race.source:usesRakuten?'https://my.keirin.kdreams.jp'+race.commentKey:race.source);
    assert.equal(race.race,Math.min(...sourceRaces.filter(r=>r.venueCode===race.venueCode).map(r=>r.race)));
    button.click();await pause();assert.equal(window.location.hash,destination.hash);jumps++;
   }
