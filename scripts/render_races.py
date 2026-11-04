@@ -117,6 +117,8 @@ def validate(dataset):
             if source_id['provider']=='kdreams':
                 require(type(p.get('absent',False)) is bool,'Invalid official absence status')
                 players[-1]['absent']=p.get('absent',False)
+                if 'identity_source' in p:
+                    players[-1]['identitySource']=dict(p['identity_source'])
         normalized.append({'venue': venue, 'race': number, 'source': source, 'raceType': race_type,
                            'startTime': start_time, 'players': players, 'groups': parse_lineup(r['lineup'], numbers),
                            'averageScore': sum(p['rawScore'] for p in players) / len(players),

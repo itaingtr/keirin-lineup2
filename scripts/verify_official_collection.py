@@ -10,6 +10,7 @@ from kdreams_provider import collect_cards, collect_quote, fetch
 from source_http import cells
 from official_odds import blank_feed, refresh, should_collect
 from official_publication import build_card, encode
+from keirin_jp_provider import enrich_cards
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -82,7 +83,7 @@ def verify_collection(target, output, *, source_site=ROOT / 'site', collector=co
         if quote_collector is collect_quote:
             quote_collector = lambda race: collect_quote(race, read=read)
     try:
-        dataset = collector(target)
+        dataset = enrich_cards(collector(target))
     except Exception:
         if diagnostics:
             read.describe_last()
@@ -93,6 +94,7 @@ def verify_collection(target, output, *, source_site=ROOT / 'site', collector=co
                'expected_races', 'races', 'excluded_meetings') if key in dataset}
     display['sources'] = [{key: row[key] for key in ('url', 'provider', 'observed_at')}
                           for row in dataset.get('sources', [])]
+    display['history_sources'] = dataset.get('history_sources',[])
     (output / 'dataset.json').write_text(encode(display))
     checked_at = datetime.now(timezone.utc).isoformat()
     card, races = build_card(display, checked_at,
@@ -121,7 +123,7 @@ def verify_collection(target, output, *, source_site=ROOT / 'site', collector=co
     local_odds.write_text(encode(feed))
     report.update({'public_dir': str(public), 'local_odds_file': str(local_odds),
                    'dataset_file': str(output / 'dataset.json'),
-                   'source_providers': ['kdreams'], 'source_reads': len(display['sources']),
+                   'source_providers': card['summary']['source_providers'], 'source_reads': len(display['sources'])+len(display['history_sources']),
                    'quotes_attempted': attempted, 'quotes': quote_stats,
                    'quote_check': 'checked' if attempted else 'outside_race_day_window_or_disabled',
                    'database_writes': 0, 'github_writes': 0})

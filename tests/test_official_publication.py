@@ -89,6 +89,7 @@ class OfficialPublicationTests(unittest.TestCase):
                  patch('official_publication.git_read', return_value=None), \
                  patch('official_publication.saved_odds', return_value=None), \
                  patch('kdreams_provider.collect_cards', return_value=fresh_dataset), \
+                 patch('official_publication.enrich_cards', side_effect=lambda dataset:dataset), \
                  patch('official_publication.export', side_effect=ValueError('invalid public layout')), \
                  patch('official_publication.publish_feed') as shared_publication:
                 clock.now.return_value = datetime.fromisoformat('2026-10-17T23:10:00+00:00')

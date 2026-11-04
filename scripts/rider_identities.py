@@ -79,7 +79,9 @@ def collect_identities(races, target, observed_at, reader=fetch):
                 ids[entry['number']] = entry['playerId']
         records.append({'source_url': race['source'], 'observed_at': observed,
                         'players': [{'no': p['no'], 'name': p['name'], 'period': str(p['period']),
-                                     'player_id': ids[p['no']]} for p in race['players']]})
+                                     'player_id': ids[p['no']],
+                                     **({'identity_source':dict(p['identitySource'])} if 'identitySource' in p else {})}
+                                    for p in race['players']]})
         print('RIDER IDENTITIES', race['venue'], race['race'], 'R verified', flush=True)
     providers={identity(r['source'])['provider'] for r in races}
     require(len(providers)==1,'Mixed rider identity providers')

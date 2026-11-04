@@ -1,0 +1,251 @@
+{
+  "previous": {
+    "raceNo": "12",
+    "shumokuName": "Ｓ級準決勝",
+    "row_fields": [
+      "age",
+      "backCnt",
+      "heikinTokuten",
+      "homeTori",
+      "huKen",
+      "ketujyouTuikaHojyu",
+      "ketujyouTuikaHojyuColorInfo",
+      "konResultInfoSubData",
+      "kyakusitu",
+      "kyuhan",
+      "makuriCnt",
+      "markCnt",
+      "nigeCnt",
+      "prevKyuhan",
+      "rentairitu2",
+      "rentairitu3",
+      "sasiCnt",
+      "sensyuName",
+      "sensyuRegistNo",
+      "sotugyouki",
+      "stTori",
+      "syaban",
+      "syabanBgColorInfo",
+      "syabanCharColorInfo",
+      "syouritu",
+      "tyo4InfoSubData"
+    ],
+    "players": [
+      {
+        "syaban": "1",
+        "sensyuRegistNo": "014322",
+        "sensyuName": "片岡　迪之",
+        "sotugyouki": "93"
+      },
+      {
+        "syaban": "2",
+        "sensyuRegistNo": "014534",
+        "sensyuName": "深谷　知広",
+        "sotugyouki": "96"
+      },
+      {
+        "syaban": "3",
+        "sensyuRegistNo": "014605",
+        "sensyuName": "中井　太祐",
+        "sotugyouki": "97"
+      },
+      {
+        "syaban": "4",
+        "sensyuRegistNo": "014505",
+        "sensyuName": "雨谷　一樹",
+        "sotugyouki": "96"
+      },
+      {
+        "syaban": "5",
+        "sensyuRegistNo": "013923",
+        "sensyuName": "武田　豊樹",
+        "sotugyouki": "88"
+      },
+      {
+        "syaban": "6",
+        "sensyuRegistNo": "014881",
+        "sensyuName": "山崎　泰己",
+        "sotugyouki": "101",
+        "ketujyouTuikaHojyu": "(追加)"
+      },
+      {
+        "syaban": "7",
+        "sensyuRegistNo": "015744",
+        "sensyuName": "橋本　宇宙",
+        "sotugyouki": "123"
+      }
+    ]
+  },
+  "current": {
+    "raceNo": "12",
+    "shumokuName": "Ｓ級決勝",
+    "row_fields": [
+      "age",
+      "backCnt",
+      "heikinTokuten",
+      "homeTori",
+      "huKen",
+      "ketujyouTuikaHojyu",
+      "ketujyouTuikaHojyuColorInfo",
+      "konResultInfoSubData",
+      "kyakusitu",
+      "kyuhan",
+      "makuriCnt",
+      "markCnt",
+      "nigeCnt",
+      "prevKyuhan",
+      "rentairitu2",
+      "rentairitu3",
+      "sasiCnt",
+      "sensyuName",
+      "sensyuRegistNo",
+      "sotugyouki",
+      "stTori",
+      "syaban",
+      "syabanBgColorInfo",
+      "syabanCharColorInfo",
+      "syouritu",
+      "tyo4InfoSubData",
+      "yosoin"
+    ],
+    "players": [
+      {
+        "syaban": "1",
+        "sensyuRegistNo": "014534",
+        "sensyuName": "深谷　知広",
+        "sotugyouki": "96"
+      },
+      {
+        "syaban": "2",
+        "sensyuRegistNo": "015475",
+        "sensyuName": "伊藤　旭",
+        "sotugyouki": "117"
+      },
+      {
+        "syaban": "3",
+        "sensyuRegistNo": "014497",
+        "sensyuName": "川津　悠揮",
+        "sotugyouki": "96"
+      },
+      {
+        "syaban": "4",
+        "sensyuRegistNo": "014552",
+        "sensyuName": "福島　武士",
+        "sotugyouki": "96",
+        "ketujyouTuikaHojyu": "(追加)"
+      },
+      {
+        "syaban": "5",
+        "sensyuRegistNo": "014505",
+        "sensyuName": "雨谷　一樹",
+        "sotugyouki": "96"
+      },
+      {
+        "syaban": "6",
+        "sensyuRegistNo": "015363",
+        "sensyuName": "田中　大我",
+        "sotugyouki": "115"
+      },
+      {
+        "syaban": "7",
+        "sensyuRegistNo": "014860",
+        "sensyuName": "吉澤　純平",
+        "sotugyouki": "101"
+      }
+    ]
+  },
+  "result": [
+    {
+      "tyaku": "1",
+      "syaban": "2",
+      "sensyuRegistNo": "014534",
+      "sensyuName": "深谷　知広",
+      "sotugyouki": "96",
+      "agari": "11.0",
+      "BH": "",
+      "inLineJyuni": "",
+      "kimarite": "捲り",
+      "kojinStateItemSubData": []
+    },
+    {
+      "tyaku": "2",
+      "syaban": "4",
+      "sensyuRegistNo": "014505",
+      "sensyuName": "雨谷　一樹",
+      "sotugyouki": "96",
+      "agari": "11.0",
+      "BH": "",
+      "inLineJyuni": "",
+      "kimarite": "マーク",
+      "kojinStateItemSubData": []
+    },
+    {
+      "tyaku": "3",
+      "syaban": "1",
+      "sensyuRegistNo": "014322",
+      "sensyuName": "片岡　迪之",
+      "sotugyouki": "93",
+      "agari": "11.8",
+      "BH": "",
+      "inLineJyuni": "",
+      "kimarite": "",
+      "kojinStateItemSubData": [
+        {
+          "kojinState": "",
+          "kojinStateClass": "",
+          "tyakuNote": ""
+        }
+      ]
+    },
+    {
+      "tyaku": "4",
+      "syaban": "7",
+      "sensyuRegistNo": "015744",
+      "sensyuName": "橋本　宇宙",
+      "sotugyouki": "123",
+      "agari": "12.1",
+      "BH": "HB",
+      "inLineJyuni": "",
+      "kimarite": "",
+      "kojinStateItemSubData": []
+    },
+    {
+      "tyaku": "5",
+      "syaban": "3",
+      "sensyuRegistNo": "014605",
+      "sensyuName": "中井　太祐",
+      "sotugyouki": "97",
+      "agari": "11.5",
+      "BH": "",
+      "inLineJyuni": "",
+      "kimarite": "",
+      "kojinStateItemSubData": []
+    },
+    {
+      "tyaku": "6",
+      "syaban": "5",
+      "sensyuRegistNo": "013923",
+      "sensyuName": "武田　豊樹",
+      "sotugyouki": "88",
+      "agari": "11.7",
+      "BH": "",
+      "inLineJyuni": "",
+      "kimarite": "",
+      "kojinStateItemSubData": []
+    },
+    {
+      "tyaku": "7",
+      "syaban": "6",
+      "sensyuRegistNo": "014881",
+      "sensyuName": "山崎　泰己",
+      "sotugyouki": "101",
+      "agari": "11.9",
+      "BH": "",
+      "inLineJyuni": "",
+      "kimarite": "",
+      "kojinStateItemSubData": []
+    }
+  ],
+  "source_url": "https://keirin.jp/pc/dfw/dataplaza/guest/raceresult?KCD=45&KBI=20261103&RNO=12",
+  "observed_at": "2026-11-04T07:21:49.146141+00:00"
+}

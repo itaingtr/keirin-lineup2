@@ -413,7 +413,10 @@ def public_structure(url, read=fetch):
     tables=[]
     all_tables=list(doc.find_all('table'))
     primary=[t for t in all_tables if any(part in t.attrs.get('class','') for part in ('racecard','odds','result'))]
-    selected=(primary+[t for t in all_tables if t not in primary])[:16]
+    def result_table(table):
+        headings={compact(n.text()) for n in table.find_all('th')}
+        return '着順' in headings and '車番' in headings and 'racecard_table' not in classes(table)
+    selected=sorted(primary+[t for t in all_tables if t not in primary],key=lambda t:not result_table(t))[:16]
     for table in selected:
         rows=list(table.find_all('tr'))
         headers=[];samples=[]
@@ -421,7 +424,7 @@ def public_structure(url, read=fetch):
             values=cells(row)
             if any(c.tag=='th' for c in values):
                 headers.append([compact(c.text())[:100] for c in values][:22])
-            if any(c.tag=='td' for c in values) and len(samples)<3:
+            if any(c.tag=='td' for c in values) and len(samples)<(9 if result_table(table) else 3):
                 samples.append([{'class':c.attrs.get('class',''),'text':compact(c.text())[:100],
                                  'links':[{'href':a.attrs.get('href',''),'onclick':a.attrs.get('onclick','')} for a in list(c.find_all('a'))[:2]],
                                  'items':[{'text':compact(item.text())[:100], 'attrs':dict(item.attrs),

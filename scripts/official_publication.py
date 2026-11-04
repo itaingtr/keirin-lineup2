@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 from zoneinfo import ZoneInfo
+from urllib.parse import urlsplit
 
 from export_pages import export, materialize_card, page_date
 from official_odds import ODDS_PREFIX, blank_feed, refresh, should_collect, stage_feed
@@ -17,6 +18,7 @@ from render_races import validate
 from rider_identities import collect_identities, validate_identities
 from update_publication import git, morning_recovery_date, publish_feed, requested_mode
 from venues import identity
+from keirin_jp_provider import enrich_cards, check_url as check_official_url
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -60,6 +62,27 @@ def build_card(dataset, checked_at, known_dates=()):
         require(stamp.tzinfo is not None and stamp <= datetime.now(timezone.utc), 'Invalid source observation time')
         observed[source['url']] = source['observed_at']
     require(all(r['source'] in observed for r in races), 'Card lacks official observation receipts')
+    providers={PROVIDER}
+    history_sources=dataset.get('history_sources',[])
+    for source in history_sources:
+        stamp=datetime.fromisoformat(source['observed_at'])
+        require(stamp.tzinfo is not None and stamp<=datetime.now(timezone.utc),'Invalid history observation time')
+        if source.get('provider')=='keirin.jp':
+            check_official_url(source['url'])
+            require(urlsplit(source['url']).path!='/pc/json','Never persist public navigation parameters')
+        elif source.get('provider')==PROVIDER:
+            from kdreams_provider import check_url
+            check_url(source['url'])
+            require(urlsplit(source['url']).query=='pageType=showResult','Unexpected result flag source')
+        else:raise ValueError('Unexpected active history provider')
+        providers.add(source['provider'])
+    for race in races:
+        for player in race['players']:
+            source=player.get('identitySource')
+            if source:
+                require(source.get('provider')=='keirin.jp' and source.get('race_number')==race['race'], 'Wrong registration identity source')
+                check_official_url(source['url'])
+                require(any(s['provider']==source['provider'] and s['url']==source['url'] and s['observed_at']==source['observed_at'] for s in history_sources),'Registration identity lacks observation receipt')
     feed = blank_feed(races, target, checked_at)
     card = display_card(dataset, feed, known_dates)
     marks = {'schema_version': 1, 'provider': PROVIDER, 'target_date': target,
@@ -77,7 +100,9 @@ def build_card(dataset, checked_at, known_dates=()):
     validate_identities(identities, races, target)
     card['assets']['rakuten-marks.json'] = encode(marks)
     card['assets']['rider-identities.json'] = encode(identities)
-    card['summary']['source_providers'] = [PROVIDER]
+    card['summary']['source_providers'] = sorted(providers)
+    card['sources'] = dataset.get('sources',[])
+    card['history_sources'] = history_sources
     return official_card(card, races), races
 
 
@@ -152,7 +177,7 @@ def main():
         require(can_replace(collection_date, now, target, migration=migration),
                 'Refusing a past/in-progress card rewrite or date regression')
         from kdreams_provider import collect_cards
-        dataset = collect_cards(collection_date.isoformat())
+        dataset = enrich_cards(collect_cards(collection_date.isoformat()))
         names = git('ls-tree', '--name-only', ref + ':fallback/cards').splitlines()
         card, races = build_card(dataset, datetime.now(timezone.utc).isoformat(),
                                  [name for name in names if re.fullmatch(r'\d{8}', name)])
@@ -162,7 +187,7 @@ def main():
     publish_pages = mode != 'odds' or collected
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
-    if mode == 'odds' and should_collect(target, now, args.schedule if args.event == 'schedule' else ''):
+    if (mode == 'odds' or migration) and should_collect(target, now, args.schedule if args.event == 'schedule' else ''):
         fresh, odds_stats = refresh(races, odds_feed)
         if odds_stats['observations']:
             run_path = ODDS_PREFIX + '/' + target.replace('-', '') + '/runs/' + args.run_key + '.json'
@@ -203,7 +228,7 @@ def main():
             git('commit', '-m', 'Update official public card ' + target + ' [skip ci]')
             git('push', 'origin', 'HEAD:main')
     report.update({'mode': mode, 'publish_pages': publish_pages, 'feed_commit': feed_commit,
-                   'source_commit': git('rev-parse', 'HEAD'), 'source_providers': [PROVIDER],
+                   'source_commit': git('rev-parse', 'HEAD'), 'source_providers': card['summary'].get('source_providers',[PROVIDER]),
                    'provider_migration': migration, 'odds': odds_stats})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
