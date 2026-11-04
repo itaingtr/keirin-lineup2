@@ -14,16 +14,15 @@ body[data-rider-details="true"] .period-toggle{display:block;appearance:none;bor
 body[data-rider-details="true"] .period-toggle:focus-visible{outline:1px solid #155eef;outline-offset:1px;border-radius:2px}
 body[data-rider-details="true"] .rider-profile{display:block;width:22px;height:20px;color:#627086;font-size:8px;font-weight:400;line-height:10px;text-align:center;writing-mode:horizontal-tb;font-variant-numeric:tabular-nums}
 body[data-rider-details="true"] .rider-profile[hidden]{display:none}
-body[data-rider-details="true"] tr.rider-details-open .rider-profile[hidden]{display:block;visibility:hidden}
 body[data-rider-details="true"] .rider-prefecture,body[data-rider-details="true"] .rider-age{display:block;width:22px;height:10px;line-height:10px;white-space:nowrap}
 </style>'''
 
 DETAILS_FUNCTIONS = '''const riderDetailsExpanded=new Set();
-function riderDetailsKey(p,r){return r.source+'|'+p.playerId;}
+function riderDetailsKey(p,r){return r.source;}
 function riderDetailsId(p,r){return 'rider-details-'+r.venueCode+'-'+r.meetingStart+'-'+r.meetingDay+'-'+r.race+'-'+p.playerId;}
 function riderProfileMarkup(p,r){
  const key=riderDetailsKey(p,r),id=riderDetailsId(p,r),expanded=riderDetailsExpanded.has(key);
- return '<button type="button" class="period period-toggle" data-details-key="'+escapeHtml(key)+'" data-rider-name="'+escapeHtml(p.name)+'" aria-expanded="'+expanded+'" aria-controls="'+id+'" aria-label="'+escapeHtml(p.name+'の府県と年齢を'+(expanded?'閉じる':'表示'))+'">'+p.period+'</button><span id="'+id+'" class="rider-profile"'+(expanded?'':' hidden')+'><span class="rider-prefecture" title="'+escapeHtml(p.prefecture)+'" aria-label="'+escapeHtml('府県 '+p.prefecture)+'">'+escapeHtml(Array.from(p.prefecture).slice(0,2).join(''))+'</span><span class="rider-age" aria-label="年齢 '+p.age+'歳">'+p.age+'</span></span>';
+ return '<button type="button" class="period period-toggle" data-details-key="'+escapeHtml(key)+'" data-rider-name="'+escapeHtml(p.name)+'" aria-expanded="'+expanded+'" aria-controls="'+id+'" aria-label="'+escapeHtml(p.name+'の期別：このレース全員の府県と年齢を'+(expanded?'閉じる':'表示'))+'">'+p.period+'</button><span id="'+id+'" class="rider-profile"'+(expanded?'':' hidden')+'><span class="rider-prefecture" title="'+escapeHtml(p.prefecture)+'" aria-label="'+escapeHtml('府県 '+p.prefecture)+'">'+escapeHtml(Array.from(p.prefecture).slice(0,2).join(''))+'</span><span class="rider-age" aria-label="年齢 '+p.age+'歳">'+p.age+'</span></span>';
 }
 '''
 
@@ -33,11 +32,13 @@ DETAILS_EVENTS = '''body.addEventListener('click',event=>{
  event.preventDefault();
  const key=toggle.dataset.detailsKey,expanded=!riderDetailsExpanded.has(key);
  if(expanded)riderDetailsExpanded.add(key);else riderDetailsExpanded.delete(key);
- toggle.setAttribute('aria-expanded',String(expanded));
- toggle.setAttribute('aria-label',toggle.dataset.riderName+'の府県と年齢を'+(expanded?'閉じる':'表示'));
- document.getElementById(toggle.getAttribute('aria-controls')).hidden=!expanded;
  const row=toggle.closest('tr');
- row.classList.toggle('rider-details-open',Boolean(row.querySelector('.period-toggle[aria-expanded="true"]')));
+ for(const member of row.querySelectorAll('.period-toggle')){
+  member.setAttribute('aria-expanded',String(expanded));
+  member.setAttribute('aria-label',member.dataset.riderName+'の期別：このレース全員の府県と年齢を'+(expanded?'閉じる':'表示'));
+  document.getElementById(member.getAttribute('aria-controls')).hidden=!expanded;
+ }
+ row.classList.toggle('rider-details-open',expanded);
 });
 '''
 

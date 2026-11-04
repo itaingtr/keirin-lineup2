@@ -18,6 +18,7 @@ REPOSITORY='itaingtr/keirin-lineup2'
 SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-comparison.js','odds-current-rakuten.js',
         'comments-passphrase.js','rider-condition.css','rider-condition.js')
 TOP_BUTTON=f'''<button type="button" class="refresh-button home-button" onclick="location.href='{BASE}'" aria-label="トップページへ">トップ</button>'''
+CALENDAR_BUTTON=f'''<button type="button" class="refresh-button calendar-button" onclick="location.href='{BASE}calendar/index.html'" aria-label="日程カレンダーへ">日程</button>'''
 MOBILE_STYLE='''<style id="mobile-readability-style">
 @media(max-width:640px){
 html{overflow-x:auto}
@@ -109,6 +110,8 @@ def public_html(page,day,marks=None,identities=None,details=None):
         result=official_page(result)
     if details is not None:
         result,expected=apply_details(result,details)
+        if result.count(TOP_BUTTON)!=1:raise ValueError('Top navigation renderer differs')
+        result=result.replace(TOP_BUTTON,TOP_BUTTON+CALENDAR_BUTTON,1)
     if parse_page(result)!=expected or '/open-web?' in result:
         raise ValueError('Do not alter race data or retain server-only links')
     return result

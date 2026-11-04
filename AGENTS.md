@@ -1,7 +1,12 @@
+# Latest race-wide profile toggle and calendar link
+
+- Any rider's period button opens prefecture/age for every member of that same race. Pressing any period in the open race closes every member. State is keyed by source race URL, with unique per-rider aria-controls IDs; searching preserves each race's state. Other races stay independent. This supersedes the previous per-rider toggle.
+- On current/future pages opted into rider-details.json, place a same-style 「日程」 button immediately after 「更新」「トップ」. Navigate in the same tab to /keirin-lineup2/calendar/index.html. The user assigned calendar page creation to another chat: do not create or replace calendar files. Preserve old pages without the details asset and all source/odds/comment/rating data.
+
 # Latest period details and result alignment
 
 - Current/future cards with rider-details.json opt into rider_details_page.apply_details. Keep old pages without this asset byte-identical. Rank rows start at the same shared 8px/4ch inset as the tens digit of the individual time, retaining compact SHB + red condition, 22px rider columns and existing line gaps.
-- Pressing a native period button opens two 10px rows immediately below it: the first two prefecture characters horizontally in 8px, then age. Press again to close. When any profile in a race is open, reserve the same 20px on all riders in that race so S/B/stat rows stay aligned. Closing the last profile removes the reserved rows. State stays in memory through searches; no network request or database write on a toggle.
+- Pressing any native period button opens the same two 10px rows beneath all members in its race: the first two prefecture characters horizontally in 8px, then age. Press again to close. When any profile in a race is open, reserve the same 20px on all riders in that race so S/B/stat rows stay aligned. Closing the last profile removes the reserved rows. State stays in memory through searches; no network request or database write on a toggle.
 - Actual full prefecture and integer age come from verified K Dreams card rows matched by all cars/names/periods (and registration ID where supplied). New nightly cards reuse their original card observations. For the existing current card collect only profile fields, append immutable fallback/details/date/runs/run-*.json and add the display asset; do not recollect or alter ranks, statistics, lineup, odds, comments or ratings.
 
 # Latest official-provider migration (November 4 onward)

@@ -7,6 +7,7 @@ import unittest
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
 from export_pages import public_html,page_date,export,materialize_card
 from published_card import parse_page
+from rider_details import validate_details
 
 ROOT=Path(__file__).parents[1]
 
@@ -44,8 +45,19 @@ class PublicPagesTests(unittest.TestCase):
             self.assertIn('/itaingtr/keirin-lineup2/odds-diagnostics/',(root/'data'/day/'odds-config.json').read_text())
             self.assertTrue((root/'.nojekyll').exists())
             for raw in report['dates']:
+                directory=ROOT/'site'/('line'+raw+'.html')
+                expected=parse_page((directory/'index.html').read_text())
+                details_path=directory/'rider-details.json'
+                if details_path.exists():
+                    details=json.loads(details_path.read_text())
+                    validate_details(details,expected,raw[:4]+'-'+raw[4:6]+'-'+raw[6:])
+                    rows={r['source_url']:{p['no']:p for p in r['players']} for r in details['races']}
+                    for race in expected:
+                        for player in race['players']:
+                            profile=rows[race['source']][player['no']]
+                            player['prefecture'],player['age']=profile['prefecture'],profile['age']
                 self.assertEqual(without_marks(parse_page((root/('line'+raw+'.html')).read_text())),
-                                 without_marks(parse_page((ROOT/'site'/('line'+raw+'.html')/'index.html').read_text())))
+                                 without_marks(expected))
                 if raw<'20261030':
                     self.assertEqual(parse_page((root/('line'+raw+'.html')).read_text()),parse_page((ROOT/'site'/('line'+raw+'.html')/'index.html').read_text()))
 

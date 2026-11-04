@@ -74,33 +74,43 @@ process.stdout.write(first);
         markup=self.node(code,{'functions':DETAILS_FUNCTIONS,'player':p,'race':self.races[0]})
         self.assertIn('aria-controls="rider-details-',markup)
         self.assertIn('.rider-profile[hidden]{display:none}',self.page)
-        self.assertIn('tr.rider-details-open .rider-profile[hidden]{display:block;visibility:hidden}',self.page)
+        self.assertNotIn('visibility:hidden',self.page)
         self.assertIn('writing-mode:horizontal-tb',self.page)
 
-    def test_toggle_state_survives_rerender_without_rebuilding_odds_or_saving_data(self):
+    def test_any_member_toggles_the_entire_race_and_preserves_rerender_state(self):
         code=r'''
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const input=JSON.parse(fs.readFileSync(0,'utf8'));
 const listeners={},profiles=new Map(),toggles=[];
-const row={classList:{enabled:false,toggle(name,value){assert.equal(name,'rider-details-open');this.enabled=value;}},
- querySelector(){return toggles.find(b=>b.attrs['aria-expanded']==='true')||null;}};
-function button(key,id){const profile={hidden:true};profiles.set(id,profile);
+function raceRow(){return {toggles:[],classList:{enabled:false,toggle(name,value){assert.equal(name,'rider-details-open');this.enabled=value;}},
+ querySelectorAll(selector){assert.equal(selector,'.period-toggle');return this.toggles;}};}
+function button(row,key,id){const profile={hidden:true};profiles.set(id,profile);
  const b={dataset:{detailsKey:key,riderName:'表示選手'},attrs:{'aria-expanded':'false','aria-controls':id},
   closest(selector){return selector==='tr'?row:this;},getAttribute(k){return this.attrs[k];},setAttribute(k,v){this.attrs[k]=v;}};
- toggles.push(b);return b;}
+ toggles.push(b);row.toggles.push(b);return b;}
 const context={escapeHtml:String,body:{contains:t=>toggles.includes(t),addEventListener:(name,handler)=>listeners[name]=handler},
  document:{getElementById:id=>profiles.get(id)}};
 vm.createContext(context);vm.runInContext(input.functions+'\n'+input.events,context);
-const p=input.player,r=input.race,key=context.riderDetailsKey(p,r),id=context.riderDetailsId(p,r);
-const a=button(key,id),b=button('other-rider','other-profile');let prevented=0;
+const p=input.player,r=input.race,otherPlayer={...p,playerId:'999999'},otherRace={...r,source:r.source+'different',race:r.race+1};
+const key=context.riderDetailsKey(p,r),id=context.riderDetailsId(p,r),otherId=context.riderDetailsId(otherPlayer,r);
+assert.equal(key,context.riderDetailsKey(otherPlayer,r));
+assert.notEqual(key,context.riderDetailsKey(p,otherRace));
+const row=raceRow(),elsewhere=raceRow();
+const a=button(row,key,id),b=button(row,key,otherId),c=button(elsewhere,context.riderDetailsKey(p,otherRace),context.riderDetailsId(p,otherRace));let prevented=0;
 const click=target=>listeners.click({target,preventDefault(){prevented++;}});
-click(a);assert.equal(a.attrs['aria-expanded'],'true');assert.equal(profiles.get(id).hidden,false);assert.equal(row.classList.enabled,true);
+click(a);assert.equal(a.attrs['aria-expanded'],'true');assert.equal(b.attrs['aria-expanded'],'true');
+assert.equal(profiles.get(id).hidden,false);assert.equal(profiles.get(otherId).hidden,false);assert.equal(row.classList.enabled,true);
+assert.equal(c.attrs['aria-expanded'],'false');assert.equal(elsewhere.classList.enabled,false);
 assert.match(context.riderProfileMarkup(p,r),/aria-expanded="true"/);assert.doesNotMatch(context.riderProfileMarkup(p,r),/class="rider-profile" hidden/);
-click(b);click(a);assert.equal(a.attrs['aria-expanded'],'false');assert.equal(profiles.get(id).hidden,true);assert.equal(row.classList.enabled,true);
-click(b);assert.equal(row.classList.enabled,false);assert.equal(prevented,4);
+assert.match(context.riderProfileMarkup(otherPlayer,r),/aria-expanded="true"/);
+click(c);assert.equal(c.attrs['aria-expanded'],'true');
+click(b);assert.equal(a.attrs['aria-expanded'],'false');assert.equal(b.attrs['aria-expanded'],'false');
+assert.equal(profiles.get(id).hidden,true);assert.equal(profiles.get(otherId).hidden,true);assert.equal(row.classList.enabled,false);
+assert.equal(c.attrs['aria-expanded'],'true');assert.equal(elsewhere.classList.enabled,true);
 assert.match(context.riderProfileMarkup(p,r),/class="rider-profile" hidden/);
-// A different race for the same registration does not inherit the open state.
-click(a);assert.match(context.riderProfileMarkup(p,{...r,source:r.source+'different'}),/aria-expanded="false"/);
+click(b);assert.match(context.riderProfileMarkup(p,r),/aria-expanded="true"/);
+click(a);assert.equal(a.attrs['aria-expanded'],'false');assert.equal(b.attrs['aria-expanded'],'false');
+assert.equal(prevented,5);
 process.stdout.write('toggle pass');
 '''
         out=self.node(code,{'functions':DETAILS_FUNCTIONS,'events':DETAILS_EVENTS,

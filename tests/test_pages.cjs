@@ -50,6 +50,14 @@ const activeWindows=[];
   }});
   activeWindows.push(dom.window);
   const {window}=dom;const doc=window.document;
+  if(riderDetails){
+   const calendar=doc.querySelector('.calendar-button'),home=doc.querySelector('.home-button');
+   assert.ok(calendar);assert.equal(calendar.textContent,'日程');assert.equal(home.nextElementSibling,calendar);
+   assert.equal(doc.querySelector('.refresh-button:not(.home-button):not(.calendar-button)').nextElementSibling,home);
+   assert.ok(calendar.classList.contains('refresh-button'));
+   const destination={href:''};vm.runInNewContext(calendar.getAttribute('onclick'),{location:destination});
+   assert.equal(destination.href,'/keirin-lineup2/calendar/index.html');
+  }
   for(const file of usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
   await pause();
   assert.equal(doc.querySelectorAll('.race-link').length,report.races);
@@ -109,8 +117,12 @@ const activeWindows=[];
        const saved=riderDetails.races.find(r=>r.source_url===race.source).players.find(p=>p.no===player.no);
        assert.equal(period.type,'button');assert.equal(period.getAttribute('aria-expanded'),'false');assert.equal(profile.hidden,true);
        assert.equal(profile.querySelector('.rider-prefecture').textContent,Array.from(saved.prefecture).slice(0,2).join(''));assert.equal(profile.querySelector('.rider-age').textContent,String(saved.age));
-       period.click();assert.equal(profile.hidden,false);assert.ok(row.classList.contains('rider-details-open'));assert.equal(period.getAttribute('aria-expanded'),'true');
-       period.click();assert.equal(profile.hidden,true);assert.equal(row.classList.contains('rider-details-open'),false);
+       period.click();assert.equal(profile.hidden,false);assert.ok(row.classList.contains('rider-details-open'));
+       const members=[...row.querySelectorAll('.period-toggle')];
+       for(const button of members){assert.equal(button.getAttribute('aria-expanded'),'true');assert.equal(doc.getElementById(button.getAttribute('aria-controls')).hidden,false);}
+       const other=members[(members.indexOf(period)+1)%members.length];other.click();
+       for(const button of members){assert.equal(button.getAttribute('aria-expanded'),'false');assert.equal(doc.getElementById(button.getAttribute('aria-controls')).hidden,true);}
+       assert.equal(profile.hidden,true);assert.equal(row.classList.contains('rider-details-open'),false);
       }else assert.equal(period.nextElementSibling,s);
       assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,usesOfficial&&player.stats[0]===0?'':String(player.stats[0]));
       const back=s.nextElementSibling.firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
