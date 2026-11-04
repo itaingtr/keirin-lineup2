@@ -1,4 +1,4 @@
-name: Calendar official schedule inspection
+name: Calendar official schedule validation
 on: workflow_dispatch
 permissions:
   contents: read
@@ -7,5 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect public schedule structure
-        run: python3 scripts/calendar_probe.py
+      - name: Collect and validate public official schedules
+        run: python3 -u scripts/calendar_schedule.py --output /tmp/calendar/schedule.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-calendar
+          path: /tmp/calendar/schedule.json
