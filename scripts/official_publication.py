@@ -20,6 +20,7 @@ from update_publication import git, morning_recovery_date, publish_feed, request
 from venues import identity
 from keirin_jp_provider import enrich_cards, check_url as check_official_url, program_url
 from kdreams_history import enrich_start_flags
+from rider_details import collect_details, details_from_dataset, stage_details, validate_details
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -113,6 +114,9 @@ def build_card(dataset, checked_at, known_dates=()):
     validate_identities(identities, races, target)
     card['assets']['rakuten-marks.json'] = encode(marks)
     card['assets']['rider-identities.json'] = encode(identities)
+    details=details_from_dataset(dataset)
+    validate_details(details,races,target)
+    card['assets']['rider-details.json']=encode(details)
     card['summary']['source_providers'] = sorted(providers)
     card['sources'] = dataset.get('sources',[])
     card['history_sources'] = history_sources
@@ -136,6 +140,8 @@ def stage_card(card, run_key, output, previous_ref, reader=git_read):
     (Path(output) / prefix / 'latest.json').write_text(encode(pointer))
     (Path(output) / 'fallback/cards/current.json').write_text(encode(pointer))
     stage_marks(json.loads(card['assets']['rakuten-marks.json']), run_key, output)
+    if 'rider-details.json' in card['assets']:
+        stage_details(json.loads(card['assets']['rider-details.json']),run_key,output)
     return pointer
 
 
@@ -221,10 +227,23 @@ def main():
         # Assets stay bound to the source record, including stable JKA IDs.
         marks_path = dated / 'rakuten-marks.json'
         identities_path = dated / 'rider-identities.json'
+        details_path=dated/'rider-details.json'
         marks = validate_marks(json.loads(marks_path.read_text()), current_races, target)
         identities = validate_identities(json.loads(identities_path.read_text()), current_races, target)
         marks_path.write_text(encode(marks))
         identities_path.write_text(encode(identities))
+        if details_path.exists():
+            validate_details(json.loads(details_path.read_text()),current_races,target)
+        else:
+            require(now.astimezone(JST).date().isoformat()<=target,'Refusing to add new details to an archived card')
+            details_raw=git_read(ref,'fallback/details/'+target.replace('-','')+'/latest.json',optional=True)
+            details=(validate_details(json.loads(details_raw),current_races,target) if details_raw
+                     else collect_details(current_races,target))
+            if not details_raw:
+                details_run='fallback/details/'+target.replace('-','')+'/runs/'+args.run_key+'.json'
+                require(git_read(ref,details_run,optional=True) is None,'Immutable details run already exists')
+                stage_details(details,args.run_key,output)
+            details_path.write_text(encode(details))
         # Validate the complete exported page before advancing either shared
         # card pointers or the main branch. A rejected layout keeps both old
         # published records intact.

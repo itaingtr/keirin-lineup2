@@ -11,6 +11,7 @@ from render_races import script_json
 from rider_identities import CONDITION_CUTOVER
 from rider_features import rider_features
 from official_page import official_page
+from rider_details_page import apply_details
 
 BASE='/keirin-lineup2/'
 REPOSITORY='itaingtr/keirin-lineup2'
@@ -75,7 +76,7 @@ def rakuten_page(page, day, marks):
     return page,races
 
 
-def public_html(page,day,marks=None,identities=None):
+def public_html(page,day,marks=None,identities=None,details=None):
     if page_date(page)!=day:
         raise ValueError('Page date mismatch')
     # GitHub Pages has no Worker redirect endpoint. Keep ordinary same-tab links.
@@ -106,6 +107,8 @@ def public_html(page,day,marks=None,identities=None):
         result,expected=rider_features(result,day,identities)
     if all(identity(r['source'])['provider']=='kdreams' for r in expected):
         result=official_page(result)
+    if details is not None:
+        result,expected=apply_details(result,details)
     if parse_page(result)!=expected or '/open-web?' in result:
         raise ValueError('Do not alter race data or retain server-only links')
     return result
@@ -121,7 +124,7 @@ def materialize_card(card,site):
     dated=site/('line'+day+'.html');dated.mkdir(parents=True,exist_ok=True)
     current.write_text(card['html']);(dated/'index.html').write_text(card['html'])
     for name,body in card['assets'].items():
-        if name not in ('media.json','odds.json','odds-config.json','rakuten-marks.json','rider-identities.json'):
+        if name not in ('media.json','odds.json','odds-config.json','rakuten-marks.json','rider-identities.json','rider-details.json'):
             raise ValueError('Unexpected display asset')
         (dated/name).write_text(body)
 
@@ -145,7 +148,8 @@ def export(site,output,repository=REPOSITORY):
         page=(directory/'index.html').read_text()
         marks=json.loads((directory/'rakuten-marks.json').read_text()) if day>=CUTOVER else None
         identities=json.loads((directory/'rider-identities.json').read_text()) if day>=CONDITION_CUTOVER else None
-        (output/('line'+day+'.html')).write_text(public_html(page,day,marks,identities))
+        details=json.loads((directory/'rider-details.json').read_text()) if (directory/'rider-details.json').exists() else None
+        (output/('line'+day+'.html')).write_text(public_html(page,day,marks,identities,details))
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
         for file in directory.glob('*.json'):
             # These are existing public display fields, never raw source backups.
@@ -158,7 +162,9 @@ def export(site,output,repository=REPOSITORY):
     if current_day not in dates:raise ValueError('Current dated page is missing')
     marks=json.loads((site/('line'+current_day+'.html')/'rakuten-marks.json').read_text()) if current_day>=CUTOVER else None
     identities=json.loads((site/('line'+current_day+'.html')/'rider-identities.json').read_text()) if current_day>=CONDITION_CUTOVER else None
-    page=public_html(current,current_day,marks,identities)
+    details_path=site/('line'+current_day+'.html')/'rider-details.json'
+    details=json.loads(details_path.read_text()) if details_path.exists() else None
+    page=public_html(current,current_day,marks,identities,details)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')

@@ -16,6 +16,7 @@ HOSTS = {'keirin.kdreams.jp', 'my.keirin.kdreams.jp'}
 RACE_PATH = re.compile(r'/([a-z]+)/racedetail/(\d{2})(\d{8})(\d{2})(\d{4})/')
 PREFECTURES = '北海道 青森 岩手 宮城 秋田 山形 福島 茨城 栃木 群馬 埼玉 千葉 東京 神奈川 新潟 富山 石川 福井 山梨 長野 岐阜 静岡 愛知 三重 滋賀 京都 大阪 兵庫 奈良 和歌山 鳥取 島根 岡山 広島 山口 徳島 香川 愛媛 高知 福岡 佐賀 長崎 熊本 大分 宮崎 鹿児島 沖縄 外国'.split()
 RIDER = re.compile(r'(.+?)(?:'+'|'.join(PREFECTURES)+r')/\d+/(\d+)')
+RIDER_PROFILE = re.compile(r'(.+?)('+'|'.join(PREFECTURES)+r')/(\d{1,3})/(\d{1,3})')
 MARKS = ('', '◎', '○', '◯', '▲', '△', '×', '注', '☆', '★', '穴')
 KDREAMS_SLUGS = {code: ('iwakitaira' if code == '13' else item[1]) for code, item in VENUES.items()}
 
@@ -220,6 +221,8 @@ def parse_players(doc):
         require(len(indexes) == 1, 'Missing K Dreams rider')
         index = indexes[0];rider = RIDER.fullmatch(compact(values[index].text()))
         require(rider is not None and len(values) >= index+11, 'Incomplete K Dreams rider/statistics')
+        profile = RIDER_PROFILE.fullmatch(compact(values[index].text()))
+        require(profile is not None and 18 <= int(profile[3]) <= 100, 'Missing/invalid K Dreams rider prefecture or age')
         score = compact(values[index+4].text())
         stats = [compact(c.text()) for c in values[index+5:index+11]]
         require(re.fullmatch(r'\d+(?:\.\d+)?', score) and all(re.fullmatch(r'\d+', v) for v in stats), 'Missing K Dreams numeric statistics')
@@ -228,7 +231,8 @@ def parse_players(doc):
         explicit = [compact(c.text()) for c in values]
         absent = bool(set(classes(row)) & {'absent', 'withdrawal', 'cancel'}) or any(v in ('欠場','欠車','出走取消','取消','欠') for v in explicit)
         player = {'no': number, 'name': rider[1], 'score': float(score), 'period': int(rider[2]),
-                  'mark': marks[0], 'stats': list(map(int, stats)), 'absent': absent, 'meeting_results': []}
+                  'mark': marks[0], 'stats': list(map(int, stats)), 'absent': absent, 'meeting_results': [],
+                  'prefecture': profile[2], 'age': int(profile[3])}
         identifier = _player_id(values[index])
         if identifier:
             player['player_id'] = identifier

@@ -15,6 +15,8 @@ const usesRiderAppearance=day>='20261103';
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
+const detailsPath=path.join(publicDir,'data',day,'rider-details.json');
+const riderDetails=fs.existsSync(detailsPath)?JSON.parse(fs.readFileSync(detailsPath,'utf8')):null;
 if(usesOfficial){assert.equal(media.provider,'kdreams');assert.ok(config.endpoint.includes('/fallback/kdreams/exacta/'));assert.doesNotMatch(html,/winticket|ウィンチケット/i);}
 const videoGrades=JSON.parse(/const videoGrades=(.*);\n/.exec(html)[1]);
 let legacyLineup;
@@ -102,7 +104,15 @@ const activeWindows=[];
      const today=car.closest('.rider').querySelector('.condition-today');assert.ok(today);assert.equal(today.textContent,'');
      if(usesRiderAppearance){
       const rider=car.closest('.rider'),period=rider.querySelector('.period'),s=rider.querySelector('.recent-s');
-      assert.equal(period.nextElementSibling,s);assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,usesOfficial&&player.stats[0]===0?'':String(player.stats[0]));
+      if(riderDetails){
+       const profile=period.nextElementSibling;assert.ok(profile.classList.contains('rider-profile'));assert.equal(profile.nextElementSibling,s);
+       const saved=riderDetails.races.find(r=>r.source_url===race.source).players.find(p=>p.no===player.no);
+       assert.equal(period.type,'button');assert.equal(period.getAttribute('aria-expanded'),'false');assert.equal(profile.hidden,true);
+       assert.equal(profile.querySelector('.rider-prefecture').textContent,Array.from(saved.prefecture).slice(0,2).join(''));assert.equal(profile.querySelector('.rider-age').textContent,String(saved.age));
+       period.click();assert.equal(profile.hidden,false);assert.ok(row.classList.contains('rider-details-open'));assert.equal(period.getAttribute('aria-expanded'),'true');
+       period.click();assert.equal(profile.hidden,true);assert.equal(row.classList.contains('rider-details-open'),false);
+      }else assert.equal(period.nextElementSibling,s);
+      assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,usesOfficial&&player.stats[0]===0?'':String(player.stats[0]));
       const back=s.nextElementSibling.firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
       assert.equal(window.getComputedStyle(back).fontSize,'10px');assert.equal(window.getComputedStyle(back).fontWeight,'400');
       assert.equal(window.getComputedStyle(today).fontSize,'8px');assert.equal(window.getComputedStyle(today).fontWeight,'400');assert.equal(window.getComputedStyle(today).color,'rgb(211, 47, 47)');

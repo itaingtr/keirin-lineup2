@@ -1,3 +1,9 @@
+# Latest period details and result alignment
+
+- Current/future cards with rider-details.json opt into rider_details_page.apply_details. Keep old pages without this asset byte-identical. Rank rows start at the same shared 8px/4ch inset as the tens digit of the individual time, retaining compact SHB + red condition, 22px rider columns and existing line gaps.
+- Pressing a native period button opens two 10px rows immediately below it: the first two prefecture characters horizontally in 8px, then age. Press again to close. When any profile in a race is open, reserve the same 20px on all riders in that race so S/B/stat rows stay aligned. Closing the last profile removes the reserved rows. State stays in memory through searches; no network request or database write on a toggle.
+- Actual full prefecture and integer age come from verified K Dreams card rows matched by all cars/names/periods (and registration ID where supplied). New nightly cards reuse their original card observations. For the existing current card collect only profile fields, append immutable fallback/details/date/runs/run-*.json and add the display asset; do not recollect or alter ranks, statistics, lineup, odds, comments or ratings.
+
 # Latest official-provider migration (November 4 onward)
 
 - The latest user explicitly chooses Rakuten K Dreams plus the official KEIRIN.JP site for all active data collection; no active WINTICKET fallback. This supersedes the earlier prohibition on K Dreams odds and the older WINTICKET collection instructions below. Never relabel retained old records.

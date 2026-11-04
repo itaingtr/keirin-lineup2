@@ -62,7 +62,7 @@ class KdreamsProviderTests(unittest.TestCase):
     def test_card_preserves_car_identity_score_marks_statistics_and_single_line(self):
         result=parse_card(Document(card(absent=True)).root,URL,MEETING)
         self.assertEqual(result['lineup'],'12/3')
-        self.assertEqual(result['players'][0],{'no':1,'name':'選手1','score':101.25,'period':101,'mark':'◎','stats':[1,12,4,3,2,1],'absent':False,'meeting_results':[],'player_id':'015101'})
+        self.assertEqual(result['players'][0],{'no':1,'name':'選手1','score':101.25,'period':101,'mark':'◎','stats':[1,12,4,3,2,1],'absent':False,'meeting_results':[],'player_id':'015101','prefecture':'高知','age':30})
         self.assertTrue(result['players'][2]['absent'])
         self.assertEqual(race_identity(URL)['date'],'20261018')
 
