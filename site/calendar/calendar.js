@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const GRADES = ['GP', 'G1', 'G2', 'G3', 'F1'];
-  const F1_COLORS = ['blue', 'yellow', 'green', 'orange'];
+  const F1_COLORS = ['blue', 'yellow', 'green', 'orange', 'pink', 'purple', 'mint', 'peach'];
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
   const $ = id => document.getElementById(id);
   const today = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
@@ -52,17 +52,22 @@
     const list = schedule.meetings.filter(m => m.start <= end && m.end >= start && m.start <= last && m.end >= first)
       .sort((a, b) => GRADES.indexOf(a.grade) - GRADES.indexOf(b.grade) || a.start.localeCompare(b.start) || a.code.localeCompare(b.code));
     const rows = []; const groupLanes = new Map();
+    const group = m => m.grade === 'F1' && m.night ? 'F1-night' : m.grade;
     for (const m of list) {
       const from = [m.start, start, first].sort().at(-1), to = [m.end, end, last].sort()[0];
-      const lanes = groupLanes.get(m.grade) || [];
+      const lanes = groupLanes.get(group(m)) || [];
       let lane = lanes.findIndex(end => end < from);
       if (lane < 0) lane = lanes.length;
-      lanes[lane] = to; groupLanes.set(m.grade, lanes);
+      lanes[lane] = to; groupLanes.set(group(m), lanes);
       rows.push({m, from, to, lane});
     }
     const offsets = new Map(); let total = 0;
     for (const grade of GRADES) { offsets.set(grade, total); total += (groupLanes.get(grade) || []).length; }
-    return rows.map(r => ({...r, lane: r.lane + offsets.get(r.m.grade)}));
+    offsets.set('F1-night', total);
+    const nightRows = (groupLanes.get('F1-night') || []).length;
+    check(nightRows <= 2, 'ナイター開催の配置を確認できませんでした。');
+    const rowCount = total + (nightRows ? 2 : 0);
+    return {rows: rows.map(r => ({...r, lane: r.lane + offsets.get(group(r.m))})), rowCount};
   }
   function renderWeek(start, first, last) {
     const end = shift(start, 6), section = node('section', 'week');
@@ -83,7 +88,8 @@
       background.style.setProperty('--today-column', (utc(today) - utc(start)) / 86400000);
       background.setAttribute('aria-hidden', 'true'); events.append(background);
     }
-    const rows = weekMeetings(start, end, first, last);
+    const {rows, rowCount} = weekMeetings(start, end, first, last);
+    if (rowCount) events.style.gridTemplateRows = `repeat(${rowCount}, var(--meeting-height))`;
     if (!rows.length) events.append(node('span', 'empty-week', '掲載中の開催予定はないにゃ'));
     for (const {m, from, to, lane} of rows) {
       const count = (utc(to) - utc(from)) / 86400000 + 1, col = (utc(from) - utc(start)) / 86400000 + 1;
@@ -99,7 +105,10 @@
         const lastLabel = target?.last_race ? `${target.last_race}R` : 'レース';
         cell.title = description + (href ? `｜最終掲載${lastLabel}の出走メンバーへ` : '｜出走表は未掲載');
         if (href) { cell.href = href; cell.setAttribute('aria-label', `${day} ${m.venue} 最終掲載${lastLabel}の出走メンバー`); }
-        cell.append(node('span', 'venue-name', m.venue), node('small', '', m.grade)); bar.append(cell);
+        const venueName = Array.from(m.venue).slice(0, 3).join('');
+        cell.append(node('span', 'venue-name', venueName + (m.night ? '🌛' : '')));
+        if (!href) cell.setAttribute('aria-label', description + (m.night ? ' ナイター' : ''));
+        bar.append(cell);
       }
       events.append(bar);
     }
@@ -146,7 +155,7 @@
       } catch (_) { verified = new Map(); }
       schedule = data; links = dates; entries = new Map(links.days.map(d => [d.date, d]));
       const sorted = [...data.meetings].sort((a, b) => a.start.localeCompare(b.start) || a.code.localeCompare(b.code));
-      let f1 = 0; colors = new Map(sorted.map(m => [m.id, m.grade === 'F1' ? F1_COLORS[f1++ % 4] : m.grade === 'G3' ? 'purple' : m.grade === 'GP' ? 'gp' : 'pink']));
+      let f1 = 0; colors = new Map(sorted.map(m => [m.id, m.grade === 'F1' ? F1_COLORS[f1++ % F1_COLORS.length] : m.grade === 'G3' ? 'grade-purple' : 'grade-red']));
       const starts = [...data.monthly_coverage, ...data.meetings.map(m => m.start.slice(0, 7))].sort();
       const ends = [...data.monthly_coverage, ...data.meetings.map(m => m.end.slice(0, 7))].sort();
       // Keep the calendar focused on available archives and announced schedules.

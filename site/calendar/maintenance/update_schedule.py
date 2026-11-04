@@ -117,7 +117,7 @@ def parse_month(html, month, url, observed):
         return None
     require(selected.get('cmdYearval') == [str(month.year)] and selected.get('cmdDayval') == [f'{month.month:02}'],
             'Official schedule returned a different month')
-    venue, grade, pending, output, venues_seen = None, None, None, [], set()
+    venue, grade, holding, pending, output, venues_seen = None, None, None, None, [], set()
     for cell in root.find('td'):
         if cell.has_class('border_width0'):
             name = next((name for name in NAMES if cell.text.startswith(name)), None)
@@ -127,11 +127,22 @@ def parse_month(html, month, url, observed):
             grades = [n.attrs.get('alt') for n in cell.find('img')]
             require(len(grades) == 1 and grades[0] in (*GRADES, 'F2'), 'Unknown schedule grade')
             grade = grades[0]
+            holding = None
+        if cell.has_class('holding'):
+            icons = [n.attrs.get('src', '') for n in cell.find('img') if n.attrs.get('src')]
+            require(len(icons) <= 1, 'Ambiguous official holding icon')
+            if icons:
+                match = re.fullmatch(r'/sp/static/img/icon/KaisaiIcon/ico_kaisai_(\d+)\.png', icons[0])
+                require(match, 'Unknown official holding icon')
+                holding = int(match[1])
         if cell.has_class('kikan'):
             require(venue and grade, 'Official date range lacks venue or grade')
             start, end = period(cell.text, month)
             if grade in GRADES:
                 pending = meeting(venue, grade, start, end, '', url, observed)
+                if holding is not None:
+                    pending['holding_kind'] = holding
+                    pending['night'] = holding == 3
                 output.append(pending)
             else:
                 pending = None
