@@ -64,11 +64,13 @@ class ScheduleTests(unittest.TestCase):
         for stamp in ('2026-10-25T12:31:00+00:00','2026-10-25T15:05:00+00:00'):
             self.assertFalse(should_collect('2026-10-25',datetime.fromisoformat(stamp),last))
 
-    def test_morning_recovery_only_adds_a_missing_today_before_the_existing_cutoff(self):
+    def test_recovery_only_adds_missing_today_from_eight_including_later_slots(self):
         for stamp,expected in [('2026-10-31T22:59:00+00:00',''),
                                ('2026-10-31T23:00:00+00:00','2026-11-01'),
                                ('2026-10-31T23:59:00+00:00','2026-11-01'),
-                               ('2026-11-01T00:00:00+00:00','')]:
+                               ('2026-11-01T00:00:00+00:00','2026-11-01'),
+                               ('2026-11-01T05:47:00+00:00','2026-11-01'),
+                               ('2026-11-01T14:59:00+00:00','2026-11-01')]:
             now=datetime.fromisoformat(stamp)
             self.assertEqual(morning_recovery_date('2026-10-31',now),expected)
             self.assertFalse(morning_recovery_date('2026-11-01',now))

@@ -23,6 +23,15 @@ def dataset():
 
 
 class OfficialPublicationTests(unittest.TestCase):
+    def test_late_recovery_adds_only_unpublished_today_without_regressing(self):
+        now=datetime.fromisoformat('2026-11-08T05:47:00+00:00')
+        today=date(2026,11,8)
+        self.assertTrue(can_replace(today,now,'2026-11-07'))
+        for previous in (None,'2026-11-08','2026-11-09'):
+            self.assertFalse(can_replace(today,now,previous))
+        self.assertFalse(can_replace(date(2026,11,7),now,'2026-11-06'))
+        self.assertTrue(can_replace(date(2026,11,9),now,'2026-11-08'))
+
     def test_provider_migration_requires_the_same_current_or_future_date(self):
         now = datetime.fromisoformat('2026-11-04T05:00:00+00:00')
         self.assertTrue(can_replace(date(2026, 11, 4), now, '2026-11-04', migration=True))

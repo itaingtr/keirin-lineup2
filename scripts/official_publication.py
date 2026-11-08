@@ -39,9 +39,11 @@ def encode(value):
 
 def can_replace(target, now, previous=None, *, migration=False):
     """The explicit provider switch may replace today's card, never an archive."""
-    if not migration:
-        return can_publish(target, now, previous)
     today = now.astimezone(JST).date()
+    if not migration:
+        if target == today and previous is not None and previous < target.isoformat():
+            return True
+        return can_publish(target, now, previous)
     return (previous == target.isoformat() and today <= target <= today + timedelta(days=1))
 
 
@@ -191,6 +193,8 @@ def main():
         elif card.get('provider') != PROVIDER:
             collection_date = date.fromisoformat(target)
             migration = True
+    recovered_today = (collection_date == now.astimezone(JST).date()
+                       and target < collection_date.isoformat()) if collection_date else False
     output = args.work / 'update'
     collected = collection_date is not None
     if collected:
@@ -213,7 +217,8 @@ def main():
     publish_pages = mode != 'odds' or collected
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
-    if (mode == 'odds' or migration) and should_collect(target, now, args.schedule if args.event == 'schedule' else ''):
+    odds_schedule = args.schedule if args.event == 'schedule' and mode == 'odds' else ''
+    if (mode == 'odds' or migration or recovered_today) and should_collect(target, now, odds_schedule):
         fresh, odds_stats = refresh(races, odds_feed)
         if odds_stats['observations']:
             run_path = ODDS_PREFIX + '/' + target.replace('-', '') + '/runs/' + args.run_key + '.json'

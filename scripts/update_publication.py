@@ -30,10 +30,10 @@ def requested_mode(event,schedule='',mode='publish'):
 
 
 def morning_recovery_date(target,now):
-    """Recover a missing card during the existing before-09:00 publish window."""
+    """Retry only a missing current-day card, including later odds slots."""
     local=now.astimezone(ZoneInfo('Asia/Tokyo'))
     today=local.date().isoformat()
-    return today if target<today and 8<=local.hour<9 else ''
+    return today if target<today and local.hour>=8 else ''
 
 
 def git(*args,cwd=ROOT):

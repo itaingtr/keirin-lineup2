@@ -248,9 +248,16 @@ def parse_players(doc):
         number = int(numbers[0]);require(number not in seen, 'Duplicate K Dreams car');seen.add(number)
         indexes = [i for i,c in enumerate(values) if 'rider' in classes(c)]
         require(len(indexes) == 1, 'Missing K Dreams rider')
-        index = indexes[0];rider = RIDER.fullmatch(compact(values[index].text()))
+        index = indexes[0]
+        rider_text = compact(values[index].text())
+        # Published withdrawals keep their profile and statistics, with this
+        # explicit status appended to the rider cell (e.g. 97(欠車)).
+        withdrawal = re.fullmatch(r'(.+)\((欠車|欠場|出走取消|取消)\)', rider_text)
+        if withdrawal:
+            rider_text = withdrawal[1]
+        rider = RIDER.fullmatch(rider_text)
         require(rider is not None and len(values) >= index+11, 'Incomplete K Dreams rider/statistics')
-        profile = RIDER_PROFILE.fullmatch(compact(values[index].text()))
+        profile = RIDER_PROFILE.fullmatch(rider_text)
         require(profile is not None and 18 <= int(profile[3]) <= 100, 'Missing/invalid K Dreams rider prefecture or age')
         score = compact(values[index+4].text())
         stats = [compact(c.text()) for c in values[index+5:index+11]]
@@ -258,7 +265,7 @@ def parse_players(doc):
         marks = [c.text().strip() for c in values if 'tip' in classes(c)]
         require(len(marks) == 1 and marks[0] in MARKS, 'Missing/invalid K Dreams prediction mark')
         explicit = [compact(c.text()) for c in values]
-        absent = bool(set(classes(row)) & {'absent', 'withdrawal', 'cancel'}) or any(v in ('欠場','欠車','出走取消','取消','欠') for v in explicit)
+        absent = bool(withdrawal or set(classes(row)) & {'absent', 'withdrawal', 'cancel'}) or any(v in ('欠場','欠車','出走取消','取消','欠') for v in explicit)
         player = {'no': number, 'name': rider[1], 'score': float(score), 'period': int(rider[2]),
                   'mark': marks[0], 'stats': list(map(int, stats)), 'absent': absent, 'meeting_results': [],
                   'prefecture': profile[2], 'age': int(profile[3])}

@@ -58,6 +58,25 @@ def contested_lineup():
 
 
 class KdreamsProviderTests(unittest.TestCase):
+    def test_published_withdrawal_suffix_preserves_identity_stats_and_absence(self):
+        from kdreams_provider import parse_players
+        from kdreams_history import parse_result_flags as history_flags
+        markup=card().replace('高知/30/101','高知/30/101(欠車)')
+        players=parse_players(Document(markup).root)
+        self.assertTrue(players[0]['absent'])
+        self.assertEqual((players[0]['name'],players[0]['period'],players[0]['stats']),
+                         ('選手1',101,[1,12,4,3,2,1]))
+        self.assertFalse(players[1]['absent'])
+        # One withdrawn member of a historical race must not block verified
+        # S/B results for the other riders in that same race.
+        table=result_table().replace('<td>1</td><td>選手1</td>',
+                                     '<td class="num">1</td><td>選手1</td>')
+        rows=history_flags(Document(markup+table).root,URL+'?pageType=showResult')
+        self.assertTrue(rows[1]['start'])
+        for invalid in ['(不明)','(欠車)extra']:
+            with self.assertRaises(ValueError):
+                parse_players(Document(card().replace('高知/30/101','高知/30/101'+invalid)).root)
+
     def test_actual_competing_sibling_icons_preserve_one_position_and_source_order(self):
         value=parse_lineup(Document(contested_lineup()).root,list(range(1,8)))
         self.assertEqual(value,'1(73)/26/54')

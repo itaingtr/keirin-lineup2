@@ -1,3 +1,8 @@
+# Missing current-day publication recovery
+
+- K Dreams rider cells may append an explicit `(欠車)` withdrawal to a complete profile. Read only recognized terminal withdrawal labels, retain absent=true and keep all identity/statistic validation. Unknown suffixes still fail; a withdrawn rider in an earlier result must not block every other rider's verified history.
+- If the checked published card is older than today, retry only the missing current-day card from08:00 JST onward, including after09:00. This supersedes the earlier08–09 recovery limit. An already published current/future card and all past cards remain protected from late replacement. A recovered current-day card may also collect odds within the existing08:00–20:30 window. Preserve the21:00/23:30 card schedules,15-minute odds schedules, immutable runs, historical HTML and zero database writes.
+
 # Verified contested lineups and pair odds
 
 - K Dreams marks competing riders using separate bracket_open/bracket_close icons. Preserve them as contest units (1(73)/26/54), reject missing/nested/unclosed markers or unbracketed competition labels, and retain every car exactly once. Do not flatten 7 and3 into a normal successive line.
