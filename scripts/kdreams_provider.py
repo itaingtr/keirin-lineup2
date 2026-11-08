@@ -122,7 +122,20 @@ class MissingCardTable(ValueError):
 def parse_schedule(doc, base, target):
     target = date.fromisoformat(target) if isinstance(target, str) else target
     containers = [n for n in doc.find_all('div') if 'raceinfo_table' in classes(n)]
-    require(len(containers) == 1, 'Expected one requested-day K Dreams calendar')
+    if len(containers) != 1:
+        title = next((n.text().strip() for n in doc.find_all('title')), '')
+        candidates = [t for t in doc.find_all('table') if any(
+            RACE_PATH.fullmatch(urlsplit(urljoin(base,a.attrs.get('href',''))).path)
+            for a in t.find_all('a'))]
+        # Multiple calendars must be disambiguated using the requested race
+        # date, never by taking the first table or relabelling another day.
+        candidates = [t for t in candidates if any(
+            RACE_PATH.fullmatch(urlsplit(urljoin(base,a.attrs.get('href',''))).path)
+            and race_identity(canonical_source(urljoin(base,a.attrs.get('href',''))))['date']==target.strftime('%Y%m%d')
+            for a in t.find_all('a'))]
+        require(len(candidates)==1,
+                f'Requested-day K Dreams calendar unavailable: containers={len(containers)}, matching_tables={len(candidates)}, title={title[:160]}')
+        containers=candidates
     meetings = []
     for row in containers[0].find_all('tr'):
         links = []
