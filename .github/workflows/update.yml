@@ -31,6 +31,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
       - name: Validate the independent collector and public export
         run: |
           python3 -m unittest discover -s tests -v
@@ -72,3 +74,11 @@ jobs:
         env:
           PAGES_URL: ${{ steps.deployment.outputs.page_url }}
         run: python3 scripts/verify_pages.py --site public --base "$PAGES_URL"
+      - name: Confirm publication only after anonymous HTTP checks
+        if: steps.update.outputs.publish == 'true'
+        run: python3 scripts/publication_state.py --site public --report /tmp/lineup2-publication/report.json --work /tmp/lineup2-confirmation
+      - name: Report a failed source check after saved-page recovery
+        if: always() && steps.update.outputs.card_check_failed == 'true'
+        run: |
+          echo 'Source card check failed; the checked saved card was preserved. See the update report.'
+          exit 1

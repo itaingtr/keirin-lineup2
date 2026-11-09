@@ -1,11 +1,15 @@
 name: Keep hourly cards and quarter-hour odds running
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/heartbeat.yml'
-      - 'scripts/update_heartbeat.py'
   workflow_dispatch:
+    inputs:
+      duration_seconds:
+        description: 'Worker duration in seconds (maximum21000; normally21000)'
+        type: string
+        default: '21000'
+      renew_after_seconds:
+        description: 'Queue successor after this many seconds (normally18000)'
+        type: string
+        default: '18000'
   schedule:
     # Queue the next runner while the current runner keeps time itself.
     - cron: '7 * * * *'
@@ -27,11 +31,17 @@ jobs:
         run: python3 -u scripts/update_heartbeat.py --once
   keep-time:
     needs: start
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v6
-      - name: Dispatch hourly cards and 15-minute odds for 350 minutes
+      - name: Keep updating and queue the next heartbeat before handoff
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 -u scripts/update_heartbeat.py
+          HEARTBEAT_DURATION: ${{ inputs.duration_seconds || '21000' }}
+          HEARTBEAT_RENEW_AFTER: ${{ inputs.renew_after_seconds || '18000' }}
+        run: |
+          python3 -u scripts/update_heartbeat.py \
+            --duration-seconds "$HEARTBEAT_DURATION" \
+            --renew-after-seconds "$HEARTBEAT_RENEW_AFTER"

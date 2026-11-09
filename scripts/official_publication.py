@@ -22,6 +22,7 @@ from keirin_jp_provider import enrich_cards, check_url as check_official_url, pr
 from kdreams_history import enrich_start_flags
 from rider_details import collect_details, details_from_dataset, stage_details, validate_details
 from lineup_refresh import refresh_lineups
+from publication_state import card_digest,artifact_digest,is_confirmed,read_receipt
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -228,7 +229,8 @@ def main():
                                      [name for name in names if re.fullmatch(r'\d{8}', name)])
             card_changed=card_fingerprint(candidate)!=card_fingerprint(card)
         except Exception as error:
-            if not (mode=='cards' and target==collection_date.isoformat()==now.astimezone(JST).date().isoformat()):raise
+            if not (mode=='cards' and target==collection_date.isoformat()
+                    and now.astimezone(JST).date()<=collection_date<=now.astimezone(JST).date()+timedelta(days=1)):raise
             card_check_error=type(error).__name__+': '+str(error)[:300]
             print('CARD CHECK FAILED: retain checked card and update its odds',card_check_error,flush=True)
         if card_changed:
@@ -246,7 +248,8 @@ def main():
         card,races=refresh_lineups(card)
         stage_card(card,args.run_key,output,ref)
         lineups_refreshed=True
-    publish_pages = mode == 'publish' or collected
+    publication_pending=not is_confirmed(read_receipt(ref,git_read),card)
+    publish_pages = mode == 'publish' or collected or publication_pending
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
     odds_schedule = args.schedule if args.event == 'schedule' and mode == 'odds' else ''
@@ -261,9 +264,10 @@ def main():
             print('All K Dreams odds reads failed; previous successful feed is unchanged', flush=True)
     if publish_pages:
         source = (ROOT / 'site/index.html').read_text()
-        materialize = (collected or lineups_refreshed or page_date(source) != target.replace('-', '')
+        materialize = (collected or lineups_refreshed or source!=card['html'] or page_date(source) != target.replace('-', '')
                        or any(identity(r['source'])['provider'] != PROVIDER for r in parse_page(source)))
         if materialize:
+            require(now.astimezone(JST).date().isoformat()<=target,'Refusing to materialize an archived card')
             materialize_card(card, ROOT / 'site')
         current_races = parse_page((ROOT / 'site/index.html').read_text())
         official_card(card, current_races)
@@ -295,6 +299,7 @@ def main():
         local_odds = args.work / 'display-odds.json'
         local_odds.write_text(encode(odds_feed) if odds_feed else card['assets']['odds.json'])
         report['local_odds_file'] = str(local_odds)
+        report['artifact_sha256']=artifact_digest(ROOT/'public')
     else:
         report = {'target_date': target, 'database_writes': 0}
     feed_commit = publish_feed(output, ref, args.work, repository) if (output / 'fallback').exists() else None
@@ -307,14 +312,14 @@ def main():
                    'source_commit': git('rev-parse', 'HEAD'), 'source_providers': card['summary'].get('source_providers',[PROVIDER]),
                    'provider_migration': migration, 'lineups_refreshed':lineups_refreshed,
                    'card_checked':card_checked,'card_changed':card_changed,
-                   'card_check_error':card_check_error,'odds': odds_stats})
+                   'card_check_error':card_check_error,'odds': odds_stats,
+                   'publication_pending':publication_pending,'card_sha256':card_digest(card),'run_key':args.run_key})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
             handle.write('publish=' + str(publish_pages).lower() + '\n')
+            handle.write('card_check_failed='+str(card_check_error is not None).lower()+'\n')
     print('OFFICIAL PUBLIC UPDATE READY', json.dumps(report, ensure_ascii=False), flush=True)
-    if card_check_error:
-        raise ValueError('Hourly card check failed; saved card retained and independent odds update completed')
 
 
 if __name__ == '__main__':

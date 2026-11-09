@@ -1,3 +1,10 @@
+# Verified publication and continuous handoff from November10
+
+- A collected card or main-branch commit is not proof that Pages was published. Only after DOM checks, deployment and anonymous exact-byte HTTP verification append a publication receipt under fallback/publication/date/runs and advance its checked current pointer. If the current checked card lacks a matching receipt, every updater run retries publication even when the source data is unchanged. Preserve all saved runs and past pages.
+- First-day cards correctly have no earlier meeting results. Validate their current condition controls without inventing history; also run the cross-day regression against a real archived card with earlier results. Never block publication simply because today is a meeting's first day.
+- The timer now self-dispatches its production successor after300minutes while continuing through350minutes. Retry handoff failures and fail visibly if no successor was queued; hourly cron is only a watchdog. A90/30-second handoff probe must verify the successor actually starts with350/300-minute production defaults. A startup API failure must not skip the resident worker. automation-recovery.yml replaces old heartbeat runs and starts this bounded live probe without touching updater runs or stored data.
+- Source-check failures preserve the checked current/future card and allow a pending saved-page publication and independent odds update to finish. Report source failure after those steps; never mark an unverified artifact as published. Queued updater runs check out latest main.
+
 # Hourly source checks and reliable odds dispatch from November9
 
 - The user now explicitly authorizes hourly changes to the current/future card: check tomorrow from21:00 JST and that same race date hourly through20:00. A changed verified lineup, withdrawal, mark, profile, statistics or meeting result may update that current/date page; past dates and stored runs remain immutable. This supersedes the earlier in-progress-day replacement prohibition only for the authorized card-check mode. Compare semantic display data without observation timestamps and skip creating a new card when unchanged.

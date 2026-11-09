@@ -1,0 +1,26 @@
+name: Replace timer and verify a real handoff
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/automation-recovery.yml'
+      - 'scripts/recover_automation.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: keirin-lineup2-automation-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Replace the old timer and exercise renewal
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -u scripts/recover_automation.py

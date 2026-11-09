@@ -74,12 +74,13 @@ class OfficialPublicationTests(unittest.TestCase):
                  patch('official_publication.git_read',return_value=None), \
                  patch('official_publication.read_published',return_value=(payload,races,'2026-10-18')), \
                  patch('official_publication.saved_odds',return_value=None), \
+                 patch('official_publication.is_confirmed',return_value=True), \
                  patch('kdreams_provider.collect_cards',side_effect=ValueError('calendar unavailable')), \
                  patch('official_publication.refresh',return_value=(fresh,{'observations':1})) as quotes, \
                  patch('official_publication.publish_feed',return_value='verified-odds-commit') as publish, \
                  patch('official_publication.export') as export_page:
                 clock.now.return_value=datetime.fromisoformat('2026-10-18T05:00:00+00:00')
-                with self.assertRaisesRegex(ValueError,'independent odds update completed'):main()
+                main()
                 quotes.assert_called_once_with(races,None)
                 publish.assert_called_once()
                 export_page.assert_not_called()
