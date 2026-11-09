@@ -248,7 +248,8 @@ def main():
         card,races=refresh_lineups(card)
         stage_card(card,args.run_key,output,ref)
         lineups_refreshed=True
-    publication_pending=not is_confirmed(read_receipt(ref,git_read),card)
+    publication_pending=not is_confirmed(read_receipt(ref,git_read),card,
+                                       source_commit=git('rev-parse','HEAD'))
     publish_pages = mode == 'publish' or collected or publication_pending
     odds_stats = {}
     odds_feed = saved_odds(ref, target)

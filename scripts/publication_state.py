@@ -21,11 +21,12 @@ def artifact_digest(directory):
     return digest.hexdigest()
 
 
-def is_confirmed(receipt,card):
+def is_confirmed(receipt,card,*,source_commit=None):
     return (isinstance(receipt,dict) and receipt.get('schema_version')==1
             and receipt.get('http_verified') is True
             and receipt.get('target_date')==card['target_date']
-            and receipt.get('card_sha256')==card_digest(card))
+            and receipt.get('card_sha256')==card_digest(card)
+            and (source_commit is None or receipt.get('source_commit')==source_commit))
 
 
 def read_receipt(ref,reader):

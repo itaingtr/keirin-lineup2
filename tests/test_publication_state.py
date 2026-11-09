@@ -20,6 +20,9 @@ class PublicationStateTests(unittest.TestCase):
         self.assertFalse(is_confirmed(None,card))
         receipt={'schema_version':1,'http_verified':True,'target_date':card['target_date'],'card_sha256':card_digest(card)}
         self.assertTrue(is_confirmed(receipt,card))
+        receipt['source_commit']='old-code'
+        self.assertFalse(is_confirmed(receipt,card,source_commit='fixed-code'))
+        self.assertTrue(is_confirmed(receipt,card,source_commit='old-code'))
         changed=deepcopy(card);changed['checked_at']='2026-10-18T01:00:00+00:00'
         self.assertFalse(is_confirmed(receipt,changed))
         self.assertFalse(is_confirmed({**receipt,'http_verified':False},card))
