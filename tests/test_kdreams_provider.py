@@ -58,6 +58,13 @@ def contested_lineup():
 
 
 class KdreamsProviderTests(unittest.TestCase):
+    def test_calendar_without_the_wrapper_still_requires_verified_race_date_and_venue(self):
+        from datetime import date
+        markup=calendar().replace('class="raceinfo_table"','class="raceinfo_new"')
+        self.assertEqual(parse_schedule(Document(markup).root,'https://keirin.kdreams.jp/racecard/2026/10/18/',date(2026,10,18))[0]['urls'],[URL])
+        with self.assertRaises(ValueError):
+            parse_schedule(Document(markup).root,'https://keirin.kdreams.jp/racecard/2026/10/19/',date(2026,10,19))
+
     def test_published_withdrawal_suffix_preserves_identity_stats_and_absence(self):
         from kdreams_provider import parse_players
         from kdreams_history import parse_result_flags as history_flags

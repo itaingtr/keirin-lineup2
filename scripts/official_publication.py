@@ -37,9 +37,12 @@ def encode(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False) + '\n'
 
 
-def can_replace(target, now, previous=None, *, migration=False):
+def can_replace(target, now, previous=None, *, migration=False, refresh_card=False):
     """The explicit provider switch may replace today's card, never an archive."""
     today = now.astimezone(JST).date()
+    if refresh_card:
+        return (today <= target <= today+timedelta(days=1)
+                and (previous is None or previous <= target.isoformat()))
     if not migration:
         if target == today and previous is not None and previous < target.isoformat():
             return True
@@ -52,6 +55,20 @@ def official_card(card, races):
             and all(identity(r['source'])['provider'] == PROVIDER for r in races),
             'Active publication requires actual K Dreams source records')
     return card
+
+
+def card_fingerprint(card):
+    """Compare actual display data, excluding changing observation receipts."""
+    volatile={'observed_at','checked_at','fetched_at','start_observed_at'}
+    def clean(value):
+        if isinstance(value,dict):
+            return {k:clean(v) for k,v in value.items() if k not in volatile}
+        if isinstance(value,list):return [clean(v) for v in value]
+        return value
+    data={'date':card['target_date'],'races':parse_page(card['html'])}
+    for name in ('rakuten-marks.json','rider-details.json'):
+        if name in card['assets']:data[name]=json.loads(card['assets'][name])
+    return hashlib.sha256(json.dumps(clean(data),sort_keys=True,ensure_ascii=False).encode()).hexdigest()
 
 
 def build_card(dataset, checked_at, known_dates=()):
@@ -197,16 +214,31 @@ def main():
                        and target < collection_date.isoformat()) if collection_date else False
     output = args.work / 'update'
     collected = collection_date is not None
+    card_checked = collected
+    card_changed = False
+    card_check_error = None
     if collected:
-        require(can_replace(collection_date, now, target, migration=migration),
+        require(can_replace(collection_date, now, target, migration=migration,refresh_card=mode=='cards'),
                 'Refusing a past/in-progress card rewrite or date regression')
         from kdreams_provider import collect_cards
-        dataset = enrich_start_flags(enrich_cards(collect_cards(collection_date.isoformat())))
-        names = git('ls-tree', '--name-only', ref + ':fallback/cards').splitlines()
-        card, races = build_card(dataset, datetime.now(timezone.utc).isoformat(),
-                                 [name for name in names if re.fullmatch(r'\d{8}', name)])
-        target = card['target_date']
-        stage_card(card, args.run_key, output, ref)
+        try:
+            dataset = enrich_start_flags(enrich_cards(collect_cards(collection_date.isoformat())))
+            names = git('ls-tree', '--name-only', ref + ':fallback/cards').splitlines()
+            candidate, candidate_races = build_card(dataset, datetime.now(timezone.utc).isoformat(),
+                                     [name for name in names if re.fullmatch(r'\d{8}', name)])
+            card_changed=card_fingerprint(candidate)!=card_fingerprint(card)
+        except Exception as error:
+            if not (mode=='cards' and target==collection_date.isoformat()==now.astimezone(JST).date().isoformat()):raise
+            card_check_error=type(error).__name__+': '+str(error)[:300]
+            print('CARD CHECK FAILED: retain checked card and update its odds',card_check_error,flush=True)
+        if card_changed:
+            card,races=candidate,candidate_races
+            target = card['target_date']
+            stage_card(card, args.run_key, output, ref)
+        else:
+            collected=False
+            if not card_check_error:
+                print('CARD CHECK: verified source display is unchanged',target,flush=True)
     official_card(card, races)
     lineups_refreshed=False
     if not collected and mode=='publish' and 'data-contest-odds="true"' not in card['html']:
@@ -214,11 +246,11 @@ def main():
         card,races=refresh_lineups(card)
         stage_card(card,args.run_key,output,ref)
         lineups_refreshed=True
-    publish_pages = mode != 'odds' or collected
+    publish_pages = mode == 'publish' or collected
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
     odds_schedule = args.schedule if args.event == 'schedule' and mode == 'odds' else ''
-    if (mode == 'odds' or migration or recovered_today) and should_collect(target, now, odds_schedule):
+    if (mode in ('odds','cards') or migration or recovered_today) and should_collect(target, now, odds_schedule):
         fresh, odds_stats = refresh(races, odds_feed)
         if odds_stats['observations']:
             run_path = ODDS_PREFIX + '/' + target.replace('-', '') + '/runs/' + args.run_key + '.json'
@@ -273,12 +305,16 @@ def main():
             git('push', 'origin', 'HEAD:main')
     report.update({'mode': mode, 'publish_pages': publish_pages, 'feed_commit': feed_commit,
                    'source_commit': git('rev-parse', 'HEAD'), 'source_providers': card['summary'].get('source_providers',[PROVIDER]),
-                   'provider_migration': migration, 'lineups_refreshed':lineups_refreshed, 'odds': odds_stats})
+                   'provider_migration': migration, 'lineups_refreshed':lineups_refreshed,
+                   'card_checked':card_checked,'card_changed':card_changed,
+                   'card_check_error':card_check_error,'odds': odds_stats})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
             handle.write('publish=' + str(publish_pages).lower() + '\n')
     print('OFFICIAL PUBLIC UPDATE READY', json.dumps(report, ensure_ascii=False), flush=True)
+    if card_check_error:
+        raise ValueError('Hourly card check failed; saved card retained and independent odds update completed')
 
 
 if __name__ == '__main__':

@@ -18,6 +18,9 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def scheduled_target(now,cron):
     """Anchor delayed starts to the intended 21:00/23:30 slot, even after midnight."""
+    if cron == '0 * * * *':
+        local=now.astimezone(JST)
+        return local.date()+timedelta(days=int(local.hour>=21))
     require(cron in ('0 12 * * *','30 14 * * *'),'Unknown card schedule')
     minute,hour=map(int,cron.split()[:2])
     slot=now.astimezone(timezone.utc).replace(hour=hour,minute=minute,second=0,microsecond=0)
@@ -39,6 +42,8 @@ def display_card(dataset,feed,known_dates=()):
     page=render(dataset,site=ROOT/'site')
     if provider=='kdreams':
         page=re.sub(r'<body\b','<body data-contest-odds="true"',page,count=1)
+        if compact>='20261109':
+            page=re.sub(r'<body\b','<body data-auto-odds="true"',page,count=1)
     page,count=re.subn(r'<base href="\./"><script>.*?</script>',f'<base href="/line{compact}.html/">',page,count=1)
     require(count==1,'Unexpected page base')
     for asset in ('predictions.js','comments.css','comments.js','odds-current.js','odds-comparison.js'):

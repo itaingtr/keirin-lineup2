@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
-from official_publication import build_card, can_replace, main, stage_card
+from official_publication import build_card, can_replace, main, stage_card, card_fingerprint
 from test_kdreams_provider import URL, STAMP, MEETING, card
 from kdreams_provider import parse_card
 from source_http import Document
@@ -23,6 +23,25 @@ def dataset():
 
 
 class OfficialPublicationTests(unittest.TestCase):
+    def test_authorized_hourly_refresh_updates_today_but_never_an_archive_or_regresses(self):
+        now=datetime.fromisoformat('2026-11-09T05:47:00+00:00')
+        self.assertTrue(can_replace(date(2026,11,9),now,'2026-11-09',refresh_card=True))
+        self.assertFalse(can_replace(date(2026,11,8),now,'2026-11-08',refresh_card=True))
+        self.assertFalse(can_replace(date(2026,11,9),now,'2026-11-10',refresh_card=True))
+        self.assertFalse(can_replace(date(2026,11,11),now,'2026-11-09',refresh_card=True))
+
+    def test_change_detection_ignores_receipts_but_detects_actual_prediction_change(self):
+        payload,_=build_card(dataset(),STAMP)
+        updated=deepcopy(payload)
+        marks=json.loads(updated['assets']['rakuten-marks.json'])
+        marks['checked_at']='2026-10-18T01:00:00+00:00'
+        for race in marks['races']:race['observed_at']=marks['checked_at']
+        updated['assets']['rakuten-marks.json']=json.dumps(marks)
+        self.assertEqual(card_fingerprint(payload),card_fingerprint(updated))
+        marks['races'][0]['players'][0]['mark']='注'
+        updated['assets']['rakuten-marks.json']=json.dumps(marks)
+        self.assertNotEqual(card_fingerprint(payload),card_fingerprint(updated))
+
     def test_late_recovery_adds_only_unpublished_today_without_regressing(self):
         now=datetime.fromisoformat('2026-11-08T05:47:00+00:00')
         today=date(2026,11,8)
@@ -40,6 +59,34 @@ class OfficialPublicationTests(unittest.TestCase):
         self.assertFalse(can_replace(date(2026, 11, 4), now, '2026-11-05', migration=True))
         self.assertFalse(can_replace(date(2026, 11, 6), now, '2026-11-06', migration=True))
         self.assertTrue(can_replace(date(2026, 11, 5), now, '2026-11-04'))
+
+    def test_failed_hourly_card_check_still_publishes_saved_card_odds_and_reports_failure(self):
+        from official_odds import blank_feed
+        payload,races=build_card(dataset(),STAMP)
+        fresh=blank_feed(races,'2026-10-18',STAMP)
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            args=['official_publication.py','--event','workflow_dispatch','--mode','cards',
+                  '--date','2026-10-18','--run-key','run-123-1','--work',str(root/'work')]
+            with patch('official_publication.ROOT',root),patch.object(sys,'argv',args), \
+                 patch('official_publication.datetime',wraps=datetime) as clock, \
+                 patch('official_publication.git',return_value='test-ref'), \
+                 patch('official_publication.git_read',return_value=None), \
+                 patch('official_publication.read_published',return_value=(payload,races,'2026-10-18')), \
+                 patch('official_publication.saved_odds',return_value=None), \
+                 patch('kdreams_provider.collect_cards',side_effect=ValueError('calendar unavailable')), \
+                 patch('official_publication.refresh',return_value=(fresh,{'observations':1})) as quotes, \
+                 patch('official_publication.publish_feed',return_value='verified-odds-commit') as publish, \
+                 patch('official_publication.export') as export_page:
+                clock.now.return_value=datetime.fromisoformat('2026-10-18T05:00:00+00:00')
+                with self.assertRaisesRegex(ValueError,'independent odds update completed'):main()
+                quotes.assert_called_once_with(races,None)
+                publish.assert_called_once()
+                export_page.assert_not_called()
+                report=json.loads((root/'work/report.json').read_text())
+                self.assertIn('calendar unavailable',report['card_check_error'])
+                self.assertFalse(report['card_changed'])
+                self.assertEqual(report['feed_commit'],'verified-odds-commit')
 
     def test_new_card_marks_ids_and_blank_quotes_share_actual_official_sources(self):
         payload, races = build_card(dataset(), '2026-10-18T00:10:00+00:00')
@@ -82,6 +129,7 @@ class OfficialPublicationTests(unittest.TestCase):
     def test_invalid_export_never_advances_shared_feed_or_main(self):
         payload, races = build_card(dataset(), STAMP)
         fresh_dataset = dataset()
+        fresh_dataset['races'][0]['players'][0]['mark']='注'
         fresh_dataset['sources'][0]['observed_at'] = '2026-10-17T22:00:00+00:00'
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -97,6 +145,7 @@ class OfficialPublicationTests(unittest.TestCase):
                  patch('official_publication.read_published', return_value=(payload, races, '2026-10-18')), \
                  patch('official_publication.git_read', return_value=None), \
                  patch('official_publication.saved_odds', return_value=None), \
+                 patch('official_publication.refresh',return_value=({}, {'observations':0})), \
                  patch('kdreams_provider.collect_cards', return_value=fresh_dataset), \
                  patch('official_publication.enrich_cards', side_effect=lambda dataset:dataset), \
                  patch('official_publication.enrich_start_flags', side_effect=lambda dataset:dataset), \

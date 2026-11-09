@@ -13,14 +13,8 @@ on:
         description: 'Optional YYYY-MM-DD for manual cards only'
         required: false
         type: string
-  schedule:
-    # Japan: odds every 15 minutes 08:00-20:30 inclusive (51/day).
-    # UTC 23:00 belongs to the following race day in Japan.
-    - cron: '*/15 23,0-10 * * *'
-    - cron: '0,15,30 11 * * *'
-    # Next-day cards remain at 21:00 and 23:30 Japan time.
-    - cron: '0 12 * * *'
-    - cron: '30 14 * * *'
+  # heartbeat.yml dispatches hourly card checks and quarter-hour odds. Its
+  # resident runner keeps time even when GitHub cron starts are delayed.
 permissions:
   contents: write
   pages: write
@@ -60,6 +54,7 @@ jobs:
           npm install --prefix /tmp/lineup2-qa --no-audit --no-fund jsdom@26.1.0
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_pages.cjs /tmp/lineup2-publication/report.json
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5

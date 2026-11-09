@@ -1,0 +1,37 @@
+name: Keep hourly cards and quarter-hour odds running
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/heartbeat.yml'
+      - 'scripts/update_heartbeat.py'
+  workflow_dispatch:
+  schedule:
+    # Queue the next runner while the current runner keeps time itself.
+    - cron: '7 * * * *'
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: keirin-lineup2-heartbeat
+  cancel-in-progress: false
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start a checked current card update immediately
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -u scripts/update_heartbeat.py --once
+  keep-time:
+    needs: start
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+      - name: Dispatch hourly cards and 15-minute odds for 350 minutes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -u scripts/update_heartbeat.py

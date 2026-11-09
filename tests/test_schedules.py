@@ -29,32 +29,26 @@ class ScheduleTests(unittest.TestCase):
             self.assertFalse(should_collect('2026-10-26',now))
             self.assertFalse(should_collect('2026-10-24',now))
 
-    def test_workflow_has_51_quarter_hour_slots_and_both_card_slots(self):
+    def test_scheduling_has_one_resident_heartbeat_and_no_duplicate_direct_crons(self):
         import re
-        workflow=(Path(__file__).parents[1]/'.github/workflows/update.yml').read_text()
-        crons=re.findall(r"- cron: '([^']+)'",workflow)
-        self.assertEqual(crons,[*ODDS_SCHEDULES,'0 12 * * *','30 14 * * *'])
-        # Expand the workflow's UTC crons independently across one Japanese day.
-        first=datetime(2026,10,24,15,tzinfo=timezone.utc)
-        matched=[]
-        for offset in range(24*60):
-            instant=first+timedelta(minutes=offset)
-            for cron in crons[:2]:
-                minutes,hours,*_=cron.split()
-                minute_ok=instant.minute%15==0 if minutes=='*/15' else instant.minute in map(int,minutes.split(','))
-                utc_hours=({23,*range(11)} if hours=='23,0-10' else {int(hours)})
-                if minute_ok and instant.hour in utc_hours:
-                    self.assertTrue(should_collect('2026-10-25',instant,cron))
-                    self.assertFalse(should_collect('2026-10-24',instant,cron))
-                    self.assertFalse(should_collect('2026-10-26',instant,cron))
-                    self.assertEqual(requested_mode('schedule',cron),'odds')
-                    matched.append(offset)
-        self.assertEqual(matched,list(range(8*60,20*60+31,15)))
-        self.assertEqual(len(matched),51)
-        for cron in crons[2:]:self.assertEqual(requested_mode('schedule',cron),'cards')
+        root=Path(__file__).parents[1]
+        workflow=(root/'.github/workflows/update.yml').read_text()
+        heartbeat=(root/'.github/workflows/heartbeat.yml').read_text()
+        self.assertEqual(re.findall(r"- cron: '([^']+)'",workflow),[])
+        self.assertEqual(re.findall(r"- cron: '([^']+)'",heartbeat),['7 * * * *'])
+        self.assertIn('actions: write',heartbeat)
+        self.assertIn('timeout-minutes: 360',heartbeat)
         self.assertEqual(requested_mode('push',mode='odds'),'publish')
         self.assertEqual(requested_mode('workflow_dispatch',mode='odds'),'odds')
-        with self.assertRaises(ValueError):requested_mode('schedule','0 0-11 * * *')
+        self.assertEqual(requested_mode('workflow_dispatch',mode='cards'),'cards')
+
+    def test_hourly_card_date_switches_at_21_and_survives_midnight(self):
+        for stamp,expected in [('2026-11-08T11:59:00+00:00',date(2026,11,8)),
+                               ('2026-11-08T12:00:00+00:00',date(2026,11,9)),
+                               ('2026-11-08T14:59:00+00:00',date(2026,11,9)),
+                               ('2026-11-08T15:05:00+00:00',date(2026,11,9)),
+                               ('2026-11-09T11:00:00+00:00',date(2026,11,9))]:
+            self.assertEqual(scheduled_target(datetime.fromisoformat(stamp),'0 * * * *'),expected)
 
     def test_delayed_final_slot_keeps_the_race_day_and_has_a_limit(self):
         last=ODDS_SCHEDULES[1]

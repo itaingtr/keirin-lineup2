@@ -24,7 +24,7 @@ def requested_mode(event,schedule='',mode='publish'):
     if event=='push':return 'publish'
     if event=='schedule':
         if schedule in ODDS_SCHEDULES:return 'odds'
-        if schedule in ('0 12 * * *','30 14 * * *'):return 'cards'
+        if schedule in ('0 * * * *','0 12 * * *','30 14 * * *'):return 'cards'
         raise ValueError('Unknown schedule')
     return mode
 

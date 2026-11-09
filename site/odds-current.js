@@ -3,6 +3,9 @@
   'use strict';
   const root = document.getElementById('rows');
   if (!root) return;
+  const autoOdds = document.body.dataset.autoOdds === 'true';
+  const openPanels = new WeakMap();
+  let savedPayload = null, savedRequest = null, lastFeedAttempt = 0;
   let configPromise;
   const element = (tag, className, content) => {
     const node = document.createElement(tag);
@@ -46,6 +49,48 @@
       ? normalizeSavedSnapshot(payload.results.find(item => item.ok && item.snapshot?.race_key === raceKey)?.snapshot)
       : payload;
     return validate(candidate || {race_key:raceKey,bet_type:'exacta',status:'unavailable'}, raceKey, numbers);
+  }
+  function retainConfirmed(payload) {
+    if (!Array.isArray(payload?.results)) throw new Error('feed');
+    if (!savedPayload) return payload;
+    const merged = new Map(payload.results.map(item => [item.snapshot?.race_key || item.race_key, item]));
+    const cards = typeof races === 'undefined' ? [] : races;
+    for (const race of cards) {
+      const key = new URL(race.source).pathname, numbers = race.players.map(player => player.no).sort((a,b) => a-b);
+      let prior;
+      try { prior = readSnapshot(savedPayload, key, numbers); } catch (error) { continue; }
+      if (!['open','snapshot'].includes(prior.status)) continue;
+      let candidate;
+      try { candidate = readSnapshot(payload, key, numbers); } catch (error) { /* Retain the validated record. */ }
+      if (!candidate || !['open','snapshot'].includes(candidate.status) || Date.parse(candidate.observed_at) < Date.parse(prior.observed_at)) {
+        merged.set(key, {ok:true,snapshot:prior});
+      }
+    }
+    return {...payload, results:[...merged.values()]};
+  }
+  async function loadSavedFeed(signal, force = false) {
+    if (autoOdds && savedRequest) return savedRequest;
+    if (autoOdds && !force && savedPayload && Date.now() - lastFeedAttempt < 60000) return savedPayload;
+    const request = (async () => {
+      if (autoOdds) lastFeedAttempt = Date.now();
+      const url = await endpoint(signal);
+      if (!url) return null;
+      if (autoOdds) url.searchParams.set('_refresh', String(Date.now()));
+      lastFeedAttempt = Date.now();
+      const response = await fetch(url.href, {cache:'no-store', signal});
+      if (!response.ok) throw new Error('fetch');
+      const received = await response.json();
+      const payload = autoOdds ? retainConfirmed(received) : received;
+      if (autoOdds) {
+        savedPayload = payload;
+        root.dispatchEvent(new CustomEvent('keirin-exacta-feed', {detail:payload}));
+        for (const row of root.children) openPanels.get(row)?.(payload);
+      }
+      return payload;
+    })();
+    if (autoOdds) savedRequest = request;
+    try { return await request; }
+    finally { if (savedRequest === request) savedRequest = null; }
   }
   const formatOdds = value => value >= 100 ? String(Math.floor(value)) : value.toFixed(1);
   const shadeClass = value => value >= 300 ? ' exacta-extreme' : value >= 200 ? ' exacta-very-high' : value >= 100 ? ' exacta-high' : '';
@@ -160,13 +205,7 @@
 
   // The initial summary and opened tables share validation, orientation and math.
   window.keirinExacta = Object.freeze({
-    async loadSavedFeed(signal) {
-      const url = await endpoint(signal);
-      if (!url) return null;
-      const response = await fetch(url.href, {cache:'no-store', signal});
-      if (!response.ok) throw new Error('fetch');
-      return response.json();
-    },
+    loadSavedFeed,
     matrixForRow(payload, row) {
       const info = raceInfo(row);
       if (!info) return null;
@@ -201,16 +240,43 @@
     lineup.append(button);
     row.append(panel);
     let loading = false;
-    async function load() {
+    let confirmedAt = 0;
+    function display(payload) {
+      const data = readSnapshot(payload, raceKey, numbers);
+      if (autoOdds && confirmedAt && (!['open','snapshot'].includes(data.status) || Date.parse(data.observed_at) < confirmedAt)) return;
+      content.replaceChildren();
+      if (data.status === 'closed') status.textContent = 'このレースのオッズ発売は終了しているにゃ。';
+      else if (data.status === 'unavailable') status.textContent = 'このレースのオッズはまだ取得できないにゃ。';
+      else {
+        const formatted = new Intl.DateTimeFormat('ja-JP', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Tokyo'}).format(new Date(data.observed_at));
+        status.textContent = '取得時刻：' + formatted + (data.status === 'snapshot' ? '（保存値）' : '（変動あり）');
+        status.title = data.status === 'snapshot' ? '取得時点の保存値です。現在の発売状態は未確認です。' : 'オッズは変動します。';
+        content.append(matrix(data, numbers, names, scores));
+        confirmedAt = Date.parse(data.observed_at);
+      }
+      if (!['open','snapshot'].includes(data.status)) clearSummary();
+    }
+    openPanels.set(row, payload => {
+      if (!panel.hidden) {
+        try { display(payload); } catch (error) { /* Keep the last verified prices. */ }
+      }
+    });
+    async function load(force = false) {
       if (loading) return;
       loading = true;
       refresh.disabled = true;
-      content.replaceChildren();
+      if (!autoOdds) content.replaceChildren();
       status.textContent = '二車単オッズを確認中にゃ…';
       panel.setAttribute('aria-busy', 'true');
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
       try {
+        if (autoOdds) {
+          const payload = await loadSavedFeed(controller.signal, force);
+          if (!payload) throw new Error('endpoint');
+          display(payload);
+          return;
+        }
         const url = await endpoint(controller.signal);
         if (!url) {
           status.textContent = 'オッズはまだ表示できないにゃ。取得先を確認中にゃ。';
@@ -222,19 +288,10 @@
         const response = await fetch(url.href, {cache: 'no-store', signal: controller.signal});
         if (!response.ok) throw new Error('fetch');
         const payload = await response.json();
-        const data = readSnapshot(payload, raceKey, numbers);
-        if (data.status === 'closed') status.textContent = 'このレースのオッズ発売は終了しているにゃ。';
-        else if (data.status === 'unavailable') status.textContent = 'このレースのオッズはまだ取得できないにゃ。';
-        else {
-          const formatted = new Intl.DateTimeFormat('ja-JP', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Tokyo'}).format(new Date(data.observed_at));
-          status.textContent = '取得時刻：' + formatted + (data.status === 'snapshot' ? '（保存値）' : '（変動あり）');
-          status.title = data.status === 'snapshot' ? '取得時点の保存値です。現在の発売状態は未確認です。' : 'オッズは変動します。';
-          content.append(matrix(data, numbers, names, scores));
-        }
-        if (!['open','snapshot'].includes(data.status)) clearSummary();
+        display(payload);
       } catch (error) {
-        status.textContent = 'オッズを取得できなかったにゃ。「更新」で再確認してにゃ。';
-        clearSummary();
+        status.textContent = autoOdds && confirmedAt ? '更新できなかったため、前回取得したオッズを表示しているにゃ。' : 'オッズを取得できなかったにゃ。「更新」で再確認してにゃ。';
+        if (!autoOdds) clearSummary();
       } finally {
         clearTimeout(timeout);
         loading = false;
@@ -250,9 +307,23 @@
       button.textContent = open ? 'オッズを閉じる' : '二車単オッズ';
       if (open) load();
     });
-    refresh.addEventListener('click', load);
+    refresh.addEventListener('click', () => load(true));
   }
   const attachAll = () => [...root.children].forEach(attach);
   attachAll();
   new MutationObserver(attachAll).observe(root, {childList: true});
+  if (autoOdds) {
+    async function refreshSaved() {
+      const pageDate = document.querySelector('.eyebrow')?.textContent.match(/(\d{4})\.(\d{2})\.(\d{2})/);
+      const today = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+      if (document.visibilityState === 'hidden' || !pageDate || pageDate.slice(1).join('-') !== today || Date.now() - lastFeedAttempt < 60000) return;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try { await loadSavedFeed(controller.signal, true); }
+      catch (error) { /* A failed poll leaves every verified price in place. */ }
+      finally { clearTimeout(timeout); }
+    }
+    setInterval(refreshSaved, 15 * 60 * 1000);
+    document.addEventListener('visibilitychange', refreshSaved);
+  }
 })();
