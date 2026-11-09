@@ -119,6 +119,8 @@ def public_html(page,day,marks=None,identities=None,details=None):
         result,count=re.subn(r'(/odds-comparison\.js)(?:\?[^"\s]*)?',r'\1?v=contest-20261105',result,count=1)
         if count!=1:raise ValueError('Contest odds reader is missing')
     if 'data-auto-odds="true"' in result:
+        result,count=re.subn(r'(/odds-comparison\.js)(?:\?[^"\s]*)?',r'\1?v=auto-20261109',result,count=1)
+        if count!=1:raise ValueError('Automatic comparison reader is missing')
         result,count=re.subn(r'(/odds-current-rakuten\.js)(?:\?[^"\s]*)?',r'\1?v=auto-20261109',result,count=1)
         if count!=1:raise ValueError('Automatic odds reader is missing')
     if parse_page(result)!=expected or '/open-web?' in result:

@@ -11,6 +11,7 @@
   const pageDate = document.querySelector('.eyebrow')?.textContent.match(/(\d{4})\.(\d{2})\.(\d{2})/);
   const today = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const showInitial = initialEnabled && pageDate && pageDate.slice(1).join('-') <= today;
+  const autoOdds = document.body.dataset.autoOdds === 'true';
   let initialPayload = null;
 
   function lineRelationships(raceRow) {
@@ -82,7 +83,7 @@
   }
 
   function showSummary(row, normal) {
-    if (!showInitial) return;
+    if (!canShowInitial()) return;
     const observed = Date.parse(normal.dataset.observedAt);
     if (!Number.isFinite(observed) || observed < (summaryTimes.get(row) || 0)) return;
     summaryTimes.set(row, observed);
@@ -120,8 +121,13 @@
     row.querySelector('.lineup')?.classList.add('lineup-odds-visible');
   }
 
+  function canShowInitial() {
+    if (!autoOdds) return showInitial;
+    const current = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    return initialEnabled && pageDate && pageDate.slice(1).join('-') <= current;
+  }
   function applyInitial() {
-    if (!initialPayload || !showInitial) return;
+    if (!initialPayload || !canShowInitial()) return;
     for (const row of root.children) {
       if (initialRows.has(row)) continue;
       initialRows.add(row);
@@ -227,6 +233,11 @@
   root.addEventListener('keirin-exacta-unavailable', event => {
     initialRows.add(event.target);
     clearSummary(event.target);
+  });
+  if (autoOdds) root.addEventListener('keirin-exacta-feed', event => {
+    initialPayload = event.detail;
+    for (const row of root.children) initialRows.delete(row);
+    applyInitial();
   });
   update();
   new MutationObserver(update).observe(root, {childList: true, subtree: true});
