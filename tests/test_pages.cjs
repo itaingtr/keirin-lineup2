@@ -209,6 +209,24 @@ const activeWindows=[];
   if(usesRakuten){assert.doesNotMatch(doc.querySelector('main').textContent,/ウィンチケット|WINTICKET/i);assert.equal(doc.querySelector('script[src*="predictions.js"]'),null);}
   assert.deepEqual(errors,[]);dom.window.close();
  }
- if(usesConditions){await require('./test_board_passphrase.cjs')();await require('./test_rider_conditions.cjs')({html,date:report.target_date});}
+ if(usesConditions){
+  await require('./test_board_passphrase.cjs')();
+  const conditions=require('./test_rider_conditions.cjs');
+  await conditions({html,date:report.target_date});
+  // Opening-day cards correctly have no prior results. Still exercise the
+  // cross-day regression using an actual saved page with verified history.
+  if(!sourceRaces.some(r=>r.players.some(p=>p.meetingResults.length>=2))){
+   let historyFixture;
+   for(const item of [...calendarIndex.days].reverse()){
+    const raw=item.date.replaceAll('-','');
+    if(raw<'20261102'||raw>=day)continue;
+    const saved=fs.readFileSync(path.join(publicDir,'line'+raw+'.html'),'utf8');
+    const races=JSON.parse(/const races=(.*);\nconst body=/.exec(saved)[1]);
+    if(races.some(r=>r.players.some(p=>p.meetingResults.length>=2))){historyFixture={html:saved,date:item.date};break;}
+   }
+   assert.ok(historyFixture,'A saved historical card must cover prior-day conditions');
+   await conditions(historyFixture);
+  }
+ }
  console.log('PUBLIC PAGES DOM PASS',JSON.stringify({races:report.races,riders,paired_odds_cells:pairs,same_tab_links:links,replay_links:replays,history_replay_links:historyReplays,venue_jumps:jumps,urls:2}));
 })().catch(error=>{for(const window of activeWindows)if(window.document)window.close();console.error(error);process.exitCode=1;});

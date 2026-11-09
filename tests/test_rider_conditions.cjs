@@ -9,9 +9,9 @@ async function run({html,date}){
  const redAppearance=html.includes('data-rider-appearance="red"');
  const ratingColor=value=>redAppearance?'rgb(211, 47, 47)':value<0?'rgb(181, 137, 0)':'rgb(8, 125, 54)';
  const original=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
- const race=original.find(r=>r.players.some(p=>p.meetingResults.length>=2));
- assert.ok(race,'A real saved card with prior days is required');
- const player=race.players.find(p=>p.meetingResults.length>=2);
+ const race=original.find(r=>r.players.some(p=>p.meetingResults.length>=2))||original.find(r=>r.players.length);
+ assert.ok(race,'A real saved card is required');
+ const player=race.players.find(p=>p.meetingResults.length>=2)||race.players[0];
  const key=(day,id,playerId)=>'condition:v1:'+day+':'+id+':'+playerId;
  const raceId=String(race.race).padStart(2,'0')+race.venueCode+date.replaceAll('-','');
  const currentKey=key(date,raceId,player.playerId);
