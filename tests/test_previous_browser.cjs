@@ -73,7 +73,11 @@ async function main() {
         const box = node.getBoundingClientRect();
         const x = box.left + box.width/2, y = box.top + box.height/2;
         const hit = document.elementFromPoint(x,y);
-        return {x,y,correct:hit === node || node.contains(hit),hitTag:hit?.tagName,hitClass:hit?.className};
+        const view=window.visualViewport;
+        const scale=view?.scale || 1;
+        return {x:(x-(view?.offsetLeft || 0))*scale,y:(y-(view?.offsetTop || 0))*scale,
+          layoutX:x,layoutY:y,scale,correct:hit === node || node.contains(hit),
+          hitTag:hit?.tagName,hitClass:hit?.className};
       });
       console.log('PREVIOUS MOBILE HIT',JSON.stringify(point));
       if (screenshot) await page.screenshot({path:screenshot,fullPage:false});
