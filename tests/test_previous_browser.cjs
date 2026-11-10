@@ -65,9 +65,24 @@ async function main() {
     await page.goto(origin+prefix+'index2.html',{waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(() => document.body.dataset.previousMeetingsStatus === 'ready',null,{timeout:30000});
     await page.waitForFunction(() => window.keirinBoard?.ready === true,null,{timeout:30000});
+    await page.evaluate(async () => { await document.fonts.ready; });
+    async function tapControl(control) {
+      await control.evaluate(node => node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const point = await control.evaluate(node => {
+        const box = node.getBoundingClientRect();
+        const x = box.left + box.width/2, y = box.top + box.height/2;
+        const hit = document.elementFromPoint(x,y);
+        return {x,y,correct:hit === node || node.contains(hit),hitTag:hit?.tagName,hitClass:hit?.className};
+      });
+      console.log('PREVIOUS MOBILE HIT',JSON.stringify(point));
+      if (screenshot) await page.screenshot({path:screenshot,fullPage:false});
+      assert.ok(point.correct,'The actual touchscreen point must reach the preview button');
+      await page.touchscreen.tap(point.x,point.y);
+    }
     const first = page.locator('.previous-toggle').first();
     assert.ok(await page.locator('.previous-toggle').count(), 'Every real rider needs the preview control');
-    await first.click();
+    await tapControl(first);
     await page.waitForFunction(() => document.querySelector('.previous-toggle')?.getAttribute('aria-expanded') === 'true');
     const geometry = await page.locator('#rows > tr').first().evaluate(row => {
       const panels = [...row.querySelectorAll('.previous-results')];
@@ -124,7 +139,7 @@ async function main() {
     assert.ok(successful.length, 'No successful read-only previous-condition request was observed');
     assert.ok(Array.isArray(await successful[0].json()), 'The real condition endpoint must return data rows');
     if (screenshot) await page.screenshot({path:screenshot,fullPage:false});
-    await first.click();
+    await tapControl(first);
     assert.ok(await page.locator('#rows > tr').first().locator('.previous-results').evaluateAll(
       panels => panels.every(panel => panel.hidden)), 'The next click must close the whole race');
     assert.deepEqual(mutations,[], 'The smoke check must issue no write requests');
