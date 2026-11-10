@@ -16,6 +16,18 @@ ROOT=Path(__file__).parents[1]
 
 
 class DailyHistoryExportTests(unittest.TestCase):
+    def test_public_verification_covers_the_approved_day_after_top_advances(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            for raw,name in [('20261111','index.html'),('20261110','line20261110.html')]:
+                page='const races='+json.dumps([{'source':'https://keirin.kdreams.jp/takeo/racedetail/84'+raw+'010006/'}])+';\nconst body='
+                page+='<body data-previous-meetings="true" data-previous-meetings-src="previous-daily.json">'
+                (root/name).write_text(page)
+            files=verification_files(root)
+            for name in ('index.html','line20261111.html','line20261110.html',
+                         'data/20261111/previous-daily.json','data/20261110/previous-daily.json'):
+                self.assertIn(name,files)
+
     def test_approved_normal_pages_share_daily_data_and_preserve_earlier_pages(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);site=root/'site';output=root/'public'

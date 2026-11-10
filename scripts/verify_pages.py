@@ -1,5 +1,6 @@
 """Read the deployed website anonymously and compare its public files."""
 import argparse
+from datetime import date,timedelta
 import hashlib
 from pathlib import Path
 import re
@@ -21,6 +22,15 @@ def verification_files(site):
             raise ValueError('Daily previous-meeting data source differs')
         files.extend(['previous-meetings.js','previous-meetings.css',
                       'data/'+day+'/previous-daily.json'])
+        # A delayed rollout may finish after the top has advanced overnight.
+        # Check the preceding adopted date too, without growing the daily HTTP
+        # workload with the entire archive.
+        previous=(date(int(day[:4]),int(day[4:6]),int(day[6:]))-timedelta(days=1)).strftime('%Y%m%d')
+        earlier=site/('line'+previous+'.html')
+        if earlier.exists() and 'data-previous-meetings="true"' in earlier.read_text():
+            if page_date(earlier.read_text())!=previous:
+                raise ValueError('Previous adopted page date differs')
+            files.extend([earlier.name,'data/'+previous+'/previous-daily.json'])
     if (site/'index2.html').exists():
         preview_day=page_date((site/'index2.html').read_text())
         files.extend(['index2.html','previous-meetings.js','previous-meetings.css',
