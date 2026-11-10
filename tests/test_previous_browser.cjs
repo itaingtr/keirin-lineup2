@@ -78,6 +78,7 @@ async function main() {
         slotCounts:groups.map(pair => pair.map(group => group.querySelectorAll('.previous-result').length)),
         tops:groups.map(pair => pair.map(group => group.getBoundingClientRect().top)),
         times:[...row.querySelectorAll('.previous-time')].map(node => getComputedStyle(node).fontSize),
+        resultHeights:[...row.querySelectorAll('.previous-result')].map(node => parseFloat(getComputedStyle(node).height)),
       };
     });
     if (screenshot) await page.screenshot({path:screenshot,fullPage:false});
@@ -88,6 +89,28 @@ async function main() {
     assert.ok(geometry.slotCounts.every(pair => pair.length === 2 && pair[0] >= 4 && pair[0] === pair[1]),
       'Both previous meetings need matching slots, including blank fourth rows');
     assert.ok(geometry.times.every(size => size === '8px'), 'Individual times must remain8px');
+    assert.ok(geometry.resultHeights.every(size=>size<=16.1&&size>=15.9), 'The old29px historical rows must be compacted to16px');
+    const styled = await page.evaluate(() => {
+      const headings=[...document.querySelectorAll('.previous-heading')];
+      return {headings:headings.map(node=>({text:node.textContent,grade3:node.classList.contains('previous-grade-g3'),high:node.classList.contains('previous-grade-high'),color:getComputedStyle(node).backgroundColor})),
+        ranks:[...document.querySelectorAll('.previous-important-rank')].map(node=>getComputedStyle(node).color),
+        s:[...document.querySelectorAll('#rows > tr')].map(row=>[...row.querySelectorAll('.recent-s')].map(node=>({value:Number(node.textContent)||0,text:node.textContent.trim(),weight:getComputedStyle(node).fontWeight,color:getComputedStyle(node).color}))) };
+    });
+    assert.ok(styled.headings.every(item=>Array.from(item.text).length<=3), 'Venue headings must use at most3characters');
+    assert.ok(styled.headings.some(item=>item.grade3)&&styled.headings.some(item=>item.high));
+    for(const heading of styled.headings){
+      if(heading.grade3)assert.equal(heading.color,'rgb(255, 235, 238)');
+      if(heading.high)assert.equal(heading.color,'rgb(243, 229, 245)');
+    }
+    assert.ok(styled.ranks.length>0&&styled.ranks.every(color=>color==='rgb(211, 47, 47)'), 'Special/final ranks must be red');
+    for(const members of styled.s){
+      const maximum=Math.max(0,...members.map(item=>item.value));
+      for(const item of members){
+        assert.equal(item.color,'rgb(8, 125, 54)');
+        assert.equal(item.weight,item.value>0&&item.value===maximum?'700':'400');
+        if(item.value===0)assert.equal(item.text,'');
+      }
+    }
     for (const index of [0,1]) {
       const positions = geometry.tops.map(pair => pair[index]);
       assert.ok(Math.max(...positions)-Math.min(...positions) <= 1.5,

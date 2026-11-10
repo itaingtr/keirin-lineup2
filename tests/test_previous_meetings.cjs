@@ -5,7 +5,7 @@ const script=fs.readFileSync(path.join(root,'site/previous-meetings.js'),'utf8')
 const css=fs.readFileSync(path.join(root,'site/previous-meetings.css'),'utf8');
 const pause=()=>new Promise(resolve=>setTimeout(resolve,25));
 const target='2026-11-10';
-const races=[1,2].map(number=>({source:'https://keirin.kdreams.jp/kumamoto/racedetail/872026111001000'+number+'/',race:number,venueCode:'87',meetingStart:'20261110',meetingDay:1,players:[1,2,3].map(no=>({no,name:'選手'+number+no,period:100+no,playerId:'015'+number+'0'+no,meetingResults:[]}))}));
+const races=[1,2].map(number=>({source:'https://keirin.kdreams.jp/kumamoto/racedetail/872026110902000'+number+'/',race:number,venueCode:'87',meetingStart:'20261109',meetingDay:2,players:[1,2,3].map(no=>({no,name:'選手'+number+no,period:100+no,playerId:'015'+number+'0'+no,stats:[no===3?0:number===1?3:3-no,0,0,0,0,0],meetingResults:no===3?[]:[{meeting_day:1,race_id:(no===1?'12':'11')+'8720261109',order:2}]}))}));
 
 function result(player,slot,date,flags={}){
  return {slot,meeting_day:slot,race_date:date,race_date_inferred:false,race_id:'1287'+date.replaceAll('-',''),race_number:12,player_id:player.playerId,order:slot===1?2:3,accident:'',final_half_record:slot===1?'11.7':'11.8',home:null,back:null,start:null,...flags,
@@ -20,11 +20,11 @@ function meeting(player,position,first,count=3){
  return {position,start_date:first,start_date_inferred:true,venue:'熊本',venue_code:'87',grade_code:2,days};
 }
 function payload(){
- return {schema_version:1,target_date:target,races:races.map(race=>({source_url:race.source,players:race.players.map(player=>({no:player.no,name:player.name,period:player.period,player_id:player.playerId,meetings:[meeting(player,'previous_previous','2026-10-20',player.no===2?4:3),meeting(player,'previous','2026-11-02')]}))}))};
+ return {schema_version:1,target_date:target,current_result_types:{'128720261109':'S級初日特選','118720261109':'S級予選'},races:races.map(race=>({source_url:race.source,players:race.players.map(player=>({no:player.no,name:player.name,period:player.period,player_id:player.playerId,meetings:[meeting(player,'previous_previous','2026-10-20',player.no===2?4:3),meeting(player,'previous','2026-11-02')]}))}))};
 }
 const conditionKey=(date,id,player)=>'condition:v1:'+date+':'+id+':'+player;
 function markup(opted=true){
- const rows=races.map(race=>'<tr><td><a class="race-link" href="'+race.source+'">'+race.race+'R</a></td><td><div class="lineup"><div class="line-group">'+race.players.map(player=>'<div class="rider"><span class="car">'+player.no+'</span><span class="name">'+player.name+'</span><span class="period">'+player.period+'</span><div class="stats">1</div><div class="meeting-results"><span class="meeting-first-day">初日</span></div><span class="condition-today"></span></div>').join('')+'</div></div></td></tr>').join('');
+ const rows=races.map(race=>'<tr><td><a class="race-link" href="'+race.source+'">'+race.race+'R</a></td><td><div class="lineup"><div class="line-group">'+race.players.map(player=>'<div class="rider"><span class="car">'+player.no+'</span><span class="name">'+player.name+'</span><span class="period">'+player.period+'</span><span class="recent-s">'+(player.stats[0]||'')+'</span><div class="stats">1</div><div class="meeting-results">'+(player.meetingResults.length?player.meetingResults.map(result=>'<div class="meeting-result" data-meeting-day="'+result.meeting_day+'"><span class="meeting-rank">'+result.order+'</span><span class="meeting-time">11.7</span></div>').join(''):'<span class="meeting-first-day">初日</span>')+'</div><span class="condition-today"></span></div>').join('')+'</div></div></td></tr>').join('');
  return '<!doctype html><html><head><base href="/keirin-lineup2/data/20261110/"><style>.rider{display:flex;flex-direction:column;flex:0 0 22px;width:22px}.line-group{display:flex;gap:0}.lineup{display:flex;gap:12px}'+css+'</style></head><body'+(opted?' data-previous-meetings="true"':'')+'><div class="table-wrap"><table><tbody id="rows">'+rows+'</tbody></table></div><p class="notice">初日には前日までの今場所成績がないため「初日」と表示します。</p><script>const races='+JSON.stringify(races)+';const conditionDate="'+target+'";</script></body></html>';
 }
 async function open({data=payload(),opted=true,posts=[]}={}){
@@ -80,7 +80,7 @@ async function basic(){
   panel.querySelector('.previous-order').click();assert.equal(app.videos.length,1);assert.match(app.videos[0],/kaisaiDate=20261020/);
   const third=app.rows[0].querySelectorAll('.previous-results')[2];
   assert.ok(third.querySelector('[data-previous-meeting="older"] .previous-order'));
-  assert.equal(third.querySelector('[data-previous-meeting="newer"]').textContent,'前走','a known older group is not moved to the newer position');
+  assert.equal(third.querySelector('[data-previous-meeting="newer"]').textContent,'—','a known older group is not moved to the newer position');
   app.posts.push({id:'new',race_key:negative,body:'3',created_at:'2026-10-20T04:00:00Z'});await app.refresh();
   assert.equal(panel.querySelector('.previous-condition').textContent,'3');
   app.fail(true);await app.refresh();assert.equal(panel.querySelector('.previous-condition').textContent,'3','a read failure keeps the last confirmed condition');
@@ -102,6 +102,57 @@ async function nullableAndLongMeeting(){
   assert.equal(unlinked.querySelector('a'),null);assert.equal(unlinked.querySelector('.previous-rank').textContent,'2');assert.equal(unlinked.querySelector('.previous-time').textContent,'11.7');
   assert.equal(unlinked.querySelector('.previous-condition').dataset.conditionKey,undefined);
   assert.ok(app.requested.every(key=>!key.includes('null')));assert.deepEqual(app.errors,[]);
+ }finally{app.dom.window.close();}
+}
+
+async function requestedAppearance(){
+ const data=payload(),members=data.races[0].players;
+ const older=members[0].meetings[0],newer=members[0].meetings[1];
+ older.venue='いわき平';older.grade_code=3;
+ newer.venue='和歌山';newer.grade_code=4;
+ older.days[0].race_type='Ｓ級初特選';older.days[1].race_type='Ｓ級準決勝';older.days[2].race_type='Ｓ級決勝';
+ newer.days[0].race_type='Ｓ級特選';newer.days[0].meeting_day=1;
+ newer.days[1].race_type='S級特選';newer.days[1].highlight_rank=true;
+ members[1].meetings[0].grade_code=2;
+ members[2].meetings[0].grade_code=5;members[2].meetings[1].grade_code=6;
+ const app=await open({data});
+ try{
+  const w=app.dom.window,doc=w.document;
+  const counts=[...app.rows[0].querySelectorAll('.recent-s')];
+  assert.deepEqual(counts.map(node=>node.textContent),['3','3','']);
+  assert.ok(counts.every(node=>w.getComputedStyle(node).color==='rgb(8, 125, 54)'));
+  assert.deepEqual(counts.map(node=>w.getComputedStyle(node).fontWeight),['700','700','400'],'all positive tied maxima are bold; zero stays blank');
+  assert.deepEqual([...app.rows[1].querySelectorAll('.recent-s')].map(node=>w.getComputedStyle(node).fontWeight),['700','400','400'],'S maximum is independent in each race');
+  const currentRanks=app.rows[0].querySelectorAll('.meeting-rank');
+  assert.ok(currentRanks[0].classList.contains('previous-important-rank'));
+  assert.equal(w.getComputedStyle(currentRanks[0]).color,'rgb(211, 47, 47)','current first-day special is red from the exact result-type sidecar');
+  assert.equal(currentRanks[1].classList.contains('previous-important-rank'),false);
+  app.rows[0].querySelector('.previous-toggle').click();await pause();
+  const headings=[...app.rows[0].querySelectorAll('.previous-heading')];
+  assert.equal(headings[0].textContent,'いわき');assert.match(headings[0].title,/いわき平/);
+  assert.equal(headings[1].textContent,'和歌山');
+  assert.ok(headings.every(node=>Array.from(node.textContent).length<=3));
+  assert.equal(w.getComputedStyle(headings[0]).backgroundColor,'rgb(255, 235, 238)');
+  assert.equal(w.getComputedStyle(headings[1]).backgroundColor,'rgb(243, 229, 245)');
+  assert.equal(headings[2].classList.contains('previous-grade-g3'),false,'F1 heading does not get a grade highlight');
+  for(const node of headings.slice(4))assert.equal(w.getComputedStyle(node).backgroundColor,'rgb(243, 229, 245)','G1 and GP use the same pale purple');
+  const panel=app.rows[0].querySelector('.previous-results');
+  const ranks=[...panel.querySelectorAll('[data-previous-meeting="older"] .previous-rank')];
+  assert.deepEqual(ranks.map(node=>node.classList.contains('previous-important-rank')),[true,false,true],'semifinal must not match final');
+  assert.equal(w.getComputedStyle(ranks[0]).color,'rgb(211, 47, 47)');
+  assert.equal(w.getComputedStyle(ranks[2]).color,'rgb(211, 47, 47)');
+  const recentRanks=[...panel.querySelectorAll('[data-previous-meeting="newer"] .previous-rank')];
+  assert.equal(recentRanks[0].classList.contains('previous-important-rank'),false,'a supplementary start is not guessed to be an opening-day special');
+  assert.equal(recentRanks[1].classList.contains('previous-important-rank'),true,'verified backend classification can highlight a result');
+  for(const node of panel.querySelectorAll('.previous-result')){
+   const style=w.getComputedStyle(node);assert.equal(style.height,'16px');assert.equal(style.marginBottom,'0px');
+  }
+  assert.equal(w.getComputedStyle(panel.querySelector('.previous-time')).fontSize,'8px');
+  assert.equal(w.getComputedStyle(panel.querySelector('.previous-time')).height,'8px');
+  await app.rerender();
+  assert.equal(w.getComputedStyle(app.rows[0].querySelector('.recent-s')).fontWeight,'700');
+  assert.equal(app.rows[0].querySelector('.meeting-rank').classList.contains('previous-important-rank'),true);
+  assert.deepEqual(app.errors,[]);
  }finally{app.dom.window.close();}
 }
 
@@ -162,4 +213,4 @@ async function actualPrototype(htmlPath,jsonPath){
  }finally{dom.window.close();}
 }
 
-(async()=>{await basic();await nullableAndLongMeeting();await guarded();if(process.argv[2]&&process.argv[3])await actualPrototype(process.argv[2],process.argv[3]);console.log('PREVIOUS MEETINGS UI PASS: exact identities, per-race toggle, four-slot alignment, nullable links, longer meetings, raw times, SHB, latest shared notes including zero, rerender and archive isolation.');})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await basic();await nullableAndLongMeeting();await requestedAppearance();await guarded();if(process.argv[2]&&process.argv[3])await actualPrototype(process.argv[2],process.argv[3]);console.log('PREVIOUS MEETINGS UI PASS: exact identities, per-race toggle, compact four-slot venue groups and grades, special/final ranks, green maximum S counts, raw times, SHB, latest shared notes including zero, rerender and archive isolation.');})().catch(error=>{console.error(error);process.exitCode=1;});

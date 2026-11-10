@@ -8,6 +8,7 @@
   const entries = new Map();
   const expectedRatings = new Set();
   const ratings = new Map();
+  const currentResultTypes = new Map();
   let ready = false, failed = false, ratingRequest = null, lastRatingAttempt = 0;
   const normalize = value => String(value).normalize('NFKC').replace(/\s+/g, '');
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -20,6 +21,43 @@
     return node;
   };
   const require = (value, message) => { if (!value) throw new Error(message); };
+
+  function importantResult(result, meeting = {}) {
+    if (result.highlight_rank === true) return true;
+    const kind = normalize(result.race_type || '');
+    if (kind.includes('決勝') && !kind.includes('準決')) return true;
+    if (/初日特選|初特選|初特/.test(kind)) return true;
+    return kind.includes('特選') && result.meeting_day === 1 && meeting.start_date_inferred !== true;
+  }
+
+  function paintCurrent(rider, player, maximumS) {
+    const count = rider.querySelector('.recent-s');
+    if (count) {
+      count.classList.add('previous-s-count');
+      const value = Number(player.stats?.[0]);
+      count.classList.toggle('previous-s-max', value > 0 && value === maximumS);
+    }
+    for (const row of rider.querySelectorAll('.meeting-result[data-meeting-day]')) {
+      const result = (player.meetingResults || []).find(item => item.meeting_day === Number(row.dataset.meetingDay));
+      const rank = row.querySelector('.meeting-rank');
+      if (rank) rank.classList.toggle('previous-important-rank', Boolean(result && importantResult({
+        ...result, race_type: currentResultTypes.get(result.race_id) || result.race_type,
+      }, {start_date_inferred:false})));
+    }
+  }
+
+  function readCurrentTypes(payload) {
+    const source = payload.current_result_types || {};
+    require(source && typeof source === 'object' && !Array.isArray(source), 'current result types');
+    currentResultTypes.clear();
+    for (const race of races) for (const player of race.players) for (const result of player.meetingResults || []) {
+      const kind = source[result.race_id];
+      if (kind !== undefined) {
+        require(typeof kind === 'string' && kind.length <= 80, 'current result type');
+        currentResultTypes.set(result.race_id, kind);
+      }
+    }
+  }
 
   function verifiedLink(raw, result) {
     if (!raw) return null;
@@ -142,7 +180,7 @@
     }
     row.dataset.raceDate = result.race_date;
     if (result.race_id) row.dataset.raceId = result.race_id;
-    const title = [meeting.venue, result.race_date, result.race_number + 'R'].filter(Boolean).join(' ');
+    const title = [meeting.venue, result.race_date, result.race_number ? result.race_number + 'R' : ''].filter(Boolean).join(' ');
     row.title = title;
     const orderLine = element('div', 'previous-order-line');
     const order = element(result.link ? 'a' : 'span', 'previous-order');
@@ -156,6 +194,7 @@
     }
     const label = result.order ? String(result.order) : String(result.accident || '');
     const rank = element('span', 'previous-rank', label);
+    rank.classList.toggle('previous-important-rank', importantResult(result, meeting));
     if (result.display_type === 1) rank.classList.add('previous-rank-circle');
     else if (result.display_type === 2) rank.classList.add('previous-rank-solid');
     order.append(rank);
@@ -184,8 +223,13 @@
     blocks.forEach((meeting, index) => {
       const block = element('div', 'previous-meeting');
       block.dataset.previousMeeting = index === 0 ? 'older' : 'newer';
-      const heading = element('span', 'previous-heading', index === 0 ? '前々走' : '前走');
+      const venue = meeting?.venue || '';
+      const heading = element('span', 'previous-heading', Array.from(venue).slice(0, 3).join('') || '—');
       heading.title = meeting ? [meeting.venue, meeting.start_date].filter(Boolean).join(' ') : '取得なし';
+      heading.setAttribute('aria-label', venue || '競輪場未取得');
+      const grade = Number(meeting?.grade_code);
+      if (grade === 3) heading.classList.add('previous-grade-g3');
+      else if (grade >= 4 && grade <= 6) heading.classList.add('previous-grade-high');
       block.append(heading);
       for (let slot = 1; slot <= record.slots; slot++) {
         const value = meeting?.days.find(result => result.slot === slot);
@@ -207,10 +251,13 @@
     const source = rowSource(row), race = current.get(source);
     if (!race) return;
     const open = expanded.has(source);
+    const maximumS = Math.max(0, ...race.players.map(player => Number(player.stats?.[0]) || 0));
     for (const rider of row.querySelectorAll('.lineup .rider')) {
       const number = Number(rider.querySelector('.car')?.textContent);
       const player = race.players.find(member => member.no === number);
-      if (!player || rider.querySelector('.previous-controls')) continue;
+      if (!player) continue;
+      paintCurrent(rider, player, maximumS);
+      if (rider.querySelector('.previous-controls')) continue;
       // Only this prototype removes the opening-day placeholder. Existing
       // current-meeting results remain above the new control.
       rider.querySelector('.meeting-first-day')?.remove();
@@ -262,12 +309,17 @@
     .then(response => { if (!response.ok) throw new Error('history unavailable'); return response.json(); })
     .then(payload => {
       for (const [source, record] of validate(payload)) entries.set(source, record);
+      readCurrentTypes(payload);
       ready = true;
       document.body.dataset.previousMeetingsStatus = 'ready';
       for (const row of root.children) {
         const source = rowSource(row);
+        const race = current.get(source);
+        const maximumS = Math.max(0, ...(race?.players || []).map(player => Number(player.stats?.[0]) || 0));
         for (const rider of row.querySelectorAll('.lineup .rider')) {
           const number = Number(rider.querySelector('.car')?.textContent);
+          const player = race?.players.find(member => member.no === number);
+          if (player) paintCurrent(rider, player, maximumS);
           const panel = rider.querySelector('.previous-results');
           if (panel) populate(panel, source, number);
           const button = rider.querySelector('.previous-toggle');

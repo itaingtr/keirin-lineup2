@@ -33,6 +33,10 @@ jobs:
         run: |
           python3 scripts/export_pages.py
           npm install --prefix /tmp/lineup2-browser --no-audit --no-fund playwright-core@1.62.1
+      - name: Install Japanese fonts for visual review
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
       - name: Verify mobile geometry and an actual read-only condition query
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_previous_browser.cjs public /tmp/previous-mobile.png
       - name: Save the review screenshot

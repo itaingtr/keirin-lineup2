@@ -75,7 +75,15 @@ def export_preview(site,output):
     if hashlib.sha256(payload).hexdigest()!=meta['sha256'] or hashlib.sha256(page).hexdigest()!=meta['page_sha256']:
         raise ValueError('Previous preview checksum differs')
     data=validate(json.loads(payload),page.decode())
-    (output/'index2.html').write_bytes(page)
-    for name in FEATURES:(output/name).write_bytes((site/name).read_bytes())
-    destination=output/'data'/day/'previous-meetings.json';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(payload)
+    from previous_presentation import enrich as presentation
+    data=presentation(data,site,parse_page(page.decode()))
+    rendered=page.decode()
+    for name in FEATURES:
+        content=(site/name).read_bytes();version=hashlib.sha256(content).hexdigest()[:12]
+        rendered,count=re.subn(r'(/'+re.escape(name)+r')(?:\?[^"\s]*)?',
+                               lambda match:match[1]+'?v='+version,rendered,count=1)
+        if count!=1:raise ValueError('Previous preview asset link is missing')
+        (output/name).write_bytes(content)
+    (output/'index2.html').write_text(rendered)
+    destination=output/'data'/day/'previous-meetings.json';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(encode(data))
     return {'target_date':meta['target_date'],'data_path':'data/'+day+'/previous-meetings.json',**data['summary']}
