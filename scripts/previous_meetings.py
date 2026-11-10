@@ -85,7 +85,7 @@ def _meeting(cell, before, player_id, source, observed):
         placing = re.fullmatch(r'([1-9])着', rank)
         accident = '' if placing else ACCIDENTS.get(rank.removesuffix('着'))
         require(placing is not None or accident is not None,
-                'Unknown previous-meeting placing/accident')
+                'Unknown previous-meeting placing/accident: '+repr([label,kind,rank,agari]))
         if agari in ('', '-', '—', '―'):
             agari = None
         else:
