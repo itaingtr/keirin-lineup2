@@ -82,11 +82,13 @@ def _meeting(cell, before, player_id, source, observed):
         require(len(spans) >= 4, 'Incomplete previous-meeting placing/time fields')
         label, kind, rank, agari = [compact(n.text()) for n in spans[:4]]
         require(bool(kind), 'Previous-meeting race type is missing')
+        blank = ('', '-', '—', '―', '−')
+        unavailable = rank in blank and agari in blank
         placing = re.fullmatch(r'([1-9])着', rank)
-        accident = '' if placing else ACCIDENTS.get(rank.removesuffix('着'))
-        require(placing is not None or accident is not None,
+        accident = '' if placing or unavailable else ACCIDENTS.get(rank.removesuffix('着'))
+        require(unavailable or placing is not None or accident is not None,
                 'Unknown previous-meeting placing/accident: '+repr([label,kind,rank,agari]))
-        if agari in ('', '-', '—', '―'):
+        if agari in blank:
             agari = None
         else:
             require(re.fullmatch(r'\d{1,2}\.\d', agari), 'Invalid previous-meeting individual time')
@@ -100,15 +102,19 @@ def _meeting(cell, before, player_id, source, observed):
                 'Historical date label differs')
         if video:
             videos.append(video)
+        # A schedule/video placeholder does not establish that this rider
+        # participated. Keep the date/slot, but provide no result identity that
+        # could attach another rider's flags, video or shared condition note.
+        own_result = video if not unavailable else None
         records.append({'race_date': actual.isoformat(), 'race_date_inferred': video is None,
-                        'race_number': video['race'] if video else None,
-                        'race_id': f'{video["race"]:02}{video["code"]}{actual:%Y%m%d}' if video else None,
+                        'race_number': own_result['race'] if own_result else None,
+                        'race_id': f'{own_result["race"]:02}{own_result["code"]}{actual:%Y%m%d}' if own_result else None,
                         'order': int(placing[1]) if placing else None, 'accident': accident,
-                        'final_half_record': agari, 'race_type': kind,
+                        'final_half_record': agari, 'race_type': kind, 'unavailable': unavailable,
                         # K's recent-results column has no verified H/B field.
                         'home': None, 'back': None, 'start': None,
-                        'video_url': video['url'] if video else None,
-                        'result_url': video['url'] if video else None,
+                        'video_url': own_result['url'] if own_result else None,
+                        'result_url': own_result['url'] if own_result else None,
                         'player_id': player_id, 'provider': PROVIDER,
                         'source_url': source, 'observed_at': observed})
     require(len({r['race_date'] for r in records}) == len(records),

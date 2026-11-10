@@ -1,0 +1,44 @@
+name: Verify index2 in mobile Chrome with the existing read-only client
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/previous-browser.yml'
+      - 'tests/test_previous_browser.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Wait for the separately collected checked prototype
+        run: |
+          python3 - <<'PY'
+          import subprocess,time
+          for attempt in range(30):
+              subprocess.run(['git','fetch','origin','main'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              result=subprocess.run(['git','show','FETCH_HEAD:site/previous-preview/current.json'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              if result.returncode==0:
+                  subprocess.run(['git','checkout','--detach','FETCH_HEAD'],check=True)
+                  break
+              time.sleep(10)
+          else:raise RuntimeError('The checked index2 data has not been collected yet')
+          PY
+      - name: Export the actual preview and install the pinned browser client
+        run: |
+          python3 scripts/export_pages.py
+          npm install --prefix /tmp/lineup2-browser --no-audit --no-fund playwright-core@1.62.1
+      - name: Verify mobile geometry and an actual read-only condition query
+        run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_previous_browser.cjs public /tmp/previous-mobile.png
+      - name: Save the review screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: index2-mobile
+          path: /tmp/previous-mobile.png
+          if-no-files-found: ignore

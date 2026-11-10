@@ -1,11 +1,11 @@
 from copy import deepcopy
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
-from previous_meetings import collect, parse_previous
+from previous_meetings import collect, parse_previous, _meeting
 from source_http import Document
 from test_kdreams_provider import URL, STAMP, card
 
@@ -44,6 +44,26 @@ def markup(old_dates=('20261001', '20261002', '20261003', '20261004'), missing_v
 
 
 class PreviousMeetingsTests(unittest.TestCase):
+    def test_observed_blank_result_keeps_its_slot_without_claiming_participation(self):
+        for rank, agari in [('', ''), ('-', '—')]:
+            markup = results('27', ['20261102', '20261103']).replace(
+                '<span>S級予選</span><span>1着</span><span>11.0</span>',
+                '<span>S級一般</span><span>'+rank+'</span><span>'+agari+'</span>', 1)
+            cell = next(Document(markup).root.find_all('td'))
+            meeting = _meeting(cell, date(2026, 11, 10), '015101', URL, STAMP)
+            first, second = meeting['days']
+            self.assertEqual((first['race_date'], first['slot'], second['slot']), ('2026-11-02', 1, 2))
+            self.assertTrue(first['unavailable'])
+            self.assertIsNone(first['order']); self.assertEqual(first['accident'], '')
+            self.assertIsNone(first['final_half_record'])
+            for field in ('race_id', 'race_number', 'video_url', 'result_url', 'home', 'back', 'start'):
+                self.assertIsNone(first[field], field)
+            self.assertEqual(second['race_id'], '072720261103')
+            self.assertFalse(second['unavailable'])
+        inconsistent = results('27', ['20261102']).replace('<span>1着</span>', '<span></span>')
+        with self.assertRaises(ValueError):
+            _meeting(next(Document(inconsistent).root.find_all('td')), date(2026, 11, 10), '015101', URL, STAMP)
+
     def test_two_actual_source_columns_are_older_first_and_keep_exact_times_and_links(self):
         rows = parse_previous(Document(markup()).root, URL, PLAYERS, STAMP)
         old, recent = rows[0]['meetings']

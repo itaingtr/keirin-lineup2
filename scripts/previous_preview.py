@@ -40,9 +40,11 @@ def prepare(card,races,target,run_key,site):
     data['summary']={'races':len(data['races']),
                      'riders':sum(len(r['players']) for r in data['races']),
                      'results':sum(len(m['days']) for r in data['races'] for p in r['players'] for m in p['meetings']),
+                     'recorded_results':sum(not d.get('unavailable',False)
+                                            for r in data['races'] for p in r['players'] for m in p['meetings'] for d in m['days']),
                      'flag_results':sum(any(d.get(f) is True for f in ('home','back','start'))
                                         for r in data['races'] for p in r['players'] for m in p['meetings'] for d in m['days'])}
-    if not data['summary']['results']:
+    if not data['summary']['recorded_results']:
         raise ValueError('No verified previous results were found; preserve the previous preview')
     day=target.replace('-','')
     page=public_html(card['html'],day,json.loads(card['assets']['rakuten-marks.json']),
