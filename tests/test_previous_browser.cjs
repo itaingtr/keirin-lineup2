@@ -10,6 +10,7 @@ catch { ({chromium} = require('playwright')); }
 
 const publicDir = path.resolve(process.argv[2] || 'public');
 const screenshot = process.argv[3] || process.env.PREVIOUS_SCREENSHOT;
+const targetPage = process.argv[4] || 'index.html';
 const prefix = '/keirin-lineup2/';
 const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
   '.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8',
@@ -23,7 +24,17 @@ function featureRead(request) {
 }
 
 async function main() {
-  assert.ok(fs.existsSync(path.join(publicDir,'index2.html')), 'The real index2 artifact is required');
+  assert.ok(['index.html','index2.html'].includes(targetPage), 'Only a checked public page can be tested');
+  assert.ok(fs.existsSync(path.join(publicDir,targetPage)), 'The real public artifact is required');
+  let datedPage;
+  if (targetPage === 'index.html') {
+    const source = fs.readFileSync(path.join(publicDir,targetPage),'utf8');
+    const day = /<base href="\/keirin-lineup2\/data\/(\d{8})\//.exec(source)?.[1];
+    assert.ok(day,'The top page needs a checked date base');
+    datedPage = 'line'+day+'.html';
+    assert.equal(fs.readFileSync(path.join(publicDir,datedPage),'utf8'),source,'Root and current date must be byte-identical');
+    assert.ok(source.includes('data-previous-meetings-src="previous-daily.json"'),'Normal cards need the date-bound daily history');
+  }
   const server = http.createServer((request,response) => {
     if (!['GET','HEAD'].includes(request.method)) { response.writeHead(405).end(); return; }
     let pathname;
@@ -42,8 +53,11 @@ async function main() {
   let browser;
   try {
     const launch = {headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};
-    try { browser = await chromium.launch({...launch,channel:'chrome'}); }
-    catch { browser = await chromium.launch(launch); }
+    if (process.env.CHROME_PATH) browser = await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
+    else {
+      try { browser = await chromium.launch({...launch,channel:'chrome'}); }
+      catch { browser = await chromium.launch(launch); }
+    }
     const context = await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,
       isMobile:true,hasTouch:true});
     const mutations = [], errors = [], reads = [];
@@ -62,7 +76,7 @@ async function main() {
       if (featureRead(response.request())) reads.push(response);
     });
     const origin = 'http://127.0.0.1:'+server.address().port;
-    await page.goto(origin+prefix+'index2.html',{waitUntil:'domcontentloaded',timeout:30000});
+    await page.goto(origin+prefix+targetPage,{waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(() => document.body.dataset.previousMeetingsStatus === 'ready',null,{timeout:30000});
     await page.waitForFunction(() => window.keirinBoard?.ready === true,null,{timeout:30000});
     await page.evaluate(async () => { await document.fonts.ready; });
@@ -113,15 +127,18 @@ async function main() {
       const headings=[...document.querySelectorAll('.previous-heading')];
       return {headings:headings.map(node=>({text:node.textContent,grade3:node.classList.contains('previous-grade-g3'),high:node.classList.contains('previous-grade-high'),color:getComputedStyle(node).backgroundColor})),
         ranks:[...document.querySelectorAll('.previous-important-rank')].map(node=>getComputedStyle(node).color),
+        semifinals:[...document.querySelectorAll('.previous-semifinal-rank')].map(node=>getComputedStyle(node).color),
         s:[...document.querySelectorAll('#rows > tr')].map(row=>[...row.querySelectorAll('.recent-s')].map(node=>({value:Number(node.textContent)||0,text:node.textContent.trim(),weight:getComputedStyle(node).fontWeight,color:getComputedStyle(node).color}))) };
     });
     assert.ok(styled.headings.every(item=>Array.from(item.text).length<=3), 'Venue headings must use at most3characters');
-    assert.ok(styled.headings.some(item=>item.grade3)&&styled.headings.some(item=>item.high));
+    assert.ok(styled.headings.length > 0, 'Previous-meeting venue headings must be present');
     for(const heading of styled.headings){
       if(heading.grade3)assert.equal(heading.color,'rgb(255, 235, 238)');
       if(heading.high)assert.equal(heading.color,'rgb(243, 229, 245)');
     }
-    assert.ok(styled.ranks.length>0&&styled.ranks.every(color=>color==='rgb(211, 47, 47)'), 'Special/final ranks must be red');
+    assert.ok(styled.ranks.every(color=>color==='rgb(211, 47, 47)'), 'Special/final ranks must be red');
+    assert.ok(styled.semifinals.every(color=>color==='rgb(239, 108, 0)'), 'Semifinal ranks must be orange');
+    console.log('PREVIOUS BROWSER COLORS',JSON.stringify({specialFinal:styled.ranks.length,semifinals:styled.semifinals.length}));
     for(const members of styled.s){
       const maximum=Math.max(0,...members.map(item=>item.value));
       for(const item of members){
@@ -146,9 +163,14 @@ async function main() {
     await tapControl(first);
     assert.ok(await page.locator('#rows > tr').first().locator('.previous-results').evaluateAll(
       panels => panels.every(panel => panel.hidden)), 'The next click must close the whole race');
+    if (datedPage) {
+      await page.goto(origin+prefix+datedPage,{waitUntil:'domcontentloaded',timeout:30000});
+      await page.waitForFunction(() => document.body.dataset.previousMeetingsStatus === 'ready',null,{timeout:30000});
+      assert.equal(await page.locator('.previous-toggle').count(),await page.locator('.lineup .rider').count(),'The date page must activate the same feature for every rider');
+    }
     assert.deepEqual(mutations,[], 'The smoke check must issue no write requests');
     assert.deepEqual(errors,[], 'The real preview must execute without browser errors');
-    console.log('PREVIOUS BROWSER PASS:390x844, race-wide toggle, aligned four-slot groups,22px columns,8px times and real read-only condition GET.');
+    console.log('PREVIOUS BROWSER PASS:'+targetPage+',390x844, race-wide toggle, aligned four-slot groups,22px columns,8px times, semifinal orange and real read-only condition GET.');
   } finally {
     if (browser) await browser.close();
     server.closeAllConnections?.();

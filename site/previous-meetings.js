@@ -1,4 +1,4 @@
-// Isolated index2 prototype. Saved results and shared notes are read only.
+// Opt-in previous-meeting presentation. Saved results and shared notes are read only.
 (() => {
   'use strict';
   const root = document.getElementById('rows');
@@ -25,9 +25,19 @@
   function importantResult(result, meeting = {}) {
     if (result.highlight_rank === true) return true;
     const kind = normalize(result.race_type || '');
-    if (kind.includes('決勝') && !kind.includes('準決')) return true;
+    if (/決勝(?:戦)?$/.test(kind) && !kind.includes('準')) return true;
     if (/初日特選|初特選|初特/.test(kind)) return true;
     return kind.includes('特選') && result.meeting_day === 1 && meeting.start_date_inferred !== true;
+  }
+
+  function semifinalResult(result) {
+    return result.semifinal_rank === true || /準決勝(?:戦)?$/.test(normalize(result.race_type || ''));
+  }
+
+  function paintRank(rank, result, meeting = {}) {
+    const semifinal = Boolean(result && semifinalResult(result));
+    rank.classList.toggle('previous-semifinal-rank', semifinal);
+    rank.classList.toggle('previous-important-rank', Boolean(result && !semifinal && importantResult(result, meeting)));
   }
 
   function paintCurrent(rider, player, maximumS) {
@@ -40,9 +50,9 @@
     for (const row of rider.querySelectorAll('.meeting-result[data-meeting-day]')) {
       const result = (player.meetingResults || []).find(item => item.meeting_day === Number(row.dataset.meetingDay));
       const rank = row.querySelector('.meeting-rank');
-      if (rank) rank.classList.toggle('previous-important-rank', Boolean(result && importantResult({
+      if (rank) paintRank(rank, result && {
         ...result, race_type: currentResultTypes.get(result.race_id) || result.race_type,
-      }, {start_date_inferred:false})));
+      }, {start_date_inferred:false});
     }
   }
 
@@ -194,7 +204,7 @@
     }
     const label = result.order ? String(result.order) : String(result.accident || '');
     const rank = element('span', 'previous-rank', label);
-    rank.classList.toggle('previous-important-rank', importantResult(result, meeting));
+    paintRank(rank, result, meeting);
     if (result.display_type === 1) rank.classList.add('previous-rank-circle');
     else if (result.display_type === 2) rank.classList.add('previous-rank-solid');
     order.append(rank);
@@ -305,7 +315,8 @@
   });
   attachAll();
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 20000);
-  fetch(new URL('previous-meetings.json', document.baseURI).href, {cache: 'no-store', signal: controller.signal})
+  const historyFile = document.body.dataset.previousMeetingsSrc === 'previous-daily.json' ? 'previous-daily.json' : 'previous-meetings.json';
+  fetch(new URL(historyFile, document.baseURI).href, {cache: 'no-store', signal: controller.signal})
     .then(response => { if (!response.ok) throw new Error('history unavailable'); return response.json(); })
     .then(payload => {
       for (const [source, record] of validate(payload)) entries.set(source, record);

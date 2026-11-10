@@ -1,6 +1,7 @@
 """Export verified cards as public, flat GitHub Pages files."""
 import argparse
 from datetime import datetime,timezone
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -20,6 +21,8 @@ SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-co
         'comments-passphrase.js','rider-condition.css','rider-condition.js')
 TOP_BUTTON=f'''<button type="button" class="refresh-button home-button" onclick="location.href='{BASE}'" aria-label="トップページへ">トップ</button>'''
 CALENDAR_BUTTON=f'''<button type="button" class="refresh-button calendar-button" onclick="location.href='{BASE}calendar/index.html'" aria-label="日程カレンダーへ">日程</button>'''
+PREVIOUS_CUTOVER='20261110'
+PREVIOUS_ASSETS=('previous-meetings.js','previous-meetings.css')
 MOBILE_STYLE='''<style id="mobile-readability-style">
 @media(max-width:640px){
 html{overflow-x:auto}
@@ -143,6 +146,38 @@ def materialize_card(card,site):
         (dated/name).write_text(body)
 
 
+def daily_previous_page(site,output,page,day):
+    """Opt a checked daily card into the approved previous-meeting layout.
+
+    The preview retains its fixed snapshot and separate data file. A daily
+    snapshot is accepted only by the identity/checksum validator, and this
+    function changes exported presentation without rewriting any source card.
+    """
+    if day<PREVIOUS_CUTOVER:return page,None
+    from previous_daily import load_daily
+    data=load_daily(site,day,page)
+    if data is None:return page,None
+    from previous_presentation import enrich
+    data=enrich(data,site,parse_page(page))
+    page,count=re.subn(r'<body\b','<body data-previous-meetings="true" data-previous-meetings-src="previous-daily.json"',page,count=1)
+    if count!=1:raise ValueError('Daily previous-meeting body is missing')
+    for name in PREVIOUS_ASSETS:
+        content=(Path(site)/name).read_bytes()
+        version=hashlib.sha256(content).hexdigest()[:12]
+        (Path(output)/name).write_bytes(content)
+        if name.endswith('.css'):
+            tag=f'<link rel="stylesheet" href="{BASE}{name}?v={version}">'
+            page=page.replace('</head>',tag+'</head>',1)
+        else:
+            tag=f'<script src="{BASE}{name}?v={version}"></script>'
+            page=page.replace('</body>',tag+'</body>',1)
+    relative='data/'+day+'/previous-daily.json'
+    destination=Path(output)/relative
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    destination.write_text(json.dumps(data,ensure_ascii=False,separators=(',',':'),allow_nan=False)+'\n')
+    return page,{'target_date':data['target_date'],'data_path':relative,**data.get('summary',{})}
+
+
 def export(site,output,repository=REPOSITORY):
     site,output=Path(site),Path(output)
     output.mkdir(parents=True,exist_ok=True)
@@ -154,7 +189,7 @@ def export(site,output,repository=REPOSITORY):
         else:
             (output/name).write_bytes((site/name).read_bytes())
     current=(site/'index.html').read_text();current_day=page_date(current)
-    dates=[]
+    dates=[];daily_reports={}
     for directory in sorted(site.iterdir()):
         match=re.fullmatch(r'line(\d{8})\.html',directory.name)
         if not match or not (directory/'index.html').is_file():continue
@@ -163,7 +198,9 @@ def export(site,output,repository=REPOSITORY):
         marks=json.loads((directory/'rakuten-marks.json').read_text()) if day>=CUTOVER else None
         identities=json.loads((directory/'rider-identities.json').read_text()) if day>=CONDITION_CUTOVER else None
         details=json.loads((directory/'rider-details.json').read_text()) if (directory/'rider-details.json').exists() else None
-        (output/('line'+day+'.html')).write_text(public_html(page,day,marks,identities,details))
+        rendered,previous=daily_previous_page(site,output,public_html(page,day,marks,identities,details),day)
+        if previous is not None:daily_reports[day]=previous
+        (output/('line'+day+'.html')).write_text(rendered)
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
         for file in directory.glob('*.json'):
             # These are existing public display fields, never raw source backups.
@@ -179,6 +216,7 @@ def export(site,output,repository=REPOSITORY):
     details_path=site/('line'+current_day+'.html')/'rider-details.json'
     details=json.loads(details_path.read_text()) if details_path.exists() else None
     page=public_html(current,current_day,marks,identities,details)
+    page,previous=daily_previous_page(site,output,page,current_day)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')
@@ -191,7 +229,7 @@ def export(site,output,repository=REPOSITORY):
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
             'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days']),
-            'previous_preview':preview}
+            'previous_preview':preview,'previous_daily':previous}
 
 
 if __name__=='__main__':

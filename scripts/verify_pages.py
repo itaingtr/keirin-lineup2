@@ -9,14 +9,18 @@ from urllib.request import Request,urlopen
 from export_pages import BASE,page_date,SHARED
 
 
-def verify(site,base):
-    expected='https://itaingtr.github.io'+BASE
-    if base.rstrip('/')+'/'!=expected:raise ValueError('Unexpected public Pages address')
+def verification_files(site):
+    """Public artifacts which must match the checked export before receipt."""
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     if (site/'data'/day/'rider-details.json').exists():files.append('data/'+day+'/rider-details.json')
+    if 'data-previous-meetings="true"' in current:
+        if 'data-previous-meetings-src="previous-daily.json"' not in current:
+            raise ValueError('Daily previous-meeting data source differs')
+        files.extend(['previous-meetings.js','previous-meetings.css',
+                      'data/'+day+'/previous-daily.json'])
     if (site/'index2.html').exists():
         preview_day=page_date((site/'index2.html').read_text())
         files.extend(['index2.html','previous-meetings.js','previous-meetings.css',
@@ -25,6 +29,14 @@ def verify(site,base):
     # link index before a separate calendar UI is supplied.
     if (site/'calendar').is_dir():
         files.extend(p.relative_to(site).as_posix() for p in sorted((site/'calendar').rglob('*')) if p.is_file())
+    return list(dict.fromkeys(files))
+
+
+def verify(site,base):
+    expected='https://itaingtr.github.io'+BASE
+    if base.rstrip('/')+'/'!=expected:raise ValueError('Unexpected public Pages address')
+    current=(site/'index.html').read_text();day=page_date(current)
+    files=verification_files(site)
     # A new deployment can take a short time to reach the public Pages CDN.
     stamp=hashlib.sha256(current.encode()).hexdigest()[:16]
     for attempt in range(12):

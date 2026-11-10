@@ -23,5 +23,7 @@ body[data-previous-meetings="true"] .previous-time{display:block;box-sizing:bord
 body[data-previous-meetings="true"] .previous-time-value{display:block;width:4ch;margin-inline:auto;text-align:left;white-space:nowrap}
 body[data-previous-meetings="true"] .previous-rank.previous-important-rank,body[data-previous-meetings="true"] .meeting-rank.previous-important-rank{color:#d32f2f}
 body[data-previous-meetings="true"] .previous-rank-solid.previous-important-rank,body[data-previous-meetings="true"] .meeting-rank-solid.previous-important-rank{background:#ffebee;border-color:#d32f2f;color:#d32f2f}
+body[data-previous-meetings="true"] .previous-rank.previous-semifinal-rank,body[data-previous-meetings="true"] .meeting-rank.previous-semifinal-rank{color:#ef6c00}
+body[data-previous-meetings="true"] .previous-rank-solid.previous-semifinal-rank,body[data-previous-meetings="true"] .meeting-rank-solid.previous-semifinal-rank{background:#fff3e0;border-color:#ef6c00;color:#ef6c00}
 body[data-previous-meetings="true"] .recent-s.previous-s-count{color:#087d36;font-weight:400}
 body[data-previous-meetings="true"] .recent-s.previous-s-count.previous-s-max{font-weight:700}

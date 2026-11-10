@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from previous_presentation import enrich,highlight
+from previous_presentation import enrich,highlight,semifinal
 
 
 def write(root,day,rows):
@@ -33,6 +33,23 @@ class PreviousPresentationTests(unittest.TestCase):
         self.assertTrue(highlight('S級特選',1))
         for kind in ('S級準決勝','S級準々決勝','S級特選','S級特秀','S級優秀'):
             self.assertFalse(highlight(kind,2),kind)
+
+    def test_semifinal_is_distinct_from_final_and_quarterfinal(self):
+        for kind in ('Ｓ級準決勝','S級準決勝戦',' Ａ級 準決勝 '):
+            self.assertTrue(semifinal(kind),kind)
+        for kind in ('S級決勝','S級準々決勝','S級二次予選','S級初日特選',None):
+            self.assertFalse(semifinal(kind),kind)
+
+    def test_verified_semifinal_metadata_stays_separate_and_preserves_source(self):
+        original=data();before=deepcopy(original)
+        current=[{'players':[{'playerId':'013497','meetingResults':[record()]}]}]
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);path=write(root,'20261109',[race('Ｓ級準決勝')]);source=path.read_bytes()
+            result=enrich(original,root,current)
+            self.assertEqual(result['current_result_types'],{'128420261109':'S級準決勝'})
+            row=result['races'][0]['players'][0]['meetings'][0]['days'][0]
+            self.assertTrue(row['semifinal_rank']);self.assertFalse(row['highlight_rank'])
+            self.assertEqual(original,before);self.assertEqual(path.read_bytes(),source)
 
     def test_exact_archive_type_adds_current_and_previous_hints_without_mutation(self):
         original=data();before=deepcopy(original)

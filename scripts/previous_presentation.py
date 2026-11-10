@@ -1,4 +1,4 @@
-"""Read-only, verified race-type metadata for the index2 presentation."""
+"""Read-only, verified race-type metadata for opted-in card presentation."""
 from copy import deepcopy
 from datetime import date
 from pathlib import Path
@@ -19,6 +19,10 @@ def highlight(race_type,meeting_day):
     if any(value in kind for value in ('初日特選','初特選','初特')):return True
     if kind.endswith(('決勝','決勝戦')) and '準' not in kind:return True
     return meeting_day==1 and kind.endswith('特選')
+
+
+def semifinal(race_type):
+    return bool(re.search(r'準決勝(?:戦)?$',compact(race_type)))
 
 
 def _archive_types(site):
@@ -80,5 +84,6 @@ def enrich(data,site,current_races=None):
                     if key in types:
                         metadata=types[key]
                         record['highlight_rank']=highlight(metadata['race_type'],metadata['meeting_day'])
+                        record['semifinal_rank']=semifinal(metadata['race_type'])
                         record['race_type_source_url']=metadata['source_url']
     return result

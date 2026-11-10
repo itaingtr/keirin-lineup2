@@ -23,17 +23,17 @@ function payload(){
  return {schema_version:1,target_date:target,current_result_types:{'128720261109':'S級初日特選','118720261109':'S級予選'},races:races.map(race=>({source_url:race.source,players:race.players.map(player=>({no:player.no,name:player.name,period:player.period,player_id:player.playerId,meetings:[meeting(player,'previous_previous','2026-10-20',player.no===2?4:3),meeting(player,'previous','2026-11-02')]}))}))};
 }
 const conditionKey=(date,id,player)=>'condition:v1:'+date+':'+id+':'+player;
-function markup(opted=true){
+function markup(opted=true,source=''){
  const rows=races.map(race=>'<tr><td><a class="race-link" href="'+race.source+'">'+race.race+'R</a></td><td><div class="lineup"><div class="line-group">'+race.players.map(player=>'<div class="rider"><span class="car">'+player.no+'</span><span class="name">'+player.name+'</span><span class="period">'+player.period+'</span><span class="recent-s">'+(player.stats[0]||'')+'</span><div class="stats">1</div><div class="meeting-results">'+(player.meetingResults.length?player.meetingResults.map(result=>'<div class="meeting-result" data-meeting-day="'+result.meeting_day+'"><span class="meeting-rank">'+result.order+'</span><span class="meeting-time">11.7</span></div>').join(''):'<span class="meeting-first-day">初日</span>')+'</div><span class="condition-today"></span></div>').join('')+'</div></div></td></tr>').join('');
- return '<!doctype html><html><head><base href="/keirin-lineup2/data/20261110/"><style>.rider{display:flex;flex-direction:column;flex:0 0 22px;width:22px}.line-group{display:flex;gap:0}.lineup{display:flex;gap:12px}'+css+'</style></head><body'+(opted?' data-previous-meetings="true"':'')+'><div class="table-wrap"><table><tbody id="rows">'+rows+'</tbody></table></div><p class="notice">初日には前日までの今場所成績がないため「初日」と表示します。</p><script>const races='+JSON.stringify(races)+';const conditionDate="'+target+'";</script></body></html>';
+ return '<!doctype html><html><head><base href="/keirin-lineup2/data/20261110/"><style>.rider{display:flex;flex-direction:column;flex:0 0 22px;width:22px}.line-group{display:flex;gap:0}.lineup{display:flex;gap:12px}'+css+'</style></head><body'+(opted?' data-previous-meetings="true"':'')+(source?' data-previous-meetings-src="'+source+'"':'')+'><div class="table-wrap"><table><tbody id="rows">'+rows+'</tbody></table></div><p class="notice">初日には前日までの今場所成績がないため「初日」と表示します。</p><script>const races='+JSON.stringify(races)+';const conditionDate="'+target+'";</script></body></html>';
 }
-async function open({data=payload(),opted=true,posts=[]}={}){
+async function open({data=payload(),opted=true,posts=[],source=''}={}){
  let calls=0,reads=0,fail=false;
  const errors=[],requested=[],intervals=[],videos=[];
- const dom=new JSDOM(markup(opted),{url:'https://itaingtr.github.io/keirin-lineup2/index2.html',runScripts:'dangerously',beforeParse(w){
+ const dom=new JSDOM(markup(opted,source),{url:'https://itaingtr.github.io/keirin-lineup2/index2.html',runScripts:'dangerously',beforeParse(w){
   Object.defineProperty(w.document,'visibilityState',{value:'visible',configurable:true});
   w.setInterval=(fn,ms)=>{intervals.push({fn,ms});return intervals.length;};
-  w.fetch=async(input,options)=>{calls++;assert.equal(String(input),'https://itaingtr.github.io/keirin-lineup2/data/20261110/previous-meetings.json');assert.equal(options.cache,'no-store');return {ok:true,json:async()=>data};};
+  w.fetch=async(input,options)=>{calls++;assert.equal(String(input),'https://itaingtr.github.io/keirin-lineup2/data/20261110/'+(source==='previous-daily.json'?source:'previous-meetings.json'));assert.equal(options.cache,'no-store');return {ok:true,json:async()=>data};};
   w.openVideo=(event,url)=>{event.preventDefault();videos.push(url);};
   w.keirinBoard={ready:true,canWrite:false,client:{from(table){assert.equal(table,'race_comments');return {
    select(columns){assert.equal(columns,'id, race_key, body, created_at');let batch=[];return {
@@ -107,13 +107,17 @@ async function nullableAndLongMeeting(){
 
 async function requestedAppearance(){
  const data=payload(),members=data.races[0].players;
+ data.current_result_types['118720261109']='S級準決勝';
  const older=members[0].meetings[0],newer=members[0].meetings[1];
  older.venue='いわき平';older.grade_code=3;
  newer.venue='和歌山';newer.grade_code=4;
  older.days[0].race_type='Ｓ級初特選';older.days[1].race_type='Ｓ級準決勝';older.days[2].race_type='Ｓ級決勝';
+ older.days[1].display_type=2;
  newer.days[0].race_type='Ｓ級特選';newer.days[0].meeting_day=1;
  newer.days[1].race_type='S級特選';newer.days[1].highlight_rank=true;
+ newer.days[2].race_type='S級準々決勝';
  members[1].meetings[0].grade_code=2;
+ members[1].meetings[0].days[0].semifinal_rank=true;
  members[2].meetings[0].grade_code=5;members[2].meetings[1].grade_code=6;
  const app=await open({data});
  try{
@@ -127,6 +131,8 @@ async function requestedAppearance(){
   assert.ok(currentRanks[0].classList.contains('previous-important-rank'));
   assert.equal(w.getComputedStyle(currentRanks[0]).color,'rgb(211, 47, 47)','current first-day special is red from the exact result-type sidecar');
   assert.equal(currentRanks[1].classList.contains('previous-important-rank'),false);
+  assert.ok(currentRanks[1].classList.contains('previous-semifinal-rank'));
+  assert.equal(w.getComputedStyle(currentRanks[1]).color,'rgb(239, 108, 0)','current semifinal is orange from the exact result-type sidecar');
   app.rows[0].querySelector('.previous-toggle').click();await pause();
   const headings=[...app.rows[0].querySelectorAll('.previous-heading')];
   assert.equal(headings[0].textContent,'いわき');assert.match(headings[0].title,/いわき平/);
@@ -141,9 +147,15 @@ async function requestedAppearance(){
   assert.deepEqual(ranks.map(node=>node.classList.contains('previous-important-rank')),[true,false,true],'semifinal must not match final');
   assert.equal(w.getComputedStyle(ranks[0]).color,'rgb(211, 47, 47)');
   assert.equal(w.getComputedStyle(ranks[2]).color,'rgb(211, 47, 47)');
+  assert.deepEqual(ranks.map(node=>node.classList.contains('previous-semifinal-rank')),[false,true,false]);
+  assert.equal(w.getComputedStyle(ranks[1]).color,'rgb(239, 108, 0)');
+  assert.equal(w.getComputedStyle(ranks[1]).backgroundColor,'rgb(255, 243, 224)','solid semifinal rank stays legible on pale orange');
+  assert.equal(w.getComputedStyle(app.rows[0].querySelectorAll('.previous-results')[1].querySelector('.previous-rank')).color,'rgb(239, 108, 0)','verified metadata can color a semifinal with no raw type');
   const recentRanks=[...panel.querySelectorAll('[data-previous-meeting="newer"] .previous-rank')];
   assert.equal(recentRanks[0].classList.contains('previous-important-rank'),false,'a supplementary start is not guessed to be an opening-day special');
   assert.equal(recentRanks[1].classList.contains('previous-important-rank'),true,'verified backend classification can highlight a result');
+  assert.equal(recentRanks[2].classList.contains('previous-important-rank'),false,'quarterfinal is not a final');
+  assert.equal(recentRanks[2].classList.contains('previous-semifinal-rank'),false,'quarterfinal is not a semifinal');
   for(const node of panel.querySelectorAll('.previous-result')){
    const style=w.getComputedStyle(node);assert.equal(style.height,'16px');assert.equal(style.marginBottom,'0px');
   }
@@ -152,11 +164,15 @@ async function requestedAppearance(){
   await app.rerender();
   assert.equal(w.getComputedStyle(app.rows[0].querySelector('.recent-s')).fontWeight,'700');
   assert.equal(app.rows[0].querySelector('.meeting-rank').classList.contains('previous-important-rank'),true);
+  assert.equal(app.rows[0].querySelectorAll('.meeting-rank')[1].classList.contains('previous-semifinal-rank'),true);
   assert.deepEqual(app.errors,[]);
  }finally{app.dom.window.close();}
 }
 
 async function guarded(){
+ const daily=await open({source:'previous-daily.json'});
+ try{assert.equal(daily.dom.window.document.body.dataset.previousMeetingsStatus,'ready');assert.equal(daily.calls(),1);}
+ finally{daily.dom.window.close();}
  const normal=await open({opted:false});
  try{assert.equal(normal.calls(),0);assert.equal(normal.dom.window.document.querySelector('.previous-toggle'),null);assert.equal(normal.dom.window.document.querySelector('.meeting-first-day').textContent,'初日');assert.equal(normal.intervals.length,0);}
  finally{normal.dom.window.close();}
@@ -174,7 +190,7 @@ async function actualPrototype(htmlPath,jsonPath){
   w.matchMedia=()=>({matches:false});w.setInterval=()=>0;
   Object.defineProperty(w.document,'visibilityState',{value:'visible',configurable:true});
   w.keirinBoard={ready:false};
-  w.fetch=async input=>{assert.equal(new URL(String(input)).pathname.split('/').at(-1),'previous-meetings.json');return {ok:true,json:async()=>data};};
+  w.fetch=async input=>{assert.equal(new URL(String(input)).pathname.split('/').at(-1),w.document.body.dataset.previousMeetingsSrc || 'previous-meetings.json');return {ok:true,json:async()=>data};};
   w.addEventListener('error',event=>errors.push(event.error||event.message));
  }});
  try{

@@ -23,6 +23,7 @@ from kdreams_history import enrich_start_flags
 from rider_details import collect_details, details_from_dataset, stage_details, validate_details
 from lineup_refresh import refresh_lineups
 from publication_state import card_digest,artifact_digest,is_confirmed,read_receipt
+from previous_daily import ensure_daily,load_daily,CUTOVER as PREVIOUS_CUTOVER
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -223,6 +224,8 @@ def main():
     card_checked = collected
     card_changed = False
     card_check_error = None
+    previous_history = None
+    history_error = None
     if collected:
         require(can_replace(collection_date, now, target, migration=migration,refresh_card=mode=='cards'),
                 'Refusing a past/in-progress card rewrite or date regression')
@@ -232,6 +235,9 @@ def main():
             names = git('ls-tree', '--name-only', ref + ':fallback/cards').splitlines()
             candidate, candidate_races = build_card(dataset, datetime.now(timezone.utc).isoformat(),
                                      [name for name in names if re.fullmatch(r'\d{8}', name)])
+            # Bind previous meetings to the complete candidate roster before
+            # advancing its immutable card pointer or replacing any page.
+            previous_history=ensure_daily(candidate,candidate_races,args.run_key,ROOT/'site')
             card_changed=card_fingerprint(candidate)!=card_fingerprint(card)
         except Exception as error:
             if not (mode=='cards' and target==collection_date.isoformat()
@@ -253,9 +259,23 @@ def main():
         card,races=refresh_lineups(card)
         stage_card(card,args.run_key,output,ref)
         lineups_refreshed=True
+    if previous_history is None:
+        try:
+            if target.replace('-','')>=PREVIOUS_CUTOVER and target<now.astimezone(JST).date().isoformat():
+                # Reading an archived record is allowed; adding one to an old
+                # page is not. Current-day recovery above owns new cards.
+                load_daily(ROOT/'site',target,card['html'])
+                previous_history={'changed':False}
+            else:
+                previous_history=ensure_daily(card,races,args.run_key,ROOT/'site')
+        except Exception as error:
+            history_error=type(error).__name__+': '+str(error)[:300]
+            card_check_error=card_check_error or 'Previous meetings: '+history_error
+            print('PREVIOUS MEETINGS CHECK FAILED: preserve published pages and continue saved-card odds',history_error,flush=True)
     publication_pending=not is_confirmed(read_receipt(ref,git_read),card,
                                        source_commit=git('rev-parse','HEAD'))
-    publish_pages = mode == 'publish' or collected or publication_pending
+    publish_pages = not history_error and (mode == 'publish' or collected or publication_pending
+                                           or previous_history.get('changed',False))
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
     odds_schedule = args.schedule if args.event == 'schedule' and mode == 'odds' else ''
@@ -322,6 +342,8 @@ def main():
                    'card_check_error':card_check_error,'odds': odds_stats,
                    'publication_pending':publication_pending,'card_sha256':card_digest(card),'run_key':args.run_key,
                    'preview_requested':preview_requested})
+    report.update({'previous_history_changed':bool(previous_history and previous_history.get('changed')),
+                   'previous_history_error':history_error})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:

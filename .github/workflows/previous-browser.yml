@@ -1,10 +1,16 @@
-name: Verify index2 in mobile Chrome with the existing read-only client
+name: Verify daily history in mobile Chrome with the existing read-only client
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/previous-browser.yml'
       - 'tests/test_previous_browser.cjs'
+      - 'scripts/previous_daily.py'
+      - 'scripts/previous_presentation.py'
+      - 'scripts/export_pages.py'
+      - 'scripts/official_publication.py'
+      - 'site/previous-meetings.js'
+      - 'site/previous-meetings.css'
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,20 +22,24 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: main
-      - name: Wait for the separately collected checked prototype
+      - name: Wait for the publisher to save the checked daily history
         run: |
           python3 - <<'PY'
-          import subprocess,time
+          import subprocess,time,sys
+          sys.path.insert(0,'scripts')
+          from export_pages import page_date
           for attempt in range(30):
               subprocess.run(['git','fetch','origin','main'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-              result=subprocess.run(['git','show','FETCH_HEAD:site/previous-preview/current.json'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              source=subprocess.check_output(['git','show','FETCH_HEAD:site/index.html'],text=True)
+              day=page_date(source)
+              result=subprocess.run(['git','show','FETCH_HEAD:site/previous-daily/'+day+'/latest.json'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
               if result.returncode==0:
                   subprocess.run(['git','checkout','--detach','FETCH_HEAD'],check=True)
                   break
               time.sleep(10)
-          else:raise RuntimeError('The checked index2 data has not been collected yet')
+          else:raise RuntimeError('The checked current-day history has not been saved yet')
           PY
-      - name: Export the actual preview and install the pinned browser client
+      - name: Export actual daily pages and install the pinned browser client
         run: |
           python3 scripts/export_pages.py
           npm install --prefix /tmp/lineup2-browser --no-audit --no-fund playwright-core@1.62.1
@@ -43,6 +53,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: index2-mobile
+          name: daily-history-mobile
           path: /tmp/previous-mobile.png
           if-no-files-found: ignore

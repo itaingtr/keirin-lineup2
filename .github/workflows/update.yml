@@ -57,6 +57,10 @@ jobs:
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_pages.cjs /tmp/lineup2-publication/report.json
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs
+          DAILY_DATA=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print((r.get("previous_daily") or {}).get("data_path", ""))')
+          if [ -n "$DAILY_DATA" ]; then
+            NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_previous_meetings.cjs public/index.html "public/$DAILY_DATA"
+          fi
           if [ -f public/index2.html ]; then
             PREVIEW_DATA=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print(r["previous_preview"]["data_path"])')
             NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_previous_meetings.cjs public/index2.html "public/$PREVIEW_DATA"
