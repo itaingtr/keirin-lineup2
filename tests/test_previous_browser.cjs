@@ -80,8 +80,11 @@ async function main() {
         times:[...row.querySelectorAll('.previous-time')].map(node => getComputedStyle(node).fontSize),
       };
     });
+    if (screenshot) await page.screenshot({path:screenshot,fullPage:false});
+    console.log('PREVIOUS BROWSER GEOMETRY',JSON.stringify(geometry));
     assert.ok(geometry.opened && geometry.slotCounts.length > 0, 'One click must open the whole race');
-    assert.ok(geometry.widths.every(width => width === '22px'), 'The original rider width must remain22px');
+    // Fractional mobile layout zoom quantizes CSS widths to layout units.
+    assert.ok(geometry.widths.every(width => Math.abs(parseFloat(width)-22)<0.1), 'The original rider width must remain22px');
     assert.ok(geometry.slotCounts.every(pair => pair.length === 2 && pair[0] >= 4 && pair[0] === pair[1]),
       'Both previous meetings need matching slots, including blank fourth rows');
     assert.ok(geometry.times.every(size => size === '8px'), 'Individual times must remain8px');
