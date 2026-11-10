@@ -17,6 +17,10 @@ def verify(site,base):
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     if (site/'data'/day/'rider-details.json').exists():files.append('data/'+day+'/rider-details.json')
+    if (site/'index2.html').exists():
+        preview_day=page_date((site/'index2.html').read_text())
+        files.extend(['index2.html','previous-meetings.js','previous-meetings.css',
+                      'data/'+preview_day+'/previous-meetings.json'])
     # Calendar files are public build outputs, including the generated daily
     # link index before a separate calendar UI is supplied.
     if (site/'calendar').is_dir():

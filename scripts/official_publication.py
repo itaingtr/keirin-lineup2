@@ -180,7 +180,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--event', required=True)
     parser.add_argument('--schedule', default='')
-    parser.add_argument('--mode', choices=('publish', 'cards', 'odds'), default='publish')
+    parser.add_argument('--mode', choices=('publish', 'cards', 'odds','preview'), default='publish')
     parser.add_argument('--date', default='')
     parser.add_argument('--run-key', required=True)
     parser.add_argument('--work', type=Path, required=True)
@@ -198,6 +198,11 @@ def main():
     saved = read_published(ref)
     require(saved is not None, 'Verified initial card is missing')
     card, races, target = saved
+    preview_requested=mode=='preview'
+    if preview_requested:
+        from previous_preview import prepare
+        prepare(card,races,target,args.run_key,ROOT/'site')
+        mode='publish'
     collection_date = None
     migration = False
     if mode == 'cards':
@@ -307,14 +312,16 @@ def main():
     if publish_pages:
         git('add', '--', 'site')
         if git('status', '--porcelain', '--', 'site'):
-            git('commit', '-m', 'Update official public card ' + target + ' [skip ci]')
+            message=('Update index2 previous-meetings preview ' if preview_requested else 'Update official public card ')
+            git('commit', '-m', message + target + ' [skip ci]')
             git('push', 'origin', 'HEAD:main')
     report.update({'mode': mode, 'publish_pages': publish_pages, 'feed_commit': feed_commit,
                    'source_commit': git('rev-parse', 'HEAD'), 'source_providers': card['summary'].get('source_providers',[PROVIDER]),
                    'provider_migration': migration, 'lineups_refreshed':lineups_refreshed,
                    'card_checked':card_checked,'card_changed':card_changed,
                    'card_check_error':card_check_error,'odds': odds_stats,
-                   'publication_pending':publication_pending,'card_sha256':card_digest(card),'run_key':args.run_key})
+                   'publication_pending':publication_pending,'card_sha256':card_digest(card),'run_key':args.run_key,
+                   'preview_requested':preview_requested})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:

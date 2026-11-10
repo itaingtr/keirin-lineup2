@@ -1,0 +1,30 @@
+name: Request the isolated previous-meetings preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/previous-preview.yml'
+      - 'scripts/previous_meetings.py'
+      - 'scripts/previous_flags.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  request:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Collect into index2 through the existing publisher
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0,'scripts')
+          from update_heartbeat import dispatch_workflow
+          dispatch_workflow('update.yml',{'mode':'preview','date':''})
+          PY

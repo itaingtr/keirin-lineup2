@@ -7,7 +7,7 @@ on:
       mode:
         description: 'publish: saved card / cards: next day / odds: current race day'
         type: choice
-        options: [publish, cards, odds]
+        options: [publish, cards, odds, preview]
         default: publish
       date:
         description: 'Optional YYYY-MM-DD for manual cards only'
@@ -57,6 +57,10 @@ jobs:
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_pages.cjs /tmp/lineup2-publication/report.json
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs
+          if [ -f public/index2.html ]; then
+            PREVIEW_DATA=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print(r["previous_preview"]["data_path"])')
+            NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_previous_meetings.cjs public/index2.html "public/$PREVIEW_DATA"
+          fi
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5

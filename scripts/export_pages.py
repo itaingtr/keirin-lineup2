@@ -185,10 +185,13 @@ def export(site,output,repository=REPOSITORY):
     calendar=export_calendar(site,output,dates,current_day,BASE)
     (output/'.nojekyll').write_text('')
     races=parse_page(page)
+    from previous_preview import export_preview
+    preview=export_preview(site,output)
     return {'target_date':current_day[:4]+'-'+current_day[4:6]+'-'+current_day[6:],
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
-            'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days'])}
+            'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days']),
+            'previous_preview':preview}
 
 
 if __name__=='__main__':
