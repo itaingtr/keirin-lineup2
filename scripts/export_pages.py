@@ -226,7 +226,8 @@ def export(site,output,repository=REPOSITORY):
     from previous_preview import export_preview
     preview=export_preview(site,output)
     from ten_preview import export_ten_preview
-    ten_preview=export_ten_preview(site,output)
+    from ten_preview_gate import ready_for_export
+    ten_preview=export_ten_preview(site,output) if ready_for_export(site) else None
     if ten_preview is not None:preview=ten_preview
     return {'target_date':current_day[:4]+'-'+current_day[4:6]+'-'+current_day[6:],
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
