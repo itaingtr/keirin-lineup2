@@ -219,7 +219,9 @@ def repair_high_grades(data,races,target,client=None):
         for player in race['players']:
             for meeting in player['meetings']:
                 grade=meeting.get('grade_code')
+                reuse=meeting.pop('_reuse_calendar',False)
                 if grade not in (4,5,6):continue
+                if reuse and meeting.get('calendar_sequence_verified') is True:continue
                 code=meeting.get('venue_code');start=date.fromisoformat(meeting['start_date'])
                 require(code in VENUES and start<before,'High-grade meeting identity differs')
                 days=meeting['days'];require(1<=len(days)<=8,'Invalid high-grade profile starts')
@@ -270,7 +272,7 @@ def repair_high_grades(data,races,target,client=None):
     return result
 
 
-def collect(races,target,read=None,client=None):
+def collect(races,target,read=None,client=None,known=None):
     """Collect current riders' last ten completed official meetings, oldest first."""
     actual=date.fromisoformat(target);read=read or ProfileReader();client=client or OfficialClient()
     require(races,'Empty ten-meeting preview card')
@@ -336,6 +338,18 @@ def collect(races,target,read=None,client=None):
                 print('OFFICIAL TEN PROFILE JOIN',len(profiles)+1,'/',total,flush=True)
                 history=deepcopy(parsed_profiles[key])
                 for meeting in history:
+                    reusable=[m for m in (known or {}).get(player_id,[])
+                        if m.get('provider','keirin.jp')=='keirin.jp'
+                        and m.get('venue_code') in meeting['venue_options']
+                        and m.get('grade_code')==meeting['grade_code'] and m.get('start_date')==meeting['start_date']
+                        and [(d.get('order'),d.get('accident','')) for d in m['days']]
+                            ==[(d.get('order'),d.get('accident','')) for d in meeting['days']]]
+                    require(len(reusable)<=1,'Ambiguous cached official meeting')
+                    if reusable:
+                        saved=deepcopy(reusable[0])
+                        if saved.get('calendar_sequence_verified') is True:saved['_reuse_calendar']=True
+                        meeting.clear();meeting.update(saved)
+                        continue
                     if meeting['grade_code'] in (4,5,6):
                         require(len(meeting['venue_options'])==1,'High-grade venue abbreviation is ambiguous')
                         code=meeting.pop('venue_options')[0];meeting.pop('venue_label')

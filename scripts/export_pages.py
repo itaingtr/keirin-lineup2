@@ -199,6 +199,8 @@ def export(site,output,repository=REPOSITORY):
         identities=json.loads((directory/'rider-identities.json').read_text()) if day>=CONDITION_CUTOVER else None
         details=json.loads((directory/'rider-details.json').read_text()) if (directory/'rider-details.json').exists() else None
         rendered,previous=daily_previous_page(site,output,public_html(page,day,marks,identities,details),day)
+        from rider_history import export_daily
+        rendered,ten_daily=export_daily(site,output,rendered,day)
         if previous is not None:daily_reports[day]=previous
         (output/('line'+day+'.html')).write_text(rendered)
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
@@ -217,6 +219,8 @@ def export(site,output,repository=REPOSITORY):
     details=json.loads(details_path.read_text()) if details_path.exists() else None
     page=public_html(current,current_day,marks,identities,details)
     page,previous=daily_previous_page(site,output,page,current_day)
+    from rider_history import export_daily
+    page,ten_daily=export_daily(site,output,page,current_day)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')
@@ -233,7 +237,7 @@ def export(site,output,repository=REPOSITORY):
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
             'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days']),
-            'previous_preview':preview,'previous_daily':previous,'ten_preview':ten_preview}
+            'previous_preview':preview,'previous_daily':previous,'ten_preview':ten_preview,'ten_daily':ten_daily}
 
 
 if __name__=='__main__':

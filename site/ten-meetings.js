@@ -6,6 +6,9 @@
   const current = new Map(races.map(race => [race.source, race]));
   const expanded = new Set(), records = new Map();
   let ready = false, failed = false;
+  let referenceData = null;
+  let referenceChecked = 0;
+  const loadedRaces = new Set(), activeLoads = new Map(), fileLoads = new Map(), rawLoaded = new Map();
   const normalize = value => String(value).normalize('NFKC').replace(/\s+/g, '');
   const require = (value, message) => { if (!value) throw new Error(message); };
   const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -34,7 +37,7 @@
   function validate(data) {
     const target = typeof conditionDate === 'string' ? conditionDate
       : document.querySelector('.eyebrow')?.textContent.match(/\d{4}\.\d{2}\.\d{2}/)?.[0].replaceAll('.','-');
-    require(data?.schema_version === 1 && data.provider === 'keirin.jp' && validDate(target)
+    require(data?.schema_version === 1 && ['keirin.jp','mixed'].includes(data.provider) && validDate(target)
       && data.target_date === target && Array.isArray(data.races) && data.races.length === current.size, 'ten meeting card');
     const verified = new Map();
     for (const race of data.races) {
@@ -86,8 +89,10 @@
     const label = result.order ? String(result.order) : String(result.accident || '');
     const rank = node(result.link ? 'a' : 'span','ten-rank',label);
     const kind = normalize(result.race_type || '');
-    if (result.highlight_rank === true || result.semifinal_rank === true || /初日特選|初特選|初特/.test(kind)
-      || /準決勝(?:戦)?$/.test(kind) || /決勝(?:戦)?$/.test(kind) && !kind.includes('準')) rank.classList.add('ten-rank-highlight');
+    const semi = result.semifinal_rank === true || /準決勝(?:戦)?$/.test(kind);
+    const important = result.highlight_rank === true || /初日特選|初特選|初特/.test(kind)
+      || /決勝(?:戦)?$/.test(kind) && !kind.includes('準');
+    if (semi || important) rank.classList.add('ten-rank-highlight',semi ? 'ten-rank-semifinal' : 'ten-rank-important');
     rank.dataset.raceDate = result.race_date;
     if (result.race_id) rank.dataset.raceId = result.race_id;
     rank.title = [result.race_date,result.race_number ? result.race_number+'R' : '',kind,label+'着'].filter(Boolean).join(' ');
@@ -153,10 +158,75 @@
       }
     }
   }
-  root.addEventListener('click',event => {
+  function emptyReferences(data) {
+    return {...data,races:data.races.map(race=>({...race,players:race.players.map(player=>({...player,meetings:rawLoaded.get(race.source_url)?.get(player.player_id) || []}))}))};
+  }
+  function checkReferences(data) {
+    for(const race of data.races)for(const player of race.players){
+      const ref=player.history_ref;
+      require(ref && /^[0-9a-f]{64}$/.test(ref.sha256)
+        && ref.path === 'rider-history/'+player.player_id+'/'+ref.sha256+'.json','shared history reference');
+    }
+    return validate(emptyReferences(data));
+  }
+  async function loadRace(source) {
+    if(!referenceData || loadedRaces.has(source))return;
+    if(activeLoads.has(source))return activeLoads.get(source);
+    const task=(async()=>{
+      const race=referenceData.races.find(item=>item.source_url===source);
+      const members=new Map();
+      await Promise.all(race.players.map(async player=>{
+        const ref=player.history_ref;
+        if(!fileLoads.has(ref.path))fileLoads.set(ref.path,fetch(new URL('/keirin-lineup2/'+ref.path,document.baseURI).href,{cache:'force-cache'})
+          .then(response=>{if(!response.ok)throw Error('shared rider history unavailable');return response.json();})
+          .catch(error=>{fileLoads.delete(ref.path);throw error;}));
+        const record=await fileLoads.get(ref.path);
+        require(record.schema_version===1 && record.player_id===player.player_id && normalize(record.name)===normalize(player.name)
+          && String(record.period)===String(player.period) && Array.isArray(record.meetings),'shared rider identity');
+        members.set(player.player_id,record.meetings);
+      }));
+      rawLoaded.set(source,members);
+      const checked=validate(emptyReferences(referenceData));
+      records.set(source,checked.get(source));loadedRaces.add(source);
+      for(const row of root.children)if(sourceFor(row)===source)for(const rider of row.querySelectorAll('.lineup .rider')){
+        const number=Number(rider.querySelector('.car')?.textContent);const panel=rider.querySelector('.ten-results');
+        if(panel)populate(panel,records.get(source).get(number));
+      }
+    })();
+    activeLoads.set(source,task);
+    try{await task;}finally{activeLoads.delete(source);}
+  }
+  async function refreshReferences(source) {
+    if(!referenceData || Date.now()-referenceChecked<60000
+      || !referenceData.races.find(r=>r.source_url===source)?.players.some(p=>p.pending))return;
+    referenceChecked=Date.now();
+    const response=await fetch(new URL('ten-meetings.json',document.baseURI).href,{cache:'no-store'});
+    if(!response.ok)return;
+    const newer=await response.json();
+    require(newer.history_storage==='rider-master','shared history storage differs');
+    checkReferences(newer);
+    for(const race of newer.races){
+      const old=referenceData.races.find(r=>r.source_url===race.source_url);
+      if(race.players.some(p=>old.players.find(x=>x.player_id===p.player_id)?.history_ref.path!==p.history_ref.path)){
+        loadedRaces.delete(race.source_url);rawLoaded.delete(race.source_url);
+      }
+    }
+    referenceData=newer;
+    const checked=checkReferences(newer);checked.forEach((members,key)=>records.set(key,members));
+  }
+  root.addEventListener('click',async event => {
     const button = event.target.closest('.ten-toggle');
     if (!button || !root.contains(button) || !ready) return;
     const source = button.dataset.tenSource;
+    if(referenceData){
+      for(const row of root.children)if(sourceFor(row)===source)row.querySelectorAll('.ten-toggle').forEach(n=>{n.disabled=true;n.setAttribute('aria-busy','true');});
+      try{await refreshReferences(source);await loadRace(source);}catch{
+        for(const row of root.children)if(sourceFor(row)===source)row.querySelectorAll('.ten-toggle').forEach(n=>{n.title='成績を読み込めませんでした。もう一度押してください';});
+        return;
+      }finally{
+        for(const row of root.children)if(sourceFor(row)===source)row.querySelectorAll('.ten-toggle').forEach(n=>{n.disabled=false;n.removeAttribute('aria-busy');});
+      }
+    }
     if (expanded.has(source)) expanded.delete(source); else expanded.add(source);
     for (const row of root.children) if (sourceFor(row) === source) {
       row.querySelectorAll('.ten-toggle').forEach(toggle => toggle.setAttribute('aria-expanded',String(expanded.has(source))));
@@ -170,7 +240,10 @@
   fetch(new URL('ten-meetings.json',document.baseURI).href,{cache:'no-store',signal:abort.signal})
     .then(response => { if (!response.ok) throw new Error('ten meetings unavailable');return response.json(); })
     .then(data => {
-      const checked = validate(data);checked.forEach((value,key) => records.set(key,value));ready = true;
+      let checked;
+      if(data.history_storage==='rider-master'){checked=checkReferences(data);referenceData=data;referenceChecked=Date.now();}
+      else checked=validate(data);
+      checked.forEach((value,key) => records.set(key,value));ready = true;
       root.querySelectorAll('.ten-controls').forEach(control => control.remove());attachAll();
       document.body.dataset.tenMeetingsStatus = 'ready';
     })

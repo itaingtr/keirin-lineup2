@@ -40,6 +40,34 @@ class Client:
 
 
 class TenMeetingsTests(unittest.TestCase):
+    def test_known_unchanged_meetings_skip_all_historical_entry_reads(self):
+        html=page([meeting(date(2026,11,1))]);race={'source':SOURCE,'players':[PLAYER]}
+        read=lambda *_:(Document(html).root,STAMP)
+        initial=collect([race],'2026-11-12',read,Client())
+        known={'013497':initial['races'][0]['players'][0]['meetings']}
+        client=Client();result=collect([race],'2026-11-12',read,client,known=known)
+        self.assertEqual(client.calls,[])
+        self.assertEqual(result['races'][0]['players'][0]['meetings'],known['013497'])
+
+    def test_only_a_new_meeting_reads_historical_entries(self):
+        race={'source':SOURCE,'players':[PLAYER]}
+        initial=collect([race],'2026-11-12',lambda *_:(Document(page([meeting(date(2026,10,1))])).root,STAMP),Client())
+        known={'013497':initial['races'][0]['players'][0]['meetings']}
+        client=Client();html=page([meeting(date(2026,11,1)),meeting(date(2026,10,1))])
+        result=collect([race],'2026-11-12',lambda *_:(Document(html).root,STAMP),client,known=known)
+        self.assertEqual(client.calls,[('84','20261101'),('84','20261102'),('84','20261103')])
+        self.assertEqual(result['races'][0]['players'][0]['meetings'][0],known['013497'][0])
+
+    def test_verified_high_grade_cache_skips_all_six_calendar_reads(self):
+        race={'source':SOURCE,'players':[PLAYER]};html=page([meeting(date(2026,11,1),'岸Ｇ１',ranks=(1,2,3,4,5))])
+        read=lambda *_:(Document(html).root,STAMP)
+        initial=collect([race],'2026-11-12',read,self.high_client())
+        known={'013497':initial['races'][0]['players'][0]['meetings']}
+        self.assertTrue(known['013497'][0]['calendar_sequence_verified'])
+        client=self.high_client();result=collect([race],'2026-11-12',read,client,known=known)
+        self.assertEqual(client.calls,[])
+        self.assertEqual(result['races'][0]['players'][0]['meetings'],known['013497'])
+
     def test_supplementary_meeting_schedule_can_overlap_previous_actual_rides(self):
         html=page([meeting(date(2026,11,3),ranks=(None,None,4)),meeting(date(2026,11,1))])
         history=parse_profile(html,PLAYER,date(2026,11,12))

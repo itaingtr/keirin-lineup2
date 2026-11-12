@@ -19,6 +19,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: write
 concurrency:
   group: keirin-lineup2-update
   cancel-in-progress: false
@@ -69,6 +70,10 @@ jobs:
             TEN_DATA=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print(r["ten_preview"]["ten_data_path"])')
             NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_ten_meetings.cjs public/index2.html "public/$TEN_DATA"
           fi
+          TEN_DAILY=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print((r.get("ten_daily") or {}).get("data_path", ""))')
+          if [ -n "$TEN_DAILY" ]; then
+            NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_ten_meetings.cjs public/index.html "public/$TEN_DAILY"
+          fi
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5
@@ -89,6 +94,11 @@ jobs:
       - name: Confirm publication only after anonymous HTTP checks
         if: steps.update.outputs.publish == 'true'
         run: python3 scripts/publication_state.py --site public --report /tmp/lineup2-publication/report.json --work /tmp/lineup2-confirmation
+      - name: Refresh missing shared rider histories in the background
+        if: steps.update.outputs.history_refresh == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/rider_history_worker.py request
       - name: Report a failed source check after saved-page recovery
         if: always() && steps.update.outputs.card_check_failed == 'true'
         run: |

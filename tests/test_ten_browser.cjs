@@ -6,16 +6,19 @@ try { ({chromium}=require('playwright-core')); }
 catch { ({chromium}=require('playwright')); }
 const publicDir=path.resolve(process.argv[2]||'public');
 const screenshot=process.argv[3]||process.env.TEN_SCREENSHOT;
+const targetPage=process.argv[4]||'index2.html';
 const prefix='/keirin-lineup2/';
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
   '.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.svg':'image/svg+xml'};
 
 async function main(){
-  const html=fs.readFileSync(path.join(publicDir,'index2.html'),'utf8');
+  const html=fs.readFileSync(path.join(publicDir,targetPage),'utf8');
   assert.ok(html.includes('data-ten-meetings="true"'),'The checked experiment must be exported');
   const day=/<base href="\/keirin-lineup2\/data\/(\d{8})\//.exec(html)?.[1];
   assert.ok(day,'Experiment needs a date-bound data base');
   const data=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'ten-meetings.json'),'utf8'));
+  if(data.history_storage==='rider-master')for(const r of data.races)for(const p of r.players)p.meetings=JSON.parse(fs.readFileSync(path.join(publicDir,p.history_ref.path),'utf8')).meetings;
+  if(targetPage==='index.html')assert.equal(fs.readFileSync(path.join(publicDir,'line'+day+'.html'),'utf8'),html,'Root and dated page must be identical');
   const known=new Map();
   for(const race of data.races)for(const player of race.players)for(const meeting of player.meetings)for(const result of meeting.days){
     if(result.video_url)known.set(result.race_id,{meeting,result});
@@ -46,7 +49,7 @@ async function main(){
       else await route.continue();
     });
     const page=await context.newPage();page.on('pageerror',error=>errors.push(error.name));
-    await page.goto('http://127.0.0.1:'+server.address().port+prefix+'index2.html',{waitUntil:'domcontentloaded',timeout:30000});
+    await page.goto('http://127.0.0.1:'+server.address().port+prefix+targetPage,{waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(()=>document.body.dataset.tenMeetingsStatus==='ready'&&document.body.dataset.previousMeetingsStatus==='ready',null,{timeout:30000});
     await page.evaluate(async()=>{await document.fonts.ready;});
     async function tap(control){
@@ -93,14 +96,14 @@ async function main(){
       assert.ok(Math.max(...tops)-Math.min(...tops)<1.6,'Meeting rows must stay aligned across all race members');
     }
     const styles=await page.evaluate(()=>({
-      pink:[...document.querySelectorAll('.ten-rank-highlight,.previous-important-rank,.previous-semifinal-rank')].map(node=>getComputedStyle(node).color),
+      highlights:[...document.querySelectorAll('.ten-rank-highlight,.previous-important-rank,.previous-semifinal-rank')].map(node=>({color:getComputedStyle(node).color,semi:node.classList.contains('ten-rank-semifinal')||node.classList.contains('previous-semifinal-rank')})),
       g3:[...document.querySelectorAll('.ten-grade-g3')].map(node=>getComputedStyle(node).backgroundColor),
       high:[...document.querySelectorAll('.ten-grade-high')].map(node=>getComputedStyle(node).backgroundColor),
       back:[...document.querySelectorAll('.lineup .stat-b,.lineup .stat-b-zero')].map(node=>getComputedStyle(node).fontWeight),
       links:[...document.querySelectorAll('a.ten-rank')].map(node=>({id:node.dataset.raceId,url:node.href})),
       otherOpen:[...document.querySelectorAll('#rows > tr')].slice(1).some(row=>[...row.querySelectorAll('.ten-results')].some(panel=>!panel.hidden)),
     }));
-    assert.ok(styles.pink.every(color=>color==='rgb(232, 90, 154)'),'Highlighted ranks must use preview pink');
+    assert.ok(styles.highlights.every(item=>item.color===(item.semi?'rgb(232, 90, 154)':'rgb(211, 47, 47)')),'Only semifinals use pink; special and final ranks must be red');
     assert.ok(styles.g3.every(color=>color==='rgb(255, 235, 238)'));
     assert.ok(styles.high.every(color=>color==='rgb(243, 229, 245)'));
     assert.ok(styles.back.length>0&&styles.back.every(weight=>weight==='700'),'Aggregate B counts must be bold');
@@ -126,7 +129,7 @@ async function main(){
     assert.deepEqual(mutations,[],'The experiment test must issue no writes');
     assert.deepEqual(errors,[],'The actual experiment must execute without browser errors');
     console.log('TEN BROWSER PASS',JSON.stringify({viewport:'390x844',riders:initial.riders,slots:10,slotHeight:18,
-      highlighted:styles.pink.length,linked:styles.links.length,realTouch:true,writeRequests:0}));
+      page:targetPage,highlighted:styles.highlights.length,linked:styles.links.length,realTouch:true,writeRequests:0}));
   }finally{
     if(browser)await browser.close();server.closeAllConnections?.();
     await new Promise(resolve=>server.close(resolve));

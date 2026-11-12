@@ -226,6 +226,7 @@ def main():
     card_check_error = None
     previous_history = None
     history_error = None
+    shared_history = None
     if collected:
         require(can_replace(collection_date, now, target, migration=migration,refresh_card=mode=='cards'),
                 'Refusing a past/in-progress card rewrite or date regression')
@@ -238,6 +239,8 @@ def main():
             # Bind previous meetings to the complete candidate roster before
             # advancing its immutable card pointer or replacing any page.
             previous_history=ensure_daily(candidate,candidate_races,args.run_key,ROOT/'site')
+            from rider_history import ensure as ensure_shared_history
+            shared_history=ensure_shared_history(ROOT/'site',candidate,candidate_races,args.run_key)
             card_changed=card_fingerprint(candidate)!=card_fingerprint(card)
         except Exception as error:
             if not (mode=='cards' and target==collection_date.isoformat()
@@ -274,8 +277,21 @@ def main():
             print('PREVIOUS MEETINGS CHECK FAILED: preserve published pages and continue saved-card odds',history_error,flush=True)
     publication_pending=not is_confirmed(read_receipt(ref,git_read),card,
                                        source_commit=git('rev-parse','HEAD'))
+    if shared_history is None and not history_error:
+        from rider_history import ensure as ensure_shared_history
+        try:
+            if target<now.astimezone(JST).date().isoformat():
+                from rider_history import load_snapshot
+                load_snapshot(ROOT/'site',target.replace('-',''),card['html'])
+                shared_history={'changed':False,'pending':0}
+            else:shared_history=ensure_shared_history(ROOT/'site',card,races,args.run_key)
+        except Exception as error:
+            history_error=type(error).__name__+': '+str(error)[:300]
+            card_check_error=card_check_error or 'Shared rider history: '+history_error
+            print('SHARED HISTORY CHECK FAILED: retain published pages and continue saved-card odds',history_error,flush=True)
     publish_pages = not history_error and (mode == 'publish' or collected or publication_pending
-                                           or previous_history.get('changed',False))
+                                           or previous_history.get('changed',False)
+                                           or bool(shared_history and shared_history['changed']))
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
     odds_schedule = args.schedule if args.event == 'schedule' and mode == 'odds' else ''
@@ -343,12 +359,13 @@ def main():
                    'publication_pending':publication_pending,'card_sha256':card_digest(card),'run_key':args.run_key,
                    'preview_requested':preview_requested})
     report.update({'previous_history_changed':bool(previous_history and previous_history.get('changed')),
-                   'previous_history_error':history_error})
+                   'previous_history_error':history_error,'shared_history':shared_history})
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
             handle.write('publish=' + str(publish_pages).lower() + '\n')
             handle.write('card_check_failed='+str(card_check_error is not None).lower()+'\n')
+            handle.write('history_refresh='+str(bool(shared_history and shared_history.get('pending'))).lower()+'\n')
     print('OFFICIAL PUBLIC UPDATE READY', json.dumps(report, ensure_ascii=False), flush=True)
 
 

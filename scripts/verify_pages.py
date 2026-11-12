@@ -2,6 +2,7 @@
 import argparse
 from datetime import date,timedelta
 import hashlib
+import json
 from pathlib import Path
 import re
 import time
@@ -17,6 +18,13 @@ def verification_files(site):
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     if (site/'data'/day/'rider-details.json').exists():files.append('data/'+day+'/rider-details.json')
+    def include_ten(raw):
+        relative='data/'+raw+'/ten-meetings.json'
+        files.extend(['ten-meetings.js','ten-meetings.css',relative])
+        data=json.loads((site/relative).read_text())
+        if data.get('history_storage')=='rider-master':
+            files.extend(p['history_ref']['path'] for r in data['races'] for p in r['players'])
+    if 'data-ten-meetings="true"' in current:include_ten(day)
     if 'data-previous-meetings="true"' in current:
         if 'data-previous-meetings-src="previous-daily.json"' not in current:
             raise ValueError('Daily previous-meeting data source differs')
@@ -31,6 +39,7 @@ def verification_files(site):
             if page_date(earlier.read_text())!=previous:
                 raise ValueError('Previous adopted page date differs')
             files.extend([earlier.name,'data/'+previous+'/previous-daily.json'])
+            if 'data-ten-meetings="true"' in earlier.read_text():include_ten(previous)
     if (site/'index2.html').exists():
         preview_day=page_date((site/'index2.html').read_text())
         files.extend(['index2.html','previous-meetings.js','previous-meetings.css',

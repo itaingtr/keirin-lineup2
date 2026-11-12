@@ -1,0 +1,79 @@
+name: Refresh shared S-class rider histories
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rider-history.yml'
+      - 'scripts/rider_history_worker.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: keirin-lineup2-rider-history
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Use the latest checked rider catalogue
+        run: |
+          python3 - <<'PY'
+          import subprocess,time
+          for attempt in range(40):
+              subprocess.run(['git','fetch','origin','main'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              exists=subprocess.run(['git','cat-file','-e','FETCH_HEAD:site/rider-history/current.json'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              if exists.returncode==0:
+                  subprocess.run(['git','checkout','--detach','FETCH_HEAD'],check=True)
+                  break
+              time.sleep(10)
+          else:raise RuntimeError('The normal publisher has not saved the checked rider catalogue')
+          PY
+      - name: Collect only missing rider and meeting contexts
+        id: collect
+        env:
+          TEN_CHECKPOINT_DIR: /tmp/shared-history-checkpoints
+        run: |
+          git fetch origin odds-diagnostics
+          python3 -u scripts/rider_history_worker.py collect --output /tmp/shared-history-batch.json
+      - name: Keep verified display checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-history-display-checkpoints
+          path: |
+            /tmp/shared-history-batch.json
+            /tmp/shared-history-checkpoints
+          if-no-files-found: ignore
+      - name: Merge against latest main without replacing other work
+        if: steps.collect.outputs.refresh == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            directory="/tmp/shared-history-merge-$attempt"
+            git worktree add --detach "$directory" FETCH_HEAD
+            python3 scripts/rider_history_worker.py apply --site "$directory/site" --input /tmp/shared-history-batch.json
+            git -C "$directory" add -- site/rider-history
+            if [ -z "$(git -C "$directory" status --porcelain -- site/rider-history)" ]; then
+              break
+            fi
+            git -C "$directory" commit -m 'Append verified shared rider history revisions [skip ci]'
+            if git -C "$directory" push origin HEAD:main; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+          done
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0,'scripts')
+          from update_heartbeat import dispatch_workflow
+          dispatch_workflow('update.yml',{'mode':'publish','date':''})
+          PY

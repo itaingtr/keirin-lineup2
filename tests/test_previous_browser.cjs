@@ -137,7 +137,8 @@ async function main() {
       if(heading.high)assert.equal(heading.color,'rgb(243, 229, 245)');
     }
     assert.ok(styled.ranks.every(color=>color==='rgb(211, 47, 47)'), 'Special/final ranks must be red');
-    assert.ok(styled.semifinals.every(color=>color==='rgb(239, 108, 0)'), 'Semifinal ranks must be orange');
+    const semifinalColor=await page.evaluate(()=>document.body.dataset.tenMeetings==='true'?'rgb(232, 90, 154)':'rgb(239, 108, 0)');
+    assert.ok(styled.semifinals.every(color=>color===semifinalColor), 'Semifinal rank colour must match the adopted page style');
     console.log('PREVIOUS BROWSER COLORS',JSON.stringify({specialFinal:styled.ranks.length,semifinals:styled.semifinals.length}));
     for(const members of styled.s){
       const maximum=Math.max(0,...members.map(item=>item.value));
@@ -170,7 +171,7 @@ async function main() {
     }
     assert.deepEqual(mutations,[], 'The smoke check must issue no write requests');
     assert.deepEqual(errors,[], 'The real preview must execute without browser errors');
-    console.log('PREVIOUS BROWSER PASS:'+targetPage+',390x844, race-wide toggle, aligned four-slot groups,22px columns,8px times, semifinal orange and real read-only condition GET.');
+    console.log('PREVIOUS BROWSER PASS:'+targetPage+',390x844, race-wide toggle, aligned four-slot groups,22px columns,8px times, verified rank colours and real read-only condition GET.');
   } finally {
     if (browser) await browser.close();
     server.closeAllConnections?.();

@@ -37,7 +37,7 @@ def validate(data,page):
     """Reject date/roster mismatches and invented video identities before export."""
     from export_pages import page_date
     races=parse_page(page);target=checked_date(data.get('target_date'))
-    require(data.get('schema_version')==1 and data.get('provider')=='keirin.jp'
+    require(data.get('schema_version')==1 and data.get('provider') in ('keirin.jp','mixed')
             and target.strftime('%Y%m%d')==page_date(page),'Ten-meeting date/provider differs')
     require(_identities(data['races'],history=True)==_identities(races),'Ten-meeting rider identity differs')
     current={race['source']:race for race in races}
