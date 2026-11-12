@@ -3,14 +3,14 @@ import json,re
 from pathlib import Path
 from urllib.request import build_opener,HTTPCookieProcessor,Request
 from http.cookiejar import CookieJar
-from urllib.parse import urljoin,urlsplit
+from urllib.parse import urljoin,urlsplit,urlencode
 from source_http import Document,cells
 
 def main():
     opener=build_opener(HTTPCookieProcessor(CookieJar()))
-    def read(url):
+    def read(url,data=None):
         assert urlsplit(url).hostname in ('keirin.jp','www.keirin.jp')
-        with opener.open(Request(url,headers={'User-Agent':'KeirinLineup2/1.0'}),timeout=25) as r:
+        with opener.open(Request(url,data=data,headers={'User-Agent':'KeirinLineup2/1.0'}),timeout=25) as r:
             assert urlsplit(r.url).hostname in ('keirin.jp','www.keirin.jp')
             return r.read(3000000).decode(r.headers.get_content_charset() or 'utf-8')
     def clean(value):
@@ -76,6 +76,24 @@ def main():
                     if values:rows.append(values)
                 entry['tables'].append(rows)
             entry['rbClick_definition']=re.findall(r'function\s+rbClick\s*\([^)]*\)[\s\S]{0,1800}',page)[:1]
+            entry['navigation_results']=[]
+            doc=Document(page).root
+            inputs={n.attrs.get('id'):n.attrs.get('value','') for n in doc.find_all('input')}
+            for n in doc.find_all('div'):
+                event=n.attrs.get('onclick','')
+                if not event.startswith('rbTyokinResultClick'):continue
+                args=[v for _,v in re.findall(r"(['\"])(.*?)\1",event)]
+                if len(args)!=3:continue
+                dest=urljoin(url,inputs.get(args[0],''))
+                if urlsplit(dest).hostname not in ('keirin.jp','www.keirin.jp') or '/raceresult' not in urlsplit(dest).path:continue
+                response=read(dest,urlencode({'encp':args[1],'disp':args[2]}).encode())
+                item={'path':urlsplit(dest).path,'embedded':{}}
+                for m in re.finditer(r'jsonData\s*\[\s*[\"\']([^\"\']+)[\"\']\s*\]\s*=',response):
+                    try:item['embedded'][m[1]]=clean(json.JSONDecoder().raw_decode(response[m.end():].lstrip())[0])
+                    except ValueError:pass
+                item['visible']=Document(response).root.visible_text()[-5000:]
+                entry['navigation_results'].append(item)
+                if len(entry['navigation_results'])==1:break
             entry['static']={}
             entry['profile_functions']={}
             entry['local_functions']=[x[:4000] for x in re.findall(r'function\s+rbClick[\s\S]{0,3000}',page)]
