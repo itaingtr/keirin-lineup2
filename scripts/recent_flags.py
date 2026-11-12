@@ -39,6 +39,8 @@ def validate_record(data):
         person=_person(player,'player_id');require(person is not None and person[0] not in people,'Duplicate result-flag rider')
         people.add(person[0]);car=player['no'];require(type(car) is int and 1<=car<=9 and car not in cars,'Invalid flag car')
         cars.add(car);require(_placing(player) is not None and _time(player.get('final_half_record')) is not False,'Invalid flag placing/time')
+        incidents=player.get('incident_states',[])
+        require(isinstance(incidents,list) and all(isinstance(s,str) and 0<len(s)<=24 and not any(c in s for c in '\r\n\t') for s in incidents),'Invalid official incident evidence')
         for field in FIELDS:
             value=player.get(field);require(value is None or type(value) is bool,'Invalid SHB flag')
             if value is None:continue
@@ -76,7 +78,22 @@ def wanted(data):
 def same_result(a,b):
     at,bt=_time(a.get('final_half_record')),_time(b.get('final_half_record'))
     if at is False or bt is False:return False
-    return _placing(a)==_placing(b) and (at is None and bt is None or at is not None and bt is not None and Decimal(at)==Decimal(bt))
+    if _placing(a)==_placing(b) and (at is None and bt is None or at is not None and bt is not None and Decimal(at)==Decimal(bt)):return True
+    # K's compact previous-results column can say only 落/故, while the
+    # official result retains a finishing rank after an explicit incident.
+    # Keep K's displayed placing/time; match only these observed details.
+    for display,actual in ((a,b),(b,a)):
+        placing=_placing(display);finished=_placing(actual)
+        if placing is None or finished is None or placing[0]!=0 or finished[0]<=0 or _time(display.get('final_half_record')) is not None:continue
+        labels={'落':{'落滑入','落車再入'},'故':{'事故入','故障再入'}}.get(placing[1],set())
+        if labels.intersection(actual.get('incident_states',[])):return True
+    return False
+
+def needs_incident_check(day,actual,record):
+    placing=_placing(day);finished=_placing(actual) if actual is not None else None
+    return (not record.get('incidents_checked') and placing is not None and finished is not None
+            and placing[0]==0 and placing[1] in ('落','故') and finished[0]>0
+            and _time(day.get('final_half_record')) is None)
 
 def pending(data,site,now=None):
     now=now or datetime.now(timezone.utc);index=read_index(site);out={}
@@ -85,6 +102,7 @@ def pending(data,site,now=None):
         if entry is None:out[identifier]=rows;continue
         record=read_record(site,entry)
         people={_person(p,'player_id'):p for p in record['players']}
+        if any(needs_incident_check(day,people.get(_person(player,'player_id')),record) for player,day in rows):out[identifier]=rows;continue
         if all((actual:=people.get(_person(player,'player_id'))) is not None
                and same_result(day,actual) and type(actual.get('start')) is bool for player,day in rows):continue
         # Missing/unavailable supplementary S evidence is retried hourly,
@@ -144,9 +162,9 @@ def collect_day(raw,identifiers,known,client_factory=OfficialClient,read=fetch):
                 require(number in cards,'Historical official race missing')
                 entries=cards[number]['players']
                 # The flags cache does not store inferred meeting-day numbers.
-                official=client.results(code,raw,number,raw,entries,allow_absence_only=True)
+                official=client.results(code,raw,number,raw,entries,allow_absence_only=True,include_incidents=True)
                 record={'schema_version':1,'race_id':identifier,'race_date':raw[:4]+'-'+raw[4:6]+'-'+raw[6:],
-                        'race_number':number,'players':[]}
+                        'race_number':number,'incidents_checked':True,'players':[]}
                 for no,member in entries.items():
                     actual=official.get(member['player_id'])
                     if actual is None:continue
@@ -154,7 +172,8 @@ def collect_day(raw,identifiers,known,client_factory=OfficialClient,read=fetch):
                     record['players'].append({'no':no,'name':member['name'],'period':member['period'],
                         'player_id':member['player_id'],'order':actual['order'],'accident':actual['accident'],
                         'final_half_record':actual['final_half_record'],'home':actual['home'],'back':actual['back'],
-                        'start':None,'flag_sources':{'home':deepcopy(source),'back':deepcopy(source)}})
+                        'start':None,'incident_states':actual.get('incident_states',[]),
+                        'flag_sources':{'home':deepcopy(source),'back':deepcopy(source)}})
             # Never fabricate K meeting starts from a rider's first actual ride.
             # Only an exact date/code/race URL read from its calendar is used.
             if any(p.get('start') is None for p in record['players']):

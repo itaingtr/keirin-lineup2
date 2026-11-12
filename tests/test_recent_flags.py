@@ -93,6 +93,23 @@ class RecentFlagsTests(unittest.TestCase):
         p=next(p for p in records[0]['players'] if p['player_id']=='014505')
         self.assertIsNone(p['start']);self.assertFalse(p['back'])
 
+    def test_explicit_official_incident_matches_compact_accident_without_changing_display(self):
+        for label,state in (('落','落滑入'),('故','事故入')):
+            with tempfile.TemporaryDirectory() as root:
+                data=record();actual=next(p for p in data['players'] if p['player_id']=='014505')
+                data.pop('incidents_checked',None)
+                source=display();day=source['races'][0]['players'][0]['meetings'][0]['days'][0]
+                day.update(order=None,accident=label,final_half_record=None)
+                original=deepcopy(source)
+                apply(root,{'records':[data]})
+                self.assertIn(IDENTIFIER,pending(source,root),'Old cache must verify the missing official incident details once')
+                self.assertIsNone(enrich(source,root)['races'][0]['players'][0]['meetings'][0]['days'][0]['start'])
+                data['checked_at']=(datetime.fromisoformat(data['checked_at'])+timedelta(microseconds=1)).isoformat()
+                data['incidents_checked']=True;actual['incident_states']=[state]
+                apply(root,{'records':[data]});merged=enrich(source,root)['races'][0]['players'][0]['meetings'][0]['days'][0]
+                self.assertTrue(merged['start']);self.assertFalse(pending(source,root));self.assertEqual(source,original)
+                self.assertEqual((merged['order'],merged['accident'],merged['final_half_record']),(None,label,None))
+
     def test_checksum_or_wrong_provenance_is_rejected(self):
         with tempfile.TemporaryDirectory() as root:
             data=record();bad=deepcopy(data);bad['players'][0]['flag_sources']['back']['provider']='kdreams'

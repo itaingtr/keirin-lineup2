@@ -115,7 +115,7 @@ def parse_cards(payload):
     return races
 
 
-def parse_results(payload, code, day, number, meeting_start, entries, *, allow_absence_only=False):
+def parse_results(payload, code, day, number, meeting_start, entries, *, allow_absence_only=False, include_incidents=False):
     require(isinstance(payload, dict) and isinstance(payload.get('tyakujyunItemSubData'), list), 'Official result rows unavailable')
     rows = payload['tyakujyunItemSubData']; require(bool(rows), 'Earlier official race result is not finalized')
     output, seen = {}, set()
@@ -158,6 +158,7 @@ def parse_results(payload, code, day, number, meeting_start, entries, *, allow_a
             'order': order, 'display_type': 0, 'has_accident': bool(accident), 'accident': accident,
             'accident_name': accident_name or accident, 'final_half_record': timing, 'start': None,
             'home': 'H' in flags, 'back': 'B' in flags}
+        if include_incidents:output[identifier]['incident_states']=states
     missing = set(p['player_id'] for p in entries.values()) - seen
     require(all(p['absent'] for p in entries.values() if p['player_id'] in missing)
             or allow_absence_only and output and all(r['order']==0 and r['accident'] in ('欠','欠場','欠車') for r in output.values()),
@@ -235,11 +236,12 @@ class OfficialClient:
         self.receipts.append({'provider':PROVIDER,'url':program_url(code,day),'observed_at':observed,'kind':'entries'})
         return races,observed
 
-    def results(self, code, day, number, meeting_start, entries, *, allow_pending=False, allow_absence_only=False):
+    def results(self, code, day, number, meeting_start, entries, *, allow_pending=False, allow_absence_only=False, include_incidents=False):
         data, observed = self._json(code, day, number, 'JSJ012')
         try:
             output = ({} if allow_pending and isinstance(data,dict) and not data.get('tyakujyunItemSubData')
-                      else parse_results(data, code, day, number, meeting_start, entries,allow_absence_only=allow_absence_only))
+                      else parse_results(data, code, day, number, meeting_start, entries,
+                                         allow_absence_only=allow_absence_only,include_incidents=include_incidents))
         except ValueError:
             print('OFFICIAL RESULT DISPLAY',code,day,number,json.dumps([
                 {k:r.get(k) for k in ('syaban','sensyuRegistNo','tyaku','agari','BH','kojinStateItemSubData')}

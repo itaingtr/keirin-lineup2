@@ -91,6 +91,16 @@ class OfficialJpTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Incomplete'):
             parse_results({'tyakujyunItemSubData':FIXTURE['result'][:1]},'45','20261103',12,'20261102',entries,allow_absence_only=True)
 
+    def test_historical_incident_details_preserve_a_ranked_finish_without_changing_current_cards(self):
+        entries=self.cards('20261103')[12]['players']
+        for state in ('落滑入','事故入'):
+            rows=deepcopy(FIXTURE['result']);rows[0]['kojinStateItemSubData']=[{'kojinState':state}]
+            actual=parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries,include_incidents=True)['014534']
+            self.assertEqual((actual['order'],actual['final_half_record']),(1,'11.0'))
+            self.assertEqual(actual['incident_states'],[state])
+            regular=parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries)['014534']
+            self.assertNotIn('incident_states',regular)
+
     def test_unrelated_foreign_empty_period_does_not_block_an_exact_historical_race(self):
         domestic={'raceNo':'12','shumokuName':'Ｓ級準決勝','sensyuTypeInfo':deepcopy(FIXTURE['previous']['players'])}
         foreign={'raceNo':'11','shumokuName':'Ｓ級準決勝','sensyuTypeInfo':[
