@@ -19,5 +19,16 @@ def main():
                     for r in rows]}
     Path('/tmp/history-flag-source.json').write_text(json.dumps(result,ensure_ascii=False))
     print('OFFICIAL RECENT FLAG FIELDS',json.dumps(result,ensure_ascii=False),flush=True)
+    card,_=client._json('55','20260806',1,'JSJ002')
+    seen=set();unusual=[]
+    import re
+    from keirin_jp_provider import compact
+    for race in card.get('raceInfo',[]):
+        for p in race.get('sensyuTypeInfo',[]):
+            identifier=p.get('sensyuRegistNo');car=compact(p.get('syaban',''));period=compact(p.get('sotugyouki',''))
+            if not re.fullmatch(r'[1-9]',car) or not isinstance(identifier,str) or not re.fullmatch(r'\d{6}',identifier) or identifier in seen or not re.fullmatch(r'\d{1,3}',period):
+                unusual.append({'race':race.get('raceNo'),**{k:p.get(k) for k in ('syaban','sensyuRegistNo','sensyuName','sotugyouki','ketujyouTuikaHojyu')}})
+            seen.add(identifier)
+    print('OFFICIAL HISTORICAL CARD SLOTS',json.dumps(unusual,ensure_ascii=False),flush=True)
 
 if __name__=='__main__':main()
