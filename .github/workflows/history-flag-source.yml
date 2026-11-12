@@ -1,0 +1,21 @@
+name: Inspect official recent SHB fields
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/probe_history_flags.py', '.github/workflows/history-flag-source.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - run: python3 -u scripts/probe_history_flags.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-recent-flag-fields
+          path: /tmp/history-flag-source.json
