@@ -1,3 +1,10 @@
+# Verified SHB for the previous two meetings
+
+- The latest user requests actual per-race SHB flags in 前回/前々回 and permanent automatic collection. Keep the existing compact display, ranks/times, links, colours, current S/B totals and source identities. Do not substitute aggregate S/B counts for per-race flags.
+- Actions probe of a verified October23 Nara result confirmed that KEIRIN.JP JSJ012 exposes BH (H/B), with no individual S field. H/B must come from official results; independently match S from K Dreams by exact date/venue/race/car/JKA/name/period/placing/time/B. Obtain its literal result URL from the checked historical calendar, never infer a meeting start from a rider's first participation. Keep S unknown if unavailable, never infer it from H/B.
+- scripts/recent_flags.py stores shared immutable exact-race evidence at site/result-flags/RACE_ID/SHA256.json and advances current.json only after verification. Reuse complete races with no new source reads; partial S checks have an hourly retry interval. The two bounded workers share daily source calendars/programmes. Persist only public display fields and source receipts, with no raw pages/session/navigation values or Supabase writes.
+- previous_daily.ensure_daily attaches cached flags to exact existing date/rider/placing/time rows and appends a new daily run when flags change, preserving old runs and ranks/times. The separate recent-flags.yml worker collects missing results outside the normal update lock, merges only result-flags against latest main, and requests normal publication. Normal publication requests missing evidence automatically; no extra timer schedule. Past date pointers/pages remain protected. Exact HTTP verification and mobile Chrome must cover the current formal top/date after enrichment.
+
 # Formal shared rider history from November13
 
 - The user approved the ten-meeting experiment for normal index and every future daily automatic card. This supersedes the index2-only restriction below from 20261113 onward. Preserve all earlier dated HTML and every saved source run. Root and the current dated page must export byte-identically.

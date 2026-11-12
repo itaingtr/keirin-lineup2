@@ -99,6 +99,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/rider_history_worker.py request
+      - name: Complete missing previous-meeting SHB in the background
+        if: steps.update.outputs.recent_flags_refresh == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/recent_flags_worker.py request
       - name: Report a failed source check after saved-page recovery
         if: always() && steps.update.outputs.card_check_failed == 'true'
         run: |

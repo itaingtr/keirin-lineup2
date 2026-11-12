@@ -150,14 +150,22 @@ def ensure_daily(card, races, run_key, site, *, collector=None):
     if identity_digest(parse_page(page)) != expected:
         raise ValueError('Daily history card/races differ')
     checked = _read_checked(site, raw)
+    reused_preview = False
     if checked is not None and checked[0]['identity_sha256'] == expected:
         pointer, data = checked
         validate_data(data, page)
-        return {'changed': False, 'data': data, 'path': pointer['path'], 'summary': summary(data)}
-    data = _matching_preview(site, target, page)
-    reused_preview = data is not None
-    if data is None:
-        data = enrich((collector or collect)(races, target), site)
+        from recent_flags import enrich as enrich_recent_flags
+        updated = enrich_recent_flags(data, site)
+        if updated == data:
+            return {'changed': False, 'data': data, 'path': pointer['path'], 'summary': summary(data)}
+        data = updated
+    else:
+        data = _matching_preview(site, target, page)
+        reused_preview = data is not None
+        if data is None:
+            data = enrich((collector or collect)(races, target), site)
+        from recent_flags import enrich as enrich_recent_flags
+        data = enrich_recent_flags(data, site)
     validate_data(data, page)
     # A rider with no prior starts legitimately contributes no result rows.
     data = dict(data)

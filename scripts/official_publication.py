@@ -360,12 +360,19 @@ def main():
                    'preview_requested':preview_requested})
     report.update({'previous_history_changed':bool(previous_history and previous_history.get('changed')),
                    'previous_history_error':history_error,'shared_history':shared_history})
+    recent_pending = 0
+    if not history_error and target >= now.astimezone(JST).date().isoformat():
+        from recent_flags import pending as pending_recent_flags
+        recent_data = load_daily(ROOT/'site', target, card['html'])
+        if recent_data is not None:recent_pending = len(pending_recent_flags(recent_data, ROOT/'site'))
+    report['recent_flags_pending_races'] = recent_pending
     (args.work / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
             handle.write('publish=' + str(publish_pages).lower() + '\n')
             handle.write('card_check_failed='+str(card_check_error is not None).lower()+'\n')
             handle.write('history_refresh='+str(bool(shared_history and shared_history.get('pending'))).lower()+'\n')
+            handle.write('recent_flags_refresh='+str(bool(recent_pending)).lower()+'\n')
     print('OFFICIAL PUBLIC UPDATE READY', json.dumps(report, ensure_ascii=False), flush=True)
 
 

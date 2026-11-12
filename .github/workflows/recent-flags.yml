@@ -1,0 +1,68 @@
+name: Complete shared previous-meeting SHB results
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recent-flags.yml'
+      - 'scripts/recent_flags.py'
+      - 'scripts/recent_flags_worker.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: keirin-lineup2-recent-flags
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Collect only missing exact-race SHB evidence
+        id: collect
+        env:
+          RECENT_FLAGS_CHECKPOINT_DIR: /tmp/recent-flags-checkpoints
+        run: |
+          git fetch origin odds-diagnostics
+          python3 -u scripts/recent_flags_worker.py collect --output /tmp/recent-flags-batch.json
+      - name: Keep the verified public display evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recent-shb-evidence
+          path: |
+            /tmp/recent-flags-batch.json
+            /tmp/recent-flags-checkpoints
+          if-no-files-found: ignore
+      - name: Append exact-race cache against latest main and request publication
+        if: steps.collect.outputs.refresh == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            directory="/tmp/recent-flags-merge-$attempt"
+            git worktree add --detach "$directory" FETCH_HEAD
+            python3 scripts/recent_flags_worker.py apply --site "$directory/site" --input /tmp/recent-flags-batch.json
+            git -C "$directory" add -- site/result-flags
+            if [ -z "$(git -C "$directory" status --porcelain -- site/result-flags)" ]; then break; fi
+            git -C "$directory" commit -m 'Append verified previous-meeting SHB race evidence [skip ci]'
+            if git -C "$directory" push origin HEAD:main; then break; fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+          done
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0,'scripts')
+          from update_heartbeat import dispatch_workflow
+          dispatch_workflow('update.yml',{'mode':'publish','date':''})
+          PY
+      - name: Report unavailable official sources after preserving checked evidence
+        if: steps.collect.outputs.source_failed == 'true'
+        run: |
+          echo 'Some official result sources failed. Existing pages and checked results were retained.'
+          exit 1

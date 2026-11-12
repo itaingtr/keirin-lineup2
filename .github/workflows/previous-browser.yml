@@ -10,6 +10,7 @@ on:
       - 'scripts/export_pages.py'
       - 'scripts/official_publication.py'
       - 'scripts/rider_history.py'
+      - 'scripts/recent_flags.py'
       - 'site/previous-meetings.js'
       - 'site/previous-meetings.css'
   workflow_dispatch:

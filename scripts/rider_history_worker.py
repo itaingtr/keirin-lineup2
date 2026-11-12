@@ -10,9 +10,10 @@ from ten_preview import validate
 
 REPOSITORY='itaingtr/keirin-lineup2'
 
-def request_refresh(opener=urlopen):
+def request_refresh(opener=urlopen, *, workflow='rider-history.yml'):
     require(os.environ.get('GITHUB_REPOSITORY')==REPOSITORY,'Wrong history-refresh repository')
-    base='https://api.github.com/repos/'+REPOSITORY+'/actions/workflows/rider-history.yml'
+    require(workflow in ('rider-history.yml','recent-flags.yml'),'Unexpected history worker')
+    base='https://api.github.com/repos/'+REPOSITORY+'/actions/workflows/'+workflow
     headers={'Authorization':'Bearer '+os.environ['GITHUB_TOKEN'],'Accept':'application/vnd.github+json',
              'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'}
     with opener(Request(base+'/runs?per_page=20',headers=headers),timeout=30) as response:
