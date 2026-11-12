@@ -1,0 +1,19 @@
+name: Inspect official public ten-meeting history fields
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/probe_ten_source.py', '.github/workflows/ten-source-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - run: python3 -u scripts/probe_ten_source.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-ten-source-report
+          path: /tmp/ten-source-report.json
