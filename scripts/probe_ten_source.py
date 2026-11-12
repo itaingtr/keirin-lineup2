@@ -55,7 +55,8 @@ def main():
                                 descendants.append({'tag':tag,'text':n.visible_text().strip()[:80],
                                     'class':n.attrs.get('class'),'title':n.attrs.get('title'),'style':n.attrs.get('style'),
                                     'event_numbers':re.findall(r"(?<![A-Za-z0-9])[0-9]{1,14}(?![A-Za-z0-9])",n.attrs.get('onclick','')) if not re.search(r'enc|token|param',n.attrs.get('onclick',''),re.I) else []})
-                        values.append({'text':cell.visible_text().strip(),'rowspan':cell.attrs.get('rowspan'),'colspan':cell.attrs.get('colspan'),'descendants':descendants,
+                        scripts=[re.sub(r"(['\"])[^'\"]{30,}\1", "'[navigation omitted]'",s.text())[:1500] for s in cell.find_all('script')]
+                        values.append({'text':cell.visible_text().strip(),'scripts':scripts,'rowspan':cell.attrs.get('rowspan'),'colspan':cell.attrs.get('colspan'),'descendants':descendants,
                                        'images':[{k:i.attrs[k] for k in ('alt','src') if k in i.attrs} for i in cell.find_all('img')],
                                        'display_nodes':[{k:n.attrs[k] for k in ('class','title','style') if k in n.attrs} | {'tag':n.tag,'text':n.visible_text().strip()}
                                                         for n in cell.find_all() if n.tag in ('span','i','a')],
@@ -65,11 +66,11 @@ def main():
             entry['rbClick_definition']=re.findall(r'function\s+rbClick\s*\([^)]*\)[\s\S]{0,1800}',page)[:1]
             entry['static']={}
             entry['local_functions']=[x[:4000] for x in re.findall(r'function\s+rbClick[\s\S]{0,3000}',page)]
-            for path in entry['scripts'][-8:]:
+            for path in entry['scripts']:
                 full=urljoin(url,path)
                 if urlsplit(full).hostname not in ('keirin.jp','www.keirin.jp'):continue
                 js=read(full)
-                lines=[line[:700] for line in js.splitlines() if re.search(r'JSJ\d+|jsonData|ajax|url:|type:|[cC]020|[cC]050|history|History|rireki',line)]
+                lines=[line[:700] for line in js.splitlines() if re.search(r'JSJ\d+|jsonData|rbClick|tyaku|Tyaku|chakujun|dispChaku|[cC]020|[cC]050|history|History|rireki',line)]
                 entry['static'][full]=lines[:150]
             report[url]=entry
             print('OFFICIAL PROFILE',url,'embedded',list(entry['embedded']),'scripts',entry['scripts'],flush=True)
