@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.request import build_opener,HTTPCookieProcessor,Request
 from http.cookiejar import CookieJar
 from urllib.parse import urljoin,urlsplit
+from source_http import Document,cells
 
 def main():
     opener=build_opener(HTTPCookieProcessor(CookieJar()))
@@ -26,6 +27,30 @@ def main():
                 try:entry['embedded'][match[1]]=clean(json.JSONDecoder().raw_decode(page[match.end():].lstrip())[0])
                 except ValueError:pass
             entry['snippets']=[clean(x) for x in re.findall(r'.{0,120}(?:racerprofile|JSJ\d+|PC05\d+|直近|過去|出走履歴).{0,160}',page)][:30]
+            entry['tables']=[]
+            for table in Document(page).root.find_all('table'):
+                if not any(word in table.visible_text() for word in ('直近1','登録番号','期別','氏名')):continue
+                rows=[]
+                for row in table.find_all('tr'):
+                    values=[]
+                    for cell in cells(row):
+                        links=[]
+                        for a in cell.find_all('a'):
+                            link={'text':a.visible_text().strip()}
+                            href=a.attrs.get('href','')
+                            if href.startswith(('/pc/dfw/dataplaza/guest/race','/stadium/digest/')):link['href']=href
+                            event=a.attrs.get('onclick','')
+                            if event:
+                                link['function']=event.split('(')[0]
+                                # Only literal public numeric display arguments;
+                                # never persist opaque navigation strings.
+                                if re.fullmatch(r"[A-Za-z_.]+\([\s'\",0-9]+\);?(?:return false;?)?",event):link['event']=event
+                            links.append(link)
+                        values.append({'text':cell.visible_text().strip(),'rowspan':cell.attrs.get('rowspan'),'colspan':cell.attrs.get('colspan'),
+                                       'images':[{k:i.attrs[k] for k in ('alt','src') if k in i.attrs} for i in cell.find_all('img')],
+                                       'links':links})
+                    if values:rows.append(values)
+                entry['tables'].append(rows)
             entry['static']={}
             for path in entry['scripts'][-8:]:
                 full=urljoin(url,path)
