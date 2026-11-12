@@ -17,6 +17,17 @@ def main():
         if isinstance(value,dict):return {k:('[navigation omitted]' if re.search(r'enc|token|session|cookie|password|csrf',k,re.I) else clean(v)) for k,v in value.items()}
         if isinstance(value,list):return [clean(v) for v in value]
         return value
+    def display_node(node):
+        value={'tag':node.tag,'text':node.visible_text().strip()[:100]}
+        for key in ('class','title','style','value','alt','width','height','role','aria-label'):
+            if key in node.attrs:value[key]=node.attrs[key]
+        for attr,event in node.attrs.items():
+            if not attr.startswith('on'):continue
+            name=re.match(r'(?:return\s+)?([A-Za-z_.$][\w.$]*)\s*\(',event)
+            numbers=re.findall(r"(?<![A-Za-z0-9])[0-9]{1,14}(?![A-Za-z0-9])",event)
+            value[attr]={'function':name[1] if name else '[navigation omitted]',
+                         'numbers':numbers}
+        return value
     report={}
     read('https://keirin.jp/pc/top')
     for url in ('https://keirin.jp/pc/racerprofile?snum=013497','https://keirin.jp/pc/dfw/dataplaza/guest/membprofile?SNO=013497'):
@@ -56,7 +67,8 @@ def main():
                                     'class':n.attrs.get('class'),'title':n.attrs.get('title'),'style':n.attrs.get('style'),
                                     'event_numbers':re.findall(r"(?<![A-Za-z0-9])[0-9]{1,14}(?![A-Za-z0-9])",n.attrs.get('onclick','')) if not re.search(r'enc|token|param',n.attrs.get('onclick',''),re.I) else []})
                         scripts=[re.sub(r"(['\"])[^'\"]{30,}\1", "'[navigation omitted]'",s.text())[:1500] for s in cell.find_all('script')]
-                        values.append({'text':cell.visible_text().strip(),'scripts':scripts,'rowspan':cell.attrs.get('rowspan'),'colspan':cell.attrs.get('colspan'),'descendants':descendants,
+                        values.append({'text':cell.visible_text().strip(),'cell':display_node(cell),'allnodes':[display_node(n) for n in cell.find_all() if n.tag not in ('script','style')],
+                                       'scripts':scripts,'rowspan':cell.attrs.get('rowspan'),'colspan':cell.attrs.get('colspan'),'descendants':descendants,
                                        'images':[{k:i.attrs[k] for k in ('alt','src') if k in i.attrs} for i in cell.find_all('img')],
                                        'display_nodes':[{k:n.attrs[k] for k in ('class','title','style') if k in n.attrs} | {'tag':n.tag,'text':n.visible_text().strip()}
                                                         for n in cell.find_all() if n.tag in ('span','i','a')],
@@ -65,11 +77,14 @@ def main():
                 entry['tables'].append(rows)
             entry['rbClick_definition']=re.findall(r'function\s+rbClick\s*\([^)]*\)[\s\S]{0,1800}',page)[:1]
             entry['static']={}
+            entry['profile_functions']={}
             entry['local_functions']=[x[:4000] for x in re.findall(r'function\s+rbClick[\s\S]{0,3000}',page)]
             for path in entry['scripts']:
                 full=urljoin(url,path)
                 if urlsplit(full).hostname not in ('keirin.jp','www.keirin.jp'):continue
                 js=read(full)
+                if full.endswith('/PJ0601.js'):
+                    entry['profile_functions'][full]=re.findall(r'function\s+rbClick(?:Digest)?\s*\([^)]*\)[\s\S]{0,1800}',js)
                 lines=[line[:700] for line in js.splitlines() if re.search(r'JSJ\d+|jsonData|rbClick|tyaku|Tyaku|chakujun|dispChaku|[cC]020|[cC]050|history|History|rireki',line)]
                 entry['static'][full]=lines[:150]
             report[url]=entry
