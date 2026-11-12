@@ -30,7 +30,7 @@ def main():
         return value
     report={}
     read('https://keirin.jp/pc/top')
-    for url in ('https://keirin.jp/pc/racerprofile?snum=015097',):
+    for url in ('https://keirin.jp/pc/racerprofile?snum=014318',):
         try:
             page=read(url);entry={'scripts':re.findall(r'<script[^>]+src=[\"\']([^\"\']+)',page)}
             entry['embedded']={}
