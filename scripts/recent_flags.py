@@ -84,7 +84,9 @@ def pending(data,site,now=None):
         entry=index['races'].get(identifier)
         if entry is None:out[identifier]=rows;continue
         record=read_record(site,entry)
-        if all(type(p.get('start')) is bool for p in record['players']):continue
+        people={_person(p,'player_id'):p for p in record['players']}
+        if all((actual:=people.get(_person(player,'player_id'))) is not None
+               and same_result(day,actual) and type(actual.get('start')) is bool for player,day in rows):continue
         # Missing/unavailable supplementary S evidence is retried hourly,
         # without a publication/worker dispatch loop.
         if now>=datetime.fromisoformat(record['checked_at'])+timedelta(hours=1):out[identifier]=rows
@@ -124,20 +126,25 @@ def collect_day(raw,identifiers,known,client_factory=OfficialClient,read=fetch):
                 ident=race_identity(source);key=f"{ident['race']:02}{ident['code']}{raw}"
                 require(key not in calendar,'Ambiguous historical K result coordinate');calendar[key]=source+'?pageType=showResult'
     except Exception as error:calendar_error=type(error).__name__+': '+str(error)[:180]
-    failed_venues={}
+    failed_venues={};historical_cards={}
     for identifier in sorted(identifiers):
         code=identifier[2:4];number=int(identifier[:2]);previous=known.get(identifier)
         try:
             if previous is not None:record=deepcopy(previous)
             else:
                 if code in failed_venues:raise ValueError(failed_venues[code])
-                try:cards,_=client.cards(code,raw)
+                try:
+                    if code not in historical_cards:
+                        numbers={int(key[:2]) for key in identifiers if key[2:4]==code}
+                        historical_cards[code]=(client.cards_for_races(code,raw,numbers)
+                                                if hasattr(client,'cards_for_races') else client.cards(code,raw))
+                    cards,_=historical_cards[code]
                 except Exception as error:
                     failed_venues[code]=str(error)[:180];raise
                 require(number in cards,'Historical official race missing')
                 entries=cards[number]['players']
                 # The flags cache does not store inferred meeting-day numbers.
-                official=client.results(code,raw,number,raw,entries)
+                official=client.results(code,raw,number,raw,entries,allow_absence_only=True)
                 record={'schema_version':1,'race_id':identifier,'race_date':raw[:4]+'-'+raw[4:6]+'-'+raw[6:],
                         'race_number':number,'players':[]}
                 for no,member in entries.items():
@@ -174,8 +181,10 @@ def collect_day(raw,identifiers,known,client_factory=OfficialClient,read=fetch):
 
 def collect(data,site,checkpoint=None,*,client_factory=OfficialClient,read=fetch,workers=2):
     planned=pending(data,site);index=read_index(site);known={}
-    for identifier in planned:
-        if identifier in index['races']:known[identifier]=read_record(site,index['races'][identifier])
+    for identifier,rows in planned.items():
+        if identifier not in index['races']:continue
+        previous=read_record(site,index['races'][identifier]);people={_person(p,'player_id'):p for p in previous['players']}
+        if all((actual:=people.get(_person(p,'player_id'))) is not None and same_result(day,actual) for p,day in rows):known[identifier]=previous
     groups={}
     for identifier in planned:groups.setdefault(identifier[4:],[]).append(identifier)
     records=[];errors=[]

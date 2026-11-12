@@ -15,8 +15,8 @@ IDENTIFIER='124520261103'
 class Official:
     def cards(self,code,raw):
         return parse_cards({'raceInfo':[{'raceNo':'12','shumokuName':'Ｓ級準決勝','sensyuTypeInfo':J['previous']['players']}]}),STAMP
-    def results(self,code,raw,number,start,entries):
-        data=parse_results({'tyakujyunItemSubData':J['result']},code,raw,number,start,entries)
+    def results(self,code,raw,number,start,entries,**kwargs):
+        data=parse_results({'tyakujyunItemSubData':J['result']},code,raw,number,start,entries,**kwargs)
         for r in data.values():r['observed_at']=STAMP
         return data
 
@@ -75,6 +75,14 @@ class RecentFlagsTests(unittest.TestCase):
             apply(root,{'records':records});self.assertFalse(pending(display(),root))
             later=datetime.fromisoformat(records[0]['checked_at'])+timedelta(hours=1,seconds=1)
             self.assertEqual(list(pending(display(),root,now=later)),[IDENTIFIER])
+
+    def test_unrequested_unknown_riders_do_not_force_a_completed_riders_source_refresh(self):
+        with tempfile.TemporaryDirectory() as root:
+            data=record()
+            for p in data['players']:
+                if p['player_id']!='014505':p['start']=None;p['flag_sources'].pop('start',None)
+            apply(root,{'records':[data]})
+            self.assertEqual(pending(display(),root),{})
 
     def test_mismatched_k_rank_or_b_never_invents_s(self):
         def wrong_k(url):

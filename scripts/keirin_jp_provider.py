@@ -115,7 +115,7 @@ def parse_cards(payload):
     return races
 
 
-def parse_results(payload, code, day, number, meeting_start, entries):
+def parse_results(payload, code, day, number, meeting_start, entries, *, allow_absence_only=False):
     require(isinstance(payload, dict) and isinstance(payload.get('tyakujyunItemSubData'), list), 'Official result rows unavailable')
     rows = payload['tyakujyunItemSubData']; require(bool(rows), 'Earlier official race result is not finalized')
     output, seen = {}, set()
@@ -133,10 +133,14 @@ def parse_results(payload, code, day, number, meeting_start, entries):
         if re.fullmatch(r'[1-9]', rank):
             order, accident = int(rank), ''
         elif not rank:
-            short={'落車棄権':'落','故障棄権':'故','落車再入':'落','故障再入':'故',
+            short={'落車棄権':'落','事故棄権':'棄','故障棄権':'故','落車再入':'落','故障再入':'故',
                    '失格':'失','欠場':'欠','欠車':'欠','棄権':'棄'}
-            require(len(states)==1 and states[0] in short,'Unranked official result needs its accident status')
-            order,accident,accident_name=0,short[states[0]],states[0]
+            require(states and all(state in short for state in states),'Unranked official result needs its accident status')
+            # A rider can both fall and be disqualified. The published final
+            # placing is disqualification; preserve every observed detail.
+            codes={short[state] for state in states}
+            require(len(codes)==1 or '失' in codes,'Conflicting official accident statuses')
+            order,accident,accident_name=0,'失' if '失' in codes else next(iter(codes)),'・'.join(states)
         else:
             require(re.fullmatch(r'[欠場失格落車棄権故障再入]{1,4}',rank) is not None,
                     'Unknown official rank label: '+repr(rank)+' '+code+' '+day+' '+str(number)+'R')
@@ -155,7 +159,9 @@ def parse_results(payload, code, day, number, meeting_start, entries):
             'accident_name': accident_name or accident, 'final_half_record': timing, 'start': None,
             'home': 'H' in flags, 'back': 'B' in flags}
     missing = set(p['player_id'] for p in entries.values()) - seen
-    require(all(p['absent'] for p in entries.values() if p['player_id'] in missing), 'Incomplete official result riders')
+    require(all(p['absent'] for p in entries.values() if p['player_id'] in missing)
+            or allow_absence_only and output and all(r['order']==0 and r['accident'] in ('欠','欠場','欠車') for r in output.values()),
+            'Incomplete official result riders')
     return output
 
 
@@ -212,11 +218,28 @@ class OfficialClient:
             self.receipts.append({'provider': PROVIDER, 'url': program_url(code, day), 'observed_at': observed, 'kind': 'entries'})
         return self.card_cache[key]
 
-    def results(self, code, day, number, meeting_start, entries, *, allow_pending=False):
+    def cards_for_races(self, code, day, numbers):
+        """Validate exact historical races without unrelated foreign entries.
+
+        Foreign riders can have an explicitly empty graduation period. They
+        must not block a different, fully identified domestic historical race.
+        The ordinary full current-card validator remains strict.
+        """
+        wanted=set(numbers)
+        require(wanted and all(type(n) is int and 1<=n<=12 for n in wanted),'Invalid historical race selection')
+        data,observed=self._json(code,day,1,'JSJ002')
+        require(isinstance(data,dict) and isinstance(data.get('raceInfo'),list),'Historical official cards unavailable')
+        selected=[r for r in data['raceInfo'] if compact(r.get('raceNo','')).isdigit() and int(compact(r['raceNo'])) in wanted]
+        races=parse_cards({**data,'raceInfo':selected})
+        require(set(races)==wanted,'Historical official race selection differs')
+        self.receipts.append({'provider':PROVIDER,'url':program_url(code,day),'observed_at':observed,'kind':'entries'})
+        return races,observed
+
+    def results(self, code, day, number, meeting_start, entries, *, allow_pending=False, allow_absence_only=False):
         data, observed = self._json(code, day, number, 'JSJ012')
         try:
             output = ({} if allow_pending and isinstance(data,dict) and not data.get('tyakujyunItemSubData')
-                      else parse_results(data, code, day, number, meeting_start, entries))
+                      else parse_results(data, code, day, number, meeting_start, entries,allow_absence_only=allow_absence_only))
         except ValueError:
             print('OFFICIAL RESULT DISPLAY',code,day,number,json.dumps([
                 {k:r.get(k) for k in ('syaban','sensyuRegistNo','tyaku','agari','BH','kojinStateItemSubData')}

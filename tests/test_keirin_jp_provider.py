@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'scripts'))
-from keirin_jp_provider import check_url, parse_cards, parse_program, parse_results, enrich_cards
+from keirin_jp_provider import check_url, parse_cards, parse_program, parse_results, enrich_cards,OfficialClient
 
 FIXTURE = json.loads((Path(__file__).parent / 'fixtures/keirin-jp-public-result.json').read_text())
 
@@ -73,6 +73,34 @@ class OfficialJpTests(unittest.TestCase):
         self.assertEqual(saved['final_half_record'],'')
         rows[0]['kojinStateItemSubData']=[]
         with self.assertRaises(ValueError):parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries)
+
+    def test_observed_accident_abandonment_and_fall_with_disqualification(self):
+        entries=self.cards('20261103')[12]['players']
+        for labels,expected in ((['事故棄権'],'棄'),(['失格','落車棄権'],'失')):
+            rows=deepcopy(FIXTURE['result']);rows[0].update(tyaku='',agari='',kojinStateItemSubData=[{'kojinState':v} for v in labels])
+            actual=parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries)['014534']
+            self.assertEqual(actual['accident'],expected)
+            self.assertEqual(actual['accident_name'],'・'.join(labels))
+
+    def test_only_explicit_absences_can_be_kept_from_an_absence_only_result(self):
+        entries=self.cards('20261103')[12]['players'];rows=deepcopy(FIXTURE['result'][:1])
+        rows[0].update(tyaku='',agari='',kojinStateItemSubData=[{'kojinState':'欠場'}])
+        with self.assertRaisesRegex(ValueError,'Incomplete'):parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries)
+        actual=parse_results({'tyakujyunItemSubData':rows},'45','20261103',12,'20261102',entries,allow_absence_only=True)
+        self.assertEqual(set(actual),{'014534'});self.assertEqual(actual['014534']['accident'],'欠')
+        with self.assertRaisesRegex(ValueError,'Incomplete'):
+            parse_results({'tyakujyunItemSubData':FIXTURE['result'][:1]},'45','20261103',12,'20261102',entries,allow_absence_only=True)
+
+    def test_unrelated_foreign_empty_period_does_not_block_an_exact_historical_race(self):
+        domestic={'raceNo':'12','shumokuName':'Ｓ級準決勝','sensyuTypeInfo':deepcopy(FIXTURE['previous']['players'])}
+        foreign={'raceNo':'11','shumokuName':'Ｓ級準決勝','sensyuTypeInfo':[
+            {'syaban':'3','sensyuRegistNo':'130127','sensyuName':'トゥルーマン','sotugyouki':''}]}
+        payload={'raceInfo':[domestic,foreign]};client=OfficialClient(pause=0)
+        client._json=lambda *_:(payload,FIXTURE['observed_at'])
+        with self.assertRaises(ValueError):client.cards('45','20261103')
+        selected,_=client.cards_for_races('45','20261103',{12})
+        self.assertEqual(set(selected),{12});self.assertEqual(selected[12]['players'][2]['player_id'],'014534')
+        with self.assertRaises(ValueError):client.cards_for_races('45','20261103',{10})
 
     def test_public_navigation_requires_the_requested_date_and_venue(self):
         data = {'C0201data': {'selKaisai': '20261103', 'selKjyoCd': '45', 'C0201race': [{'encParaR': 'public-navigation'}]}}
