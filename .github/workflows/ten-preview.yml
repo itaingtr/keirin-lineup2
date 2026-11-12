@@ -4,8 +4,6 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/ten-preview.yml'
-      - 'scripts/ten_meetings.py'
-      - 'scripts/ten_preview.py'
   workflow_dispatch:
 permissions:
   contents: write
@@ -21,7 +19,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: main
+      - name: Keep the isolated trial manual after formal adoption
+        run: echo 'Normal pages use the shared rider catalogue. Only an explicit manual run recollects index2.'
       - name: Collect checked public history for this isolated trial
+        if: github.event_name == 'workflow_dispatch'
         env:
           TEN_CHECKPOINT_DIR: /tmp/lineup2-ten-checkpoints
         run: |
@@ -43,6 +44,7 @@ jobs:
           path: /tmp/lineup2-ten-checkpoints
           if-no-files-found: ignore
       - name: Save only the checked experiment and request publication
+        if: github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
