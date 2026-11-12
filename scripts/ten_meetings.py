@@ -131,7 +131,8 @@ def _rank(cell):
     accidents={'欠':'欠','欠場':'欠','欠車':'欠','落':'落','落車':'落','落棄':'落','落再':'落',
                '落車棄権':'落','落車再入':'落','故':'故','故棄':'故','故再':'故','故障棄権':'故',
                '故障再入':'故','失':'失','失格':'失','棄':'棄','棄権':'棄','除':'除','除外':'除'}
-    require(label in accidents,'Unknown official profile rank label')
+    accidents.update({'事故棄権':'棄','途中欠場':'欠'})
+    require(label in accidents,'Unknown official profile rank label: '+repr(label))
     return 0,accidents[label]
 
 
@@ -172,6 +173,35 @@ def collect(races,target,read=None,client=None):
     require(races,'Empty ten-meeting preview card')
     output=[];sources=[];profiles={};entries={};failed_entries=set()
     total=len({player.get('playerId') or player.get('player_id') for race in races for player in race['players']})
+    # Check every inexpensive profile before starting the much larger shared
+    # historical-entry join. Keep only parsed public display fields in memory;
+    # neither raw pages nor opaque navigation strings enter the dataset.
+    parsed_profiles={};profile_errors=[];checked_profiles=set()
+    for race in races:
+        ident=identity(race['source'])
+        require(ident['provider']=='kdreams' and ident['date']==actual.strftime('%Y%m%d'),
+                'Ten-meeting current source date/provider differs')
+        before=date.fromisoformat(ident['start'][:4]+'-'+ident['start'][4:6]+'-'+ident['start'][6:])
+        for original in race['players']:
+            player=deepcopy(original);player_id=player.get('playerId') or player.get('player_id')
+            player['playerId']=player_id;url=profile_url(player_id)
+            key=(player_id,compact(player['name']),str(player['period']),before.isoformat())
+            if key in checked_profiles:continue
+            checked_profiles.add(key)
+            print('OFFICIAL TEN PROFILE START',len(checked_profiles),'/',total,flush=True)
+            # Network/access failures stop normally. Only public parser
+            # diagnostics are accumulated, so one format repair covers all
+            # affected riders without repeating expensive entry requests.
+            doc,observed=read(url)
+            try:parsed_profiles[key]=parse_profile(doc,player,before)
+            except ValueError as error:
+                diagnostic='JKA '+player_id+': '+str(error)[:250]
+                profile_errors.append(diagnostic)
+                print('OFFICIAL TEN PROFILE FORMAT',diagnostic,flush=True)
+            sources.append({'provider':PROVIDER,'url':url,'observed_at':observed,'kind':'ten_meeting_profile'})
+    require(not profile_errors,'Official ten-meeting profile preflight failed ('+str(len(profile_errors))+'):\n'
+            +'\n'.join(profile_errors))
+    print('OFFICIAL TEN PROFILES CHECKED',len(parsed_profiles),'ready for historical-entry joins',flush=True)
     def cards(code,raw):
         key=(code,raw)
         if key not in entries and key not in failed_entries:
@@ -191,9 +221,8 @@ def collect(races,target,read=None,client=None):
             player['playerId']=player_id;url=profile_url(player_id)
             key=(player_id,compact(player['name']),str(player['period']),before.isoformat())
             if key not in profiles:
-                print('OFFICIAL TEN PROFILE START',len(profiles)+1,'/',total,flush=True)
-                doc,observed=read(url);history=parse_profile(doc,player,before)
-                sources.append({'provider':PROVIDER,'url':url,'observed_at':observed,'kind':'ten_meeting_profile'})
+                print('OFFICIAL TEN PROFILE JOIN',len(profiles)+1,'/',total,flush=True)
+                history=deepcopy(parsed_profiles[key])
                 for meeting in history:
                     candidate_codes=[];resolved={}
                     for code in meeting['venue_options']:

@@ -36,6 +36,22 @@ class Client:
 
 
 class TenMeetingsTests(unittest.TestCase):
+    def test_profile_format_errors_are_batched_before_any_historical_entry_request(self):
+        first=dict(PLAYER)
+        second=dict(PLAYER,no=2,playerId='013498')
+        calls=[];client=Client()
+        def read(url):
+            calls.append(url);identifier=url.rsplit('=',1)[-1]
+            html=page([meeting(date(2026,11,1),ranks=('未確認','未確認',1))],identifier=identifier)
+            return Document(html).root,STAMP
+        with self.assertRaises(ValueError) as raised:
+            collect([{'source':SOURCE,'players':[first,second]}],'2026-11-12',read,client)
+        message=str(raised.exception)
+        self.assertIn('JKA 013497',message);self.assertIn('JKA 013498',message)
+        self.assertIn("rank label: '未確認'",message)
+        self.assertEqual(len(calls),2)
+        self.assertEqual(client.calls,[],'No costly entry join can begin after a profile format error')
+
     def test_last_ten_completed_meetings_are_chronological_and_keep_five_starts(self):
         before=date(2026,11,12)
         entries=[meeting(before)]+[meeting(before-timedelta(days=5*i),ranks=(1,2,3,4,5) if i==3 else (1,2,3)) for i in range(1,13)]
