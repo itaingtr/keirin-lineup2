@@ -21,7 +21,7 @@ PROVIDER='keirin.jp'
 GRADES={'F2':1,'F1':2,'G3':3,'G2':4,'G1':5,'GP':6}
 ALIASES={
  '函':('11',),'青':('12',),'平':('13',),'弥':('21',),'前':('22',),'取':('23',),
- '宇':('24',),'宮':('25',),'西':('26',),'京':('27',),'閣':('27',),'立':('28',),
+ '宇':('24',),'宮':('25',),'西':('26',),'園':('26',),'京':('27',),'閣':('27',),'立':('28',),
  '松':('31','47','75'),'戸':('31',),'千':('32',),'川':('34',),'塚':('35',),'小':('36','73'),
  '小田':('36',),'原':('36',),'伊':('37',),'静':('38',),'名':('42',),'岐':('43',),
  '垣':('44',),'豊':('45',),'富':('46',),'阪':('47',),'四':('48',),'井':('51',),
@@ -127,13 +127,15 @@ def _rank(cell):
                 'Unrecognized official profile rank badge')
         return None
     label=compact(badges[0].attrs.get('title',''))
-    if re.fullmatch(r'[1-9]',label):return int(label),''
+    if label=='未':return None
+    if re.fullmatch(r'[1-9]',label):return int(label),'',''
     accidents={'欠':'欠','欠場':'欠','欠車':'欠','落':'落','落車':'落','落棄':'落','落再':'落',
                '落車棄権':'落','落車再入':'落','故':'故','故棄':'故','故再':'故','故障棄権':'故',
                '故障再入':'故','失':'失','失格':'失','棄':'棄','棄権':'棄','除':'除','除外':'除'}
     accidents.update({'事故棄権':'棄','途中欠場':'欠'})
+    if re.fullmatch(r'失格(?:第)?\d{1,3}条',label):return 0,'失',label
     require(label in accidents,'Unknown official profile rank label: '+repr(label))
-    return 0,accidents[label]
+    return 0,accidents[label],label
 
 
 def parse_profile(doc,player,before):
@@ -145,7 +147,7 @@ def parse_profile(doc,player,before):
     output=[];seen=set()
     for table in tables:
         rows=_rows(table)
-        require(len(rows)==2,'Official meeting result rows changed')
+        require(2<=len(rows)<=3,'Official meeting result rows changed')
         headers=cells(rows[0]);require(len(headers)==2,'Official meeting headings changed')
         start=_past_date(headers[0].visible_text(),before)
         if start>=before:continue
@@ -154,12 +156,14 @@ def parse_profile(doc,player,before):
         venue,grade=match[1],GRADES[match[2]]
         require((venue,start) not in seen,'Duplicate official meeting');seen.add((venue,start))
         days=[]
-        for index,cell in enumerate(cells(rows[1])):
+        result_cells=[cell for row in rows[1:] for cell in cells(row)]
+        require(1<=len(result_cells)<=8,'Official meeting result day slots changed')
+        for index,cell in enumerate(result_cells):
             rank=_rank(cell)
             if rank is None:continue
             actual=start+timedelta(days=index)
             require(actual<before,'Previous official meeting is still in progress')
-            days.append({'race_date':actual.isoformat(),'order':rank[0],'accident':rank[1],
+            days.append({'race_date':actual.isoformat(),'order':rank[0],'accident':rank[1],'accident_name':rank[2],
                          'meeting_day':index+1})
         if days:
             output.append({'venue_label':venue,'venue_options':ALIASES[venue],'grade_code':grade,

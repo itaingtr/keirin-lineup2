@@ -46,7 +46,8 @@ class TenPreviewTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);site=root/'site';output=root/'public';shutil.copytree(ROOT/'site',site)
             protected={p.relative_to(site):p.read_bytes() for p in site.rglob('*')
-                       if p.is_file() and (p.name=='index.html' or 'previous-preview' in p.parts or p.name=='index2.html')}
+                       if p.is_file() and 'ten-preview' not in p.relative_to(site).parts
+                       and (p.name=='index.html' or 'previous-preview' in p.parts or p.name=='index2.html')}
             pointer=prepare(card,races,card['target_date'],'run-100-1',site,collector=lambda *_:data)
             payload=(site/pointer['path']).read_bytes();prior=(site/pointer['previous_path']).read_bytes()
             output.mkdir();(output/'index.html').write_text('normal artifact preserved')

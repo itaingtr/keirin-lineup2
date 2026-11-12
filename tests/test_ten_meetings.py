@@ -36,6 +36,33 @@ class Client:
 
 
 class TenMeetingsTests(unittest.TestCase):
+    def test_wrapped_official_g1_keeps_fifth_and_sixth_calendar_days(self):
+        for ranks in ((1,2,3,4,5),(1,None,3,4,5,6)):
+            html=meeting(date(2026,6,16),'岸Ｇ１',ranks=ranks)
+            # Observed source layout: firstfourdaycells occupy one row;
+            # the fifth/sixth calendar slots continue in the next row.
+            marker=html.index('</tr><tr>')+len('</tr><tr>')
+            pieces=html[marker:html.rindex('</tr></table>')].split('</td>')
+            split='</td>'.join(pieces[:4])+'</td></tr><tr>'+'</td>'.join(pieces[4:])
+            html=html[:marker]+split+'</tr></table>'
+            result=parse_profile(page([html]),PLAYER,date(2026,11,12))[0]
+            expected=[index+1 for index,value in enumerate(ranks) if value is not None]
+            self.assertEqual([row['meeting_day'] for row in result['days']],expected)
+            self.assertEqual([row['order'] for row in result['days']],[value for value in ranks if value is not None])
+            self.assertEqual(result['days'][-1]['race_date'],(date(2026,6,16)+timedelta(days=len(ranks)-1)).isoformat())
+
+    def test_observed_disqualification_articles_and_unconfirmed_cells(self):
+        for article in (11,13,14,15,16):
+            label='失格'+str(article)+'条'
+            result=parse_profile(page([meeting(date(2026,11,1),'園Ｇ３',ranks=('未',label,'途中欠場','事故棄権'))]),
+                                 PLAYER,date(2026,11,12))[0]
+            self.assertEqual(result['venue_options'],('26',));self.assertEqual(result['grade_code'],3)
+            self.assertEqual([row['meeting_day'] for row in result['days']],[2,3,4])
+            self.assertEqual([row['accident'] for row in result['days']],['失','欠','棄'])
+            self.assertEqual(result['days'][0]['accident_name'],label)
+            self.assertEqual(result['days'][1]['accident_name'],'途中欠場')
+            self.assertTrue(all(row['order']==0 for row in result['days']))
+
     def test_profile_format_errors_are_batched_before_any_historical_entry_request(self):
         first=dict(PLAYER)
         second=dict(PLAYER,no=2,playerId='013498')
