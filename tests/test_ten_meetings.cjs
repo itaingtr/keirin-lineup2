@@ -71,6 +71,11 @@ async function basic(){
  }finally{app.dom.window.close();}
 }
 async function guards(){
+ const supplemental=payload();
+ const second=supplemental.races[0].players[0].meetings[1];second.start_date='2026-08-03';second.days=second.days.slice(0,1);
+ Object.assign(second.days[0],{race_date:'2026-08-05',race_id:'012720260805',video_url:'https://keirin.kdreams.jp/stadium/digest/?kyogijoCd=27&kaisaiDate=20260805&gradeCd=2&raceNo=1'});
+ const joined=await open({data:supplemental});
+ try{assert.equal(joined.dom.window.document.body.dataset.tenMeetingsStatus,'ready','Meeting starts can overlap when actual supplementary rides do not');}finally{joined.dom.window.close();}
  const missing=payload();Object.assign(missing.races[0].players[0].meetings[0].days[0],{race_id:null,race_number:null,video_url:null});
  const partial=await open({data:missing});
  try{assert.equal(partial.dom.window.document.body.dataset.tenMeetingsStatus,'ready');

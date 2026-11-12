@@ -49,9 +49,9 @@
         require(person && !members.has(player.no) && normalize(person.name) === normalize(player.name)
           && String(person.period) === String(player.period) && /^\d{6}$/.test(player.player_id || '')
           && player.player_id === person.playerId && Array.isArray(player.meetings) && player.meetings.length <= 10, 'ten meeting rider');
-        let lastEnd = '';
+        let lastEnd = '', lastStart = '';
         const meetings = player.meetings.map(meeting => {
-          require(validDate(meeting.start_date) && meeting.start_date < before && meeting.start_date > lastEnd
+          require(validDate(meeting.start_date) && meeting.start_date < before && meeting.start_date > lastStart
             && typeof meeting.venue === 'string' && meeting.venue.length > 0
             && /^\d{2}$/.test(meeting.venue_code || '') && Number.isInteger(meeting.grade_code)
             && meeting.grade_code >= 1 && meeting.grade_code <= 6
@@ -71,7 +71,8 @@
             seen.add(resultKey);lastDay = value.race_date;
             return {...value, link:validateLink(value,meeting)};
           });
-          lastEnd = lastDay || meeting.start_date;
+          require(!lastEnd || !days.length || days[0].race_date > lastEnd, 'ten meeting actual starts overlap');
+          lastEnd = lastDay || meeting.start_date;lastStart = meeting.start_date;
           return {...meeting, days};
         });
         members.set(player.no, {...player, meetings});
@@ -90,6 +91,7 @@
     rank.dataset.raceDate = result.race_date;
     if (result.race_id) rank.dataset.raceId = result.race_id;
     rank.title = [result.race_date,result.race_number ? result.race_number+'R' : '',kind,label+'着'].filter(Boolean).join(' ');
+    if (result.race_date_inferred === true) rank.title = label+'着（日付・レース番号は未照合）';
     if (result.link) {
       rank.href = result.link;rank.target = '_self';
       rank.addEventListener('click',event => { if (typeof window.openVideo === 'function') window.openVideo(event,rank.href); });

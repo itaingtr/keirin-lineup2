@@ -47,14 +47,14 @@ def validate(data,page):
         for player in race['players']:
             meetings=player.get('meetings')
             require(isinstance(meetings,list) and len(meetings)<=10,'Invalid ten-meeting count')
-            previous_end=None
+            previous_end=None;previous_start=None
             for meeting in meetings:
                 code=meeting.get('venue_code');grade=meeting.get('grade_code')
                 require(code in VENUES and isinstance(meeting.get('venue'),str) and 0<len(meeting['venue'])<=24,
                         'Invalid ten-meeting venue')
                 require(grade is None or type(grade) is int and 1<=grade<=6,'Invalid ten-meeting grade')
                 first=checked_date(meeting.get('start_date'))
-                require(first<start and (previous_end is None or previous_end<first),'Ten meetings are not chronological')
+                require(first<start and (previous_start is None or previous_start<first),'Ten meetings are not chronological')
                 days=meeting.get('days');require(isinstance(days,list) and 1<=len(days)<=8,'Invalid ten-meeting starts')
                 last=None;seen=set()
                 for result in days:
@@ -85,7 +85,9 @@ def validate(data,page):
                                 and query.get('kaisaiDate')==actual.strftime('%Y%m%d')
                                 and query.get('raceNo')==str(number) and query.get('gradeCd')==str(grade),
                                 'Ten-meeting video identity differs')
-                previous_end=last
+                require(previous_end is None or previous_end<checked_date(days[0]['race_date']),
+                        'Ten-meeting actual starts overlap')
+                previous_end=last;previous_start=first
     return data
 
 

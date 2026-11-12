@@ -19,6 +19,7 @@ from keirin_jp_provider import OfficialClient,compact,program_url
 from previous_presentation import highlight,semifinal
 from source_http import Document,Node,cells
 from venues import VENUES,identity
+from previous_daily import identity_digest
 
 PROVIDER='keirin.jp'
 GRADES={'F2':1,'F1':2,'G3':3,'G2':4,'G1':5,'GP':6}
@@ -180,20 +181,93 @@ def parse_profile(doc,player,before):
 
 
 def validate_timeline(history,before):
-    previous_end=None
+    previous_end=None;previous_start=None
     for meeting in history:
         first=date.fromisoformat(meeting['start_date']);last=None
-        valid=first<before and (previous_end is None or previous_end<first)
+        valid=first<before and (previous_start is None or previous_start<first)
         for record in meeting['days']:
             actual=date.fromisoformat(record['race_date'])
             valid=valid and first<=actual<before and (last is None or last<=actual)
             last=actual
+        valid=valid and bool(meeting['days']) and (previous_end is None or
+                previous_end<date.fromisoformat(meeting['days'][0]['race_date']))
         if not valid:
             timeline=[{'venue':m['venue_label'],'start':m['start_date'],
                        'results':[[d['race_date'],d['order'],d.get('accident','')] for d in m['days']]}
                       for m in history]
             raise ValueError('Official profile meeting chronology differs: '+json.dumps(timeline,ensure_ascii=False,separators=(',',':')))
-        previous_end=last
+        previous_end=last;previous_start=first
+
+
+def repair_high_grades(data,races,target,client=None):
+    """Resolve special meetings by actual participation days, including rests.
+
+    The profile's compact five starts can span six calendar days. Only a full
+    matching entry sequence permits assigning those starts exact dates/links.
+    A mismatch preserves the observed ranks and removes every guessed link.
+    """
+    require(data.get('schema_version')==1 and data.get('provider')==PROVIDER
+            and data.get('target_date')==target,'High-grade repair date/provider differs')
+    require(identity_digest(data['races'],history=True)==identity_digest(races),
+            'High-grade repair full rider identity differs')
+    result=deepcopy(data);client=client or OfficialClient();entries={};missing=set()
+    current={race['source']:race for race in races}
+    for race in result['races']:
+        source=identity(current[race['source_url']]['source'])
+        require(source['date']==target.replace('-',''),'High-grade current card date differs')
+        before=date.fromisoformat(source['start'][:4]+'-'+source['start'][4:6]+'-'+source['start'][6:])
+        for player in race['players']:
+            for meeting in player['meetings']:
+                grade=meeting.get('grade_code')
+                if grade not in (4,5,6):continue
+                code=meeting.get('venue_code');start=date.fromisoformat(meeting['start_date'])
+                require(code in VENUES and start<before,'High-grade meeting identity differs')
+                days=meeting['days'];require(1<=len(days)<=8,'Invalid high-grade profile starts')
+                for record in days:
+                    require(record.get('player_id',player['player_id'])==player['player_id'],
+                            'High-grade result rider differs')
+                    record.update(race_id=None,race_number=None,race_type='',video_url=None,
+                                  race_date_inferred=True)
+                    for key in ('highlight_rank','semifinal_rank','race_type_source_url','race_type_observed_at'):
+                        record.pop(key,None)
+                hits=[]
+                for offset in range({4:4,5:6,6:3}[grade]):
+                    actual=start+timedelta(days=offset)
+                    if actual>=before:continue
+                    raw=actual.strftime('%Y%m%d');key=(code,raw)
+                    if key not in entries and key not in missing:
+                        try:entries[key]=client.cards(code,raw)
+                        except ValueError:missing.add(key)
+                    if key not in entries:continue
+                    rows,stamp=entries[key]
+                    matches=[(number,row,member) for number,row in rows.items()
+                             for member in row['players'].values() if member['player_id']==player['player_id']]
+                    require(len(matches)<=1,'High-grade rider appears in multiple races on one day')
+                    if not matches:continue
+                    number,row,member=matches[0]
+                    require(compact(member['name'])==compact(player['name']) and str(member['period'])==str(player['period']),
+                            'High-grade historical rider name/period differs')
+                    if member.get('absent') is True:continue
+                    hits.append((actual,number,row['race_type'],stamp))
+                complete=len(hits)==len(days)
+                meeting['calendar_sequence_verified']=complete
+                if complete:
+                    for record,(actual,number,kind,stamp) in zip(days,hits):
+                        raw=actual.strftime('%Y%m%d');day=(actual-start).days+1
+                        record.update(race_date=actual.isoformat(),meeting_day=day,race_date_inferred=False,
+                                      race_number=number,race_id=f'{number:02}{code}{raw}',race_type=kind,
+                                      video_url='https://keirin.kdreams.jp/stadium/digest/?'+urlencode({
+                                          'kyogijoCd':code,'kaisaiDate':raw,'gradeCd':grade,'raceNo':number}),
+                                      highlight_rank=highlight(kind,day),semifinal_rank=semifinal(kind),
+                                      race_type_source_url=program_url(code,raw),race_type_observed_at=stamp)
+                print('OFFICIAL TEN HIGH CALENDAR',code,start.isoformat(),len(days),'profile starts',
+                      len(hits),'entry days','verified='+str(complete).lower(),flush=True)
+    receipts=result.setdefault('sources',[])
+    seen={json.dumps(row,sort_keys=True,ensure_ascii=False) for row in receipts}
+    for row in getattr(client,'receipts',[]):
+        key=json.dumps(row,sort_keys=True,ensure_ascii=False)
+        if key not in seen:receipts.append(deepcopy(row));seen.add(key)
+    return result
 
 
 def collect(races,target,read=None,client=None):
@@ -262,6 +336,14 @@ def collect(races,target,read=None,client=None):
                 print('OFFICIAL TEN PROFILE JOIN',len(profiles)+1,'/',total,flush=True)
                 history=deepcopy(parsed_profiles[key])
                 for meeting in history:
+                    if meeting['grade_code'] in (4,5,6):
+                        require(len(meeting['venue_options'])==1,'High-grade venue abbreviation is ambiguous')
+                        code=meeting.pop('venue_options')[0];meeting.pop('venue_label')
+                        meeting.update(venue_code=code,venue=VENUES[code][0])
+                        for record in meeting['days']:
+                            record.update(player_id=player_id,provider=PROVIDER,race_date_inferred=True,
+                                          race_id=None,race_number=None,race_type='',video_url=None)
+                        continue
                     candidate_codes=[];resolved={}
                     for code in meeting['venue_options']:
                         matching={}
@@ -300,4 +382,5 @@ def collect(races,target,read=None,client=None):
         output.append({'source_url':race['source'],'players':members})
         print('OFFICIAL TEN MEETINGS',race.get('venue',''),ident['race'],'R',len(members),'riders',flush=True)
     sources.extend(getattr(client,'receipts',[]))
-    return {'schema_version':1,'provider':PROVIDER,'target_date':target,'races':output,'sources':sources}
+    data={'schema_version':1,'provider':PROVIDER,'target_date':target,'races':output,'sources':sources}
+    return repair_high_grades(data,races,target,client=client)

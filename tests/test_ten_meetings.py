@@ -1,4 +1,5 @@
 from datetime import date,timedelta
+from copy import deepcopy
 import json
 import os
 from pathlib import Path
@@ -8,7 +9,7 @@ import tempfile
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from ten_meetings import collect,parse_profile,profile_url,check_profile_url,validate_timeline
+from ten_meetings import collect,parse_profile,profile_url,check_profile_url,validate_timeline,repair_high_grades
 from source_http import Document
 
 STAMP='2026-11-12T05:00:00+00:00'
@@ -39,6 +40,70 @@ class Client:
 
 
 class TenMeetingsTests(unittest.TestCase):
+    def test_supplementary_meeting_schedule_can_overlap_previous_actual_rides(self):
+        html=page([meeting(date(2026,11,3),ranks=(None,None,4)),meeting(date(2026,11,1))])
+        history=parse_profile(html,PLAYER,date(2026,11,12))
+        validate_timeline(history,date(2026,11,12))
+        self.assertEqual(history[0]['days'][-1]['race_date'],'2026-11-03')
+        self.assertEqual(history[1]['days'][0]['race_date'],'2026-11-05')
+
+    def high_fixture(self):
+        days=[{'race_date':(date(2026,11,1)+timedelta(days=i)).isoformat(),'meeting_day':i+1,
+               'player_id':'013497','order':i+1,'accident':'','race_id':'old-wrong-date',
+               'race_number':9,'race_type':'old-type','video_url':'old-wrong-link','highlight_rank':True}
+              for i in range(5)]
+        meetings=[{'venue':'武雄','venue_code':'84','grade_code':2,'start_date':'2026-10-01',
+                   'days':[{'order':3,'race_date':'2026-10-01','video_url':'preserve-low-grade-display'}]},
+                  {'venue':'岸和田','venue_code':'56','grade_code':5,'start_date':'2026-11-01','days':days}]
+        data={'schema_version':1,'provider':'keirin.jp','target_date':'2026-11-12','sources':[],
+              'races':[{'source_url':SOURCE,'players':[{'no':1,'name':'確認選手','period':82,'player_id':'013497','meetings':meetings}]}]}
+        return data,[{'source':SOURCE,'players':[PLAYER]}]
+
+    def high_client(self,missing_last=False):
+        class Historical:
+            def __init__(self):self.calls=[];self.receipts=[]
+            def cards(self,code,raw):
+                self.calls.append((code,raw));day=int(raw[-2:])
+                member={'player_id':'013497','name':'確認選手','period':82,'absent':day==2}
+                if missing_last and day==6:return {1:{'race_type':'S級一般','players':{}}},STAMP
+                kind='S級初日特選' if day==1 else 'S級準決勝' if day==5 else 'S級決勝' if day==6 else 'S級一般'
+                return {day:{'race_type':kind,'players':{1:member}}},STAMP
+        return Historical()
+
+    def test_high_grade_rest_day_repairs_rank_sequence_to_real_participation_dates(self):
+        data,races=self.high_fixture();before=deepcopy(data);client=self.high_client()
+        repaired=repair_high_grades(data,races,'2026-11-12',client)
+        meetings=repaired['races'][0]['players'][0]['meetings'];high=meetings[1]
+        self.assertEqual(data,before,'The old saved display data remains immutable')
+        self.assertEqual(meetings[0],before['races'][0]['players'][0]['meetings'][0])
+        self.assertTrue(high['calendar_sequence_verified'])
+        self.assertEqual([d['order'] for d in high['days']],[1,2,3,4,5])
+        self.assertEqual([d['race_date'] for d in high['days']],['2026-11-01','2026-11-03','2026-11-04','2026-11-05','2026-11-06'])
+        self.assertEqual([d['meeting_day'] for d in high['days']],[1,3,4,5,6])
+        self.assertEqual(high['days'][1]['race_id'],'035620261103')
+        self.assertIn('kaisaiDate=20261103',high['days'][1]['video_url'])
+        self.assertIn('raceNo=3',high['days'][1]['video_url'])
+        self.assertTrue(high['days'][-2]['semifinal_rank']);self.assertTrue(high['days'][-1]['highlight_rank'])
+        self.assertEqual(len(client.calls),6)
+
+    def test_high_grade_incomplete_calendar_removes_all_old_guessed_links(self):
+        data,races=self.high_fixture()
+        repaired=repair_high_grades(data,races,'2026-11-12',self.high_client(missing_last=True))
+        high=repaired['races'][0]['players'][0]['meetings'][1]
+        self.assertFalse(high['calendar_sequence_verified'])
+        self.assertEqual([d['order'] for d in high['days']],[1,2,3,4,5])
+        for record in high['days']:
+            self.assertIsNone(record['video_url']);self.assertIsNone(record['race_id']);self.assertIsNone(record['race_number'])
+            self.assertEqual(record['race_type'],'');self.assertTrue(record['race_date_inferred'])
+            self.assertNotIn('highlight_rank',record);self.assertNotIn('semifinal_rank',record)
+
+    def test_high_grade_repair_requires_the_full_current_rider_identity(self):
+        data,races=self.high_fixture();data['races'][0]['players'][0]['player_id']='999999'
+        client=self.high_client()
+        with self.assertRaisesRegex(ValueError,'full rider identity'):
+            repair_high_grades(data,races,'2026-11-12',client)
+        self.assertEqual(client.calls,[])
+
     def test_source_cursor_unwraps_several_calendar_years(self):
         dates=[date(2026,10,1),date(2026,1,10),date(2025,12,1),date(2025,1,10),date(2024,12,1)]
         result=parse_profile(page([meeting(day) for day in dates]),PLAYER,date(2026,11,12))
@@ -126,7 +191,7 @@ class TenMeetingsTests(unittest.TestCase):
         html=page([meeting(date(2026,11,1))]);client=Client();calls=[]
         def read(url):calls.append(url);return Document(html).root,STAMP
         race={'source':SOURCE,'players':[PLAYER]}
-        result=collect([race,race],'2026-11-12',read,client)
+        result=collect([race],'2026-11-12',read,client)
         self.assertEqual(calls,[profile_url('013497')]);self.assertEqual(len(client.calls),3)
         actual=result['races'][0]['players'][0]['meetings'][0]
         self.assertEqual((actual['venue'],actual['venue_code'],actual['grade_code']),('武雄','84',2))
