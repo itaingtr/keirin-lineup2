@@ -30,5 +30,10 @@ def main():
                 unusual.append({'race':race.get('raceNo'),**{k:p.get(k) for k in ('syaban','sensyuRegistNo','sensyuName','sotugyouki','ketujyouTuikaHojyu')}})
             seen.add(identifier)
     print('OFFICIAL HISTORICAL CARD SLOTS',json.dumps(unusual,ensure_ascii=False),flush=True)
+    for code,raw,number,names in [('73','20261024',9,{'堀内俊介'}),('47','20261001',4,{'菊地圭尚','小西晴己'}),('27','20261018',7,{'小森貴大'})]:
+        payload,_=client._json(code,raw,number,'JSJ012')
+        rows=[{k:p.get(k) for k in ('sensyuRegistNo','sensyuName','tyaku','agari','BH','kojinStateItemSubData')}
+              for p in payload.get('tyakujyunItemSubData',[]) if compact(p.get('sensyuName','')) in names]
+        print('OFFICIAL REENTRY DETAILS',code,raw,number,json.dumps(rows,ensure_ascii=False),flush=True)
 
 if __name__=='__main__':main()
