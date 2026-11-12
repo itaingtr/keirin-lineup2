@@ -15,7 +15,7 @@ def ready_for_export(site):
     for race in data['races']:
         for player in race['players']:
             for meeting in player['meetings']:
-                if (meeting.get('grade_code',0)>=4 and any(d.get('video_url') for d in meeting['days'])
+                if ((meeting.get('grade_code') or 0)>=4 and any(d.get('video_url') for d in meeting['days'])
                         and meeting.get('calendar_sequence_verified') is not True):
                     return False
     return True
