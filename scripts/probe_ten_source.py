@@ -30,7 +30,7 @@ def main():
         return value
     report={}
     read('https://keirin.jp/pc/top')
-    for url in ('https://keirin.jp/pc/racerprofile?snum=013497','https://keirin.jp/pc/dfw/dataplaza/guest/membprofile?SNO=013497'):
+    for url in ('https://keirin.jp/pc/racerprofile?snum=015097',):
         try:
             page=read(url);entry={'scripts':re.findall(r'<script[^>]+src=[\"\']([^\"\']+)',page)}
             entry['embedded']={}
@@ -38,6 +38,7 @@ def main():
                 try:entry['embedded'][match[1]]=clean(json.JSONDecoder().raw_decode(page[match.end():].lstrip())[0])
                 except ValueError:pass
             entry['snippets']=[clean(x) for x in re.findall(r'.{0,120}(?:racerprofile|JSJ\d+|PC05\d+|直近|過去|出走履歴).{0,160}',page)][:30]
+            entry['rank_badges']=[{'title':n.attrs.get('title'),'style':n.attrs.get('style')} for n in Document(page).root.find_all('p') if 'imgbadge_s4' in n.attrs.get('class','').split()]
             entry['tables']=[]
             for table in Document(page).root.find_all('table'):
                 if not any(word in table.visible_text() for word in ('直近1','登録番号','期別','氏名')):continue
@@ -97,7 +98,7 @@ def main():
             entry['static']={}
             entry['profile_functions']={}
             entry['local_functions']=[x[:4000] for x in re.findall(r'function\s+rbClick[\s\S]{0,3000}',page)]
-            for path in entry['scripts']:
+            for path in []:
                 full=urljoin(url,path)
                 if urlsplit(full).hostname not in ('keirin.jp','www.keirin.jp'):continue
                 js=read(full)
