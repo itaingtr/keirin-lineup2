@@ -1,11 +1,14 @@
 from datetime import date,timedelta
 import json
+import os
 from pathlib import Path
 import sys
 import unittest
+import tempfile
+from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from ten_meetings import collect,parse_profile,profile_url,check_profile_url
+from ten_meetings import collect,parse_profile,profile_url,check_profile_url,validate_timeline
 from source_http import Document
 
 STAMP='2026-11-12T05:00:00+00:00'
@@ -36,6 +39,24 @@ class Client:
 
 
 class TenMeetingsTests(unittest.TestCase):
+    def test_source_cursor_unwraps_several_calendar_years(self):
+        dates=[date(2026,10,1),date(2026,1,10),date(2025,12,1),date(2025,1,10),date(2024,12,1)]
+        result=parse_profile(page([meeting(day) for day in dates]),PLAYER,date(2026,11,12))
+        self.assertEqual([m['start_date'] for m in result],[day.isoformat() for day in reversed(dates)])
+        validate_timeline(result,date(2026,11,12))
+
+    def test_timeline_failure_is_checkpointed_before_any_entry_join(self):
+        # Source has two calendar-overlapping meetings. This must be diagnosed
+        # before potentially thousands of historical source requests.
+        html=page([meeting(date(2026,11,3)),meeting(date(2026,11,1))]);client=Client()
+        with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'TEN_CHECKPOINT_DIR':folder}):
+            with self.assertRaisesRegex(ValueError,'chronology differs'):
+                collect([{'source':SOURCE,'players':[PLAYER]}],'2026-11-12',lambda *_:(Document(html).root,STAMP),client)
+            checkpoint=json.loads((Path(folder)/'profiles.json').read_text())
+            self.assertEqual(len(checkpoint['profiles']),1)
+            self.assertIn('2026-11-03',checkpoint['errors'][0]);self.assertEqual(client.calls,[])
+            self.assertNotIn('opaque-navigation-placeholder',json.dumps(checkpoint))
+
     def test_wrapped_official_g1_keeps_fifth_and_sixth_calendar_days(self):
         for ranks in ((1,2,3,4,5),(1,None,3,4,5,6)):
             html=meeting(date(2026,6,16),'岸Ｇ１',ranks=ranks)
@@ -57,10 +78,10 @@ class TenMeetingsTests(unittest.TestCase):
             result=parse_profile(page([meeting(date(2026,11,1),'園Ｇ３',ranks=('未',label,'途中欠場','事故棄権'))]),
                                  PLAYER,date(2026,11,12))[0]
             self.assertEqual(result['venue_options'],('26',));self.assertEqual(result['grade_code'],3)
-            self.assertEqual([row['meeting_day'] for row in result['days']],[2,3,4])
-            self.assertEqual([row['accident'] for row in result['days']],['失','欠','棄'])
+            self.assertEqual([row['meeting_day'] for row in result['days']],[2,4])
+            self.assertEqual([row['accident'] for row in result['days']],['失','棄'])
             self.assertEqual(result['days'][0]['accident_name'],label)
-            self.assertEqual(result['days'][1]['accident_name'],'途中欠場')
+            self.assertTrue(result['withdrawn'])
             self.assertTrue(all(row['order']==0 for row in result['days']))
 
     def test_profile_format_errors_are_batched_before_any_historical_entry_request(self):

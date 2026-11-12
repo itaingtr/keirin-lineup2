@@ -6,6 +6,9 @@ numbers and types are joined through the existing official daily entry client.
 from copy import deepcopy
 from datetime import date,datetime,timedelta,timezone
 from http.cookiejar import CookieJar
+import json
+import os
+from pathlib import Path
 import re
 import time
 from urllib.error import HTTPError,URLError
@@ -22,7 +25,7 @@ GRADES={'F2':1,'F1':2,'G3':3,'G2':4,'G1':5,'GP':6}
 ALIASES={
  '函':('11',),'青':('12',),'平':('13',),'弥':('21',),'前':('22',),'取':('23',),
  '宇':('24',),'宮':('25',),'西':('26',),'園':('26',),'京':('27',),'閣':('27',),'立':('28',),
- '松':('31','47','75'),'戸':('31',),'千':('32',),'川':('34',),'塚':('35',),'小':('36','73'),
+ '松':('75',),'戸':('31',),'千':('32',),'川':('34',),'塚':('35',),'小':('36',),
  '小田':('36',),'原':('36',),'伊':('37',),'静':('38',),'名':('42',),'岐':('43',),
  '垣':('44',),'豊':('45',),'富':('46',),'阪':('47',),'四':('48',),'井':('51',),
  '福':('51',),'奈':('53',),'向':('54',),'和':('55',),'岸':('56',),'玉':('61',),
@@ -127,7 +130,7 @@ def _rank(cell):
                 'Unrecognized official profile rank badge')
         return None
     label=compact(badges[0].attrs.get('title',''))
-    if label=='未':return None
+    if label in ('未','途中欠場'):return None
     if re.fullmatch(r'[1-9]',label):return int(label),'',''
     accidents={'欠':'欠','欠場':'欠','欠車':'欠','落':'落','落車':'落','落棄':'落','落再':'落',
                '落車棄権':'落','落車再入':'落','故':'故','故棄':'故','故再':'故','故障棄権':'故',
@@ -144,21 +147,22 @@ def parse_profile(doc,player,before):
     _verify_person(doc,player)
     tables=[table for table in doc.find_all('table') if 'seiseki_kobetsu' in table.attrs.get('class','').split()]
     require(tables,'Official recent-meeting display is unavailable')
-    output=[];seen=set()
+    output=[];seen=set();cursor=before
     for table in tables:
         rows=_rows(table)
         require(2<=len(rows)<=3,'Official meeting result rows changed')
         headers=cells(rows[0]);require(len(headers)==2,'Official meeting headings changed')
-        start=_past_date(headers[0].visible_text(),before)
+        start=_past_date(headers[0].visible_text(),cursor)
         if start>=before:continue
         label=compact(headers[1].visible_text());match=re.fullmatch(r'(.+?)(F[12]|G[123]|GP)',label)
         require(match is not None and match[1] in ALIASES,'Unknown official venue/grade heading: '+label)
         venue,grade=match[1],GRADES[match[2]]
         require((venue,start) not in seen,'Duplicate official meeting');seen.add((venue,start))
-        days=[]
+        days=[];withdrawn=False
         result_cells=[cell for row in rows[1:] for cell in cells(row)]
         require(1<=len(result_cells)<=8,'Official meeting result day slots changed')
         for index,cell in enumerate(result_cells):
+            if any(compact(n.attrs.get('title',''))=='途中欠場' for n in cell.find_all('p')):withdrawn=True
             rank=_rank(cell)
             if rank is None:continue
             actual=start+timedelta(days=index)
@@ -167,8 +171,29 @@ def parse_profile(doc,player,before):
                          'meeting_day':index+1})
         if days:
             output.append({'venue_label':venue,'venue_options':ALIASES[venue],'grade_code':grade,
-                           'start_date':start.isoformat(),'days':days})
+                           'start_date':start.isoformat(),'days':days,'withdrawn':withdrawn})
+            # The source is explicitly ordered 直近1,直近2,... . A month/day
+            # crossing this cursor belongs to an earlier year, even when the
+            # twenty displayed meetings span more than one calendar year.
+            cursor=start-timedelta(days=1)
     return sorted(output,key=lambda item:item['start_date'])[-10:]
+
+
+def validate_timeline(history,before):
+    previous_end=None
+    for meeting in history:
+        first=date.fromisoformat(meeting['start_date']);last=None
+        valid=first<before and (previous_end is None or previous_end<first)
+        for record in meeting['days']:
+            actual=date.fromisoformat(record['race_date'])
+            valid=valid and first<=actual<before and (last is None or last<=actual)
+            last=actual
+        if not valid:
+            timeline=[{'venue':m['venue_label'],'start':m['start_date'],
+                       'results':[[d['race_date'],d['order'],d.get('accident','')] for d in m['days']]}
+                      for m in history]
+            raise ValueError('Official profile meeting chronology differs: '+json.dumps(timeline,ensure_ascii=False,separators=(',',':')))
+        previous_end=last
 
 
 def collect(races,target,read=None,client=None):
@@ -197,12 +222,21 @@ def collect(races,target,read=None,client=None):
             # diagnostics are accumulated, so one format repair covers all
             # affected riders without repeating expensive entry requests.
             doc,observed=read(url)
-            try:parsed_profiles[key]=parse_profile(doc,player,before)
+            try:
+                parsed_profiles[key]=parse_profile(doc,player,before)
+                validate_timeline(parsed_profiles[key],before)
             except ValueError as error:
-                diagnostic='JKA '+player_id+': '+str(error)[:250]
+                diagnostic='JKA '+player_id+': '+str(error)[:3000]
                 profile_errors.append(diagnostic)
                 print('OFFICIAL TEN PROFILE FORMAT',diagnostic,flush=True)
             sources.append({'provider':PROVIDER,'url':url,'observed_at':observed,'kind':'ten_meeting_profile'})
+    if os.environ.get('TEN_CHECKPOINT_DIR'):
+        checkpoint=Path(os.environ['TEN_CHECKPOINT_DIR']);checkpoint.mkdir(parents=True,exist_ok=True)
+        public={'schema_version':1,'provider':PROVIDER,'target_date':target,
+                'profiles':[{'player_id':key[0],'name':key[1],'period':key[2],'before':key[3],'history':history}
+                            for key,history in parsed_profiles.items()],
+                'sources':sources,'errors':profile_errors}
+        (checkpoint/'profiles.json').write_text(json.dumps(public,ensure_ascii=False,separators=(',',':'))+'\n')
     require(not profile_errors,'Official ten-meeting profile preflight failed ('+str(len(profile_errors))+'):\n'
             +'\n'.join(profile_errors))
     print('OFFICIAL TEN PROFILES CHECKED',len(parsed_profiles),'ready for historical-entry joins',flush=True)

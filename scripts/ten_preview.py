@@ -7,6 +7,7 @@ change cannot silently rebind the experiment to another set of riders.
 from datetime import date
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from urllib.parse import parse_qsl,urlsplit
@@ -124,7 +125,13 @@ def prepare(card,races,target,run_key,site,*,collector=None):
     if collector is None:
         from ten_meetings import collect
         collector=collect
-    data=validate(collector(races,target),card['html'])
+    collected=collector(races,target)
+    if os.environ.get('TEN_CHECKPOINT_DIR'):
+        checkpoint=Path(os.environ['TEN_CHECKPOINT_DIR'])
+        checkpoint.mkdir(parents=True,exist_ok=True)
+        with (checkpoint/('collected-'+run_key+'.json')).open('x') as handle:
+            handle.write(encode(collected))
+    data=validate(collected,card['html'])
     data=dict(data);data['summary']=summary(data)
     require(data['summary']['results']>0,'No verified ten-meeting results; preserve the previous experiment')
     day=target.replace('-','')

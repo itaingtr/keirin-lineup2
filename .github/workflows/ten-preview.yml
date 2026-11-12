@@ -22,6 +22,8 @@ jobs:
         with:
           ref: main
       - name: Collect checked public history for this isolated trial
+        env:
+          TEN_CHECKPOINT_DIR: /tmp/lineup2-ten-checkpoints
         run: |
           git fetch origin odds-diagnostics
           python3 -u - <<'PY'
@@ -33,6 +35,13 @@ jobs:
           card,races,target=read_published('FETCH_HEAD')
           prepare(card,races,target,'run-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'],Path('site'))
           PY
+      - name: Keep public display-field checkpoints for review and recovery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ten-display-checkpoints
+          path: /tmp/lineup2-ten-checkpoints
+          if-no-files-found: ignore
       - name: Save only the checked experiment and request publication
         env:
           GITHUB_TOKEN: ${{ github.token }}
