@@ -48,7 +48,7 @@ class DailyHistoryExportTests(unittest.TestCase):
                 self.assertIn('/keirin-lineup2/'+name+'?v='+version,html)
             self.assertEqual(report['previous_daily']['data_path'],'data/20261110/previous-daily.json')
             self.assertEqual((site/snapshot['path']).read_bytes(),original,'Enrichment must not rewrite saved observations')
-            self.assertEqual(parse_page(html),parse_page((output/'index2.html').read_text()))
+            self.assertNotIn('data-ten-meetings="true"',html,'The trial never alters normal pages')
             for raw in report['dates']:
                 if raw>='20261110':continue
                 directory=site/('line'+raw+'.html');source=(directory/'index.html').read_text()
@@ -63,7 +63,8 @@ class DailyHistoryExportTests(unittest.TestCase):
             self.assertTrue((output/'data/20261110/previous-daily.json').exists())
             checks=verification_files(output)
             self.assertIn('data/20261110/previous-daily.json',checks)
-            self.assertIn('data/20261110/previous-meetings.json',checks)
+            from export_pages import page_date
+            self.assertIn('data/'+page_date(preview)+'/previous-meetings.json',checks)
             self.assertEqual(checks.count('previous-meetings.js'),1)
             self.assertEqual(checks.count('previous-meetings.css'),1)
 

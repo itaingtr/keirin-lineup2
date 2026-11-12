@@ -1,3 +1,9 @@
+# Isolated ten-meeting index2 trial
+
+- Latest user requests a new index2-only experiment. Keep normal index/date HTML, previous-history shared styling, source records, comments/auth and daily schedules unchanged. Collect up to10 prior completed meetings principally from KEIRIN.JP public rider profiles, validating full JKA ID/name/period and exact source race coordinates. Never guess video race numbers or relabel provider provenance.
+- Place race-wide 成績 controls below 前回, collapsed initially. Ten meetings run oldest to newest in18px two-line slots,22px rider columns. Venue uses first2characters (いわき平→平), F1 prefixes actualmonth, G3 pale-red and G1/G2 pale-purple. Five or more starts put the excess first starts beside the venue and last4 ranks below. Every verified rank links to its matching Rakuten digest. In this experiment only, special/final/semifinal ranks are pink and aggregate B count bold.
+- ten_preview freezes independent two-meeting and ten-meeting display data plus its own page under site/ten-preview, with checksummed immutable runs and pointer. The original site/index2 and previous-preview checksum remain intact; exporter chooses the new trial for public/index2. Dedicated manual-only ten-preview workflow collects outside the normal updater lock, then requests existing publication. No new daily scheduler or server DB writes. Source discovery reports omit opaque navigation values; never commit raw source pages.
+
 # Daily previous-meeting presentation from November 10
 
 - The user approved the index2 layout for normal index.html and line20261110.html, and for every future automatic daily card. This supersedes the preview-only restrictions below. Apply the scoped history display from 20261110 only after checking the complete date/race/car/name/period/JKA identity. Preserve the earlier dated pages and all immutable source records.

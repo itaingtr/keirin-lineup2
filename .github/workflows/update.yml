@@ -65,6 +65,10 @@ jobs:
             PREVIEW_DATA=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print(r["previous_preview"]["data_path"])')
             NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_previous_meetings.cjs public/index2.html "public/$PREVIEW_DATA"
           fi
+          if [ -f public/ten-meetings.js ]; then
+            TEN_DATA=$(python3 -c 'import json; r=json.load(open("/tmp/lineup2-publication/report.json")); print(r["ten_preview"]["ten_data_path"])')
+            NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_ten_meetings.cjs public/index2.html "public/$TEN_DATA"
+          fi
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5

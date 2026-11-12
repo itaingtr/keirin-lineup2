@@ -225,11 +225,14 @@ def export(site,output,repository=REPOSITORY):
     races=parse_page(page)
     from previous_preview import export_preview
     preview=export_preview(site,output)
+    from ten_preview import export_ten_preview
+    ten_preview=export_ten_preview(site,output)
+    if ten_preview is not None:preview=ten_preview
     return {'target_date':current_day[:4]+'-'+current_day[4:6]+'-'+current_day[6:],
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
             'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days']),
-            'previous_preview':preview,'previous_daily':previous}
+            'previous_preview':preview,'previous_daily':previous,'ten_preview':ten_preview}
 
 
 if __name__=='__main__':

@@ -1,0 +1,47 @@
+name: Verify isolated ten-meeting experiment in mobile Chrome
+on:
+  workflow_run:
+    workflows: ['Collect isolated ten-meeting index2 experiment']
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Wait for the checked experimental snapshot
+        run: |
+          python3 - <<'PY'
+          import subprocess,time
+          for attempt in range(30):
+              subprocess.run(['git','fetch','origin','main'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              result=subprocess.run(['git','show','FETCH_HEAD:site/ten-preview/current.json'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              if result.returncode==0:
+                  subprocess.run(['git','checkout','--detach','FETCH_HEAD'],check=True)
+                  break
+              time.sleep(10)
+          else:raise RuntimeError('The checked ten-meeting experiment has not been saved yet')
+          PY
+      - name: Export checked pages and install the pinned browser client
+        run: |
+          python3 scripts/export_pages.py
+          npm install --prefix /tmp/lineup2-browser --no-audit --no-fund playwright-core@1.62.1
+      - name: Install Japanese fonts for visual review
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - name: Verify actual compact controls, colours and video links
+        run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_ten_browser.cjs public /tmp/ten-preview-mobile.png
+      - name: Save the review screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ten-preview-mobile
+          path: /tmp/ten-preview-mobile.png
+          if-no-files-found: ignore

@@ -35,6 +35,8 @@ def verification_files(site):
         preview_day=page_date((site/'index2.html').read_text())
         files.extend(['index2.html','previous-meetings.js','previous-meetings.css',
                       'data/'+preview_day+'/previous-meetings.json'])
+        if 'data-ten-meetings="true"' in (site/'index2.html').read_text():
+            files.extend(['ten-meetings.js','ten-meetings.css','data/'+preview_day+'/ten-meetings.json'])
     # Calendar files are public build outputs, including the generated daily
     # link index before a separate calendar UI is supplied.
     if (site/'calendar').is_dir():
