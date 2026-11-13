@@ -1,4 +1,4 @@
-// Real mobile taps start, seek and pause the exact official replay without an overlay.
+// One mobile tap opens the original replay in native full screen; the browser seeks.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 let chromium;try{({chromium}=require('playwright-core'));}catch{({chromium}=require('playwright'));}
 const directory=path.resolve(process.argv[2]||'public'),screenshot=process.argv[3];
@@ -42,38 +42,53 @@ async function main(){
   await link.evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
   const point=await link.evaluate(node=>{const box=node.getBoundingClientRect(),view=visualViewport,scale=view?.scale||1;return {x:(box.left+box.width/2-(view?.offsetLeft||0))*scale,y:(box.top+box.height/2-(view?.offsetTop||0))*scale};});
   await page.touchscreen.tap(point.x,point.y);
-  await page.waitForFunction(()=>document.querySelector('dialog.mobile-replay')?.dataset.replayState==='playing',null,{timeout:45000});
-  await page.waitForFunction(()=>document.querySelector('dialog.mobile-replay video')?.currentTime>.15,null,{timeout:15000});
+  await page.waitForFunction(()=>{
+    const video=document.querySelector('video.mobile-replay-video');
+    return video && document.fullscreenElement===video && !video.paused && video.currentTime>.15;
+  },null,{timeout:45000});
   const sourceResponse=await fetch(original,{headers:{'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 Version/18.6 Mobile/15E148 Safari/604.1'}});
   assert.equal(sourceResponse.status,200);const sourceHtml=await sourceResponse.text();
   const officialSource=/<source\b[^>]*\bsrc=["']([^"']+\.mp4)["']/i.exec(sourceHtml)?.[1];
   assert.ok(officialSource,'The original Rakuten player must identify its actual MP4');
-  async function seekAt(fraction){
-   const box=await page.locator('.mobile-replay-seek').boundingBox();assert.ok(box);
-   await page.touchscreen.tap(box.x+box.width*fraction,box.y+box.height/2);
-   await page.waitForFunction(()=>{const v=document.querySelector('dialog.mobile-replay video');return v&&!v.seeking&&v.readyState>=2;});
+
+  const cdp=await context.newCDPSession(page);await cdp.send('DOM.enable');
+  async function nativeTimeline(){
+    const {root}=await cdp.send('DOM.getDocument',{depth:1,pierce:true});
+    const selected=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector:'video.mobile-replay-video'});
+    const {node}=await cdp.send('DOM.describeNode',{nodeId:selected.nodeId,depth:-1,pierce:true});
+    const nodes=[];function walk(n){nodes.push(n);for(const child of [...(n.children||[]),...(n.shadowRoots||[])])walk(child);}walk(node);
+    const candidates=[];
+    for(const input of nodes.filter(n=>n.nodeName==='INPUT'&&(n.attributes||[]).includes('range'))){
+      try{
+        const {model}=await cdp.send('DOM.getBoxModel',{backendNodeId:input.backendNodeId});
+        const q=model.content,left=Math.min(q[0],q[2],q[4],q[6]),right=Math.max(q[0],q[2],q[4],q[6]),top=Math.min(q[1],q[3],q[5],q[7]),bottom=Math.max(q[1],q[3],q[5],q[7]);
+        if(right-left>100&&bottom>top)candidates.push({left,right,top,bottom,attributes:input.attributes});
+      }catch{}
+    }
+    candidates.sort((a,b)=>(b.right-b.left)-(a.right-a.left));
+    if(!candidates.length)console.log('NATIVE MEDIA INPUTS',JSON.stringify(nodes.filter(n=>n.nodeName==='INPUT').map(n=>n.attributes)));
+    assert.ok(candidates.length,'The browser native full-screen seek bar must be available');
+    return candidates[0];
   }
-  await seekAt(.6);
-  await page.waitForFunction(()=>{const v=document.querySelector('dialog.mobile-replay video');return !v.paused&&v.currentTime>v.duration*.4;});
-  const state=await page.locator('dialog.mobile-replay').evaluate(dialog=>{const v=dialog.querySelector('video'),r=dialog.getBoundingClientRect(),bar=dialog.querySelector('.mobile-replay-controls').getBoundingClientRect(),picture=v.getBoundingClientRect();return {src:v.currentSrc,paused:v.paused,time:v.currentTime,inline:v.playsInline,muted:v.muted,nativeControls:v.controls,barBelowPicture:bar.top>=picture.bottom,width:r.width,height:r.height,left:r.left,top:r.top,original:dialog.querySelector('a').href};});
-  assert.equal(state.paused,false);assert.equal(state.inline,true);assert.equal(state.original,original);assert.equal(page.url(),before);
-  assert.ok(state.src.startsWith('https://wm.st.keirin.jp/wm-keirin'));
-  assert.equal(state.src,officialSource,'Playback must use the exact video opened by the original Rakuten player');
-  assert.equal(state.nativeControls,false,'Inline native controls must not draw a central play overlay');
-  assert.equal(state.barBelowPicture,true,'Seek/play controls must remain below the picture');
-  assert.ok(Math.abs(state.width-390)<2&&Math.abs(state.height-844)<2&&Math.abs(state.left)<2&&Math.abs(state.top)<2,'The replay must fit the phone viewport despite page enlargement');
+  const timeline=await nativeTimeline();
+  const seekPoint={x:timeline.left+8+(timeline.right-timeline.left-16)*.6,y:(timeline.top+timeline.bottom)/2};
+  await page.touchscreen.tap(seekPoint.x,seekPoint.y);
+  // If native controls had faded, the first tap reveals them.
+  const moved=await page.waitForFunction(()=>{const v=document.querySelector('video.mobile-replay-video');return v&&!v.seeking&&v.currentTime>v.duration*.4&&!v.paused;},null,{timeout:2000}).then(()=>true,()=>false);
+  if(!moved){await page.touchscreen.tap(seekPoint.x,seekPoint.y);await page.waitForFunction(()=>{const v=document.querySelector('video.mobile-replay-video');return !v.seeking&&v.currentTime>v.duration*.4&&!v.paused;});}
+  const state=await page.locator('video.mobile-replay-video').evaluate(video=>{
+    const r=video.getBoundingClientRect();return {src:video.currentSrc,paused:video.paused,time:video.currentTime,inline:video.playsInline,muted:video.muted,nativeControls:video.controls,fullscreen:document.fullscreenElement===video,
+      customSeekBars:document.querySelectorAll('.mobile-replay-seek').length,width:r.width,height:r.height,left:r.left,top:r.top};
+  });
+  assert.equal(state.src,officialSource,'The native player must use the original Rakuten video');
+  assert.equal(state.paused,false);assert.equal(state.nativeControls,true);assert.equal(state.inline,false);assert.equal(state.fullscreen,true);assert.equal(state.customSeekBars,0);
+  assert.equal(page.url(),before);
+  assert.ok(Math.abs(state.width-390)<2&&Math.abs(state.height-844)<2,'The native video must cover the phone viewport');
   if(screenshot)await page.screenshot({path:screenshot});
-  await page.locator('.mobile-replay-toggle').tap();
-  await page.waitForFunction(()=>document.querySelector('dialog.mobile-replay video').paused);
-  await seekAt(.25);
-  assert.ok(await page.locator('dialog.mobile-replay video').evaluate(v=>v.paused&&v.currentTime<v.duration*.4),'Seeking while paused must not resume unexpectedly');
-  if(screenshot)await page.screenshot({path:screenshot.replace(/\.png$/,'-paused.png')});
-  const pausedTime=await page.locator('dialog.mobile-replay video').evaluate(v=>v.currentTime);
-  await page.locator('.mobile-replay-toggle').tap();
-  await page.waitForFunction(time=>{const v=document.querySelector('dialog.mobile-replay video');return !v.paused&&v.currentTime>time+.15;},pausedTime);
-  await page.locator('.mobile-replay-close').tap();assert.equal(await page.locator('dialog.mobile-replay').count(),0);
+  await page.evaluate(()=>document.exitFullscreen());
+  await page.waitForFunction(()=>!document.querySelector('dialog.mobile-replay'));
   assert.equal(page.url(),before);assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
-  console.log('MOBILE REPLAY PASS',JSON.stringify({...state,sameAsRakutenPlayer:true,seekWhilePlaying:true,seekWhilePaused:true,realTouch:true,autoplayPolicy:'document-user-activation-required',writeRequests:0}));
+  console.log('MOBILE REPLAY PASS',JSON.stringify({...state,sameAsRakutenPlayer:true,firstTapFullscreen:true,nativeSeekWhilePlaying:true,returnToCard:true,realTouch:true,autoplayPolicy:'document-user-activation-required',writeRequests:0}));
  }catch(error){
   if(page){
    console.log('MOBILE REPLAY DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>{const d=document.querySelector('dialog.mobile-replay'),v=d?.querySelector('video'),r=d?.getBoundingClientRect();return {state:d?.dataset.replayState,src:v?.currentSrc,ready:v?.readyState,error:v?.error?.message,paused:v?.paused,width:r?.width,height:r?.height,left:r?.left,top:r?.top,bodyZoom:getComputedStyle(document.body).zoom,dialogZoom:d&&getComputedStyle(d).zoom};})));

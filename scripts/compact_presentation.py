@@ -17,15 +17,10 @@ body[data-history-layout="compact-20261113"] .lineup .previous-heading{font-size
 .mobile-replay:not([open]){display:none}
 .mobile-replay::backdrop{background:#101820}
 .mobile-replay-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.mobile-replay-original,.mobile-replay-close,.mobile-replay-fullscreen,.mobile-replay-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:1px solid #dbe2ea;border-radius:7px;background:#fff;color:#155eef;text-decoration:none;font:inherit;cursor:pointer}
+.mobile-replay-original,.mobile-replay-close,.mobile-replay-fullscreen{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:1px solid #dbe2ea;border-radius:7px;background:#fff;color:#155eef;text-decoration:none;font:inherit;cursor:pointer}
 .mobile-replay-fullscreen[hidden]{display:none}
 .mobile-replay-video{display:block;width:100%;max-height:calc(100dvh - 150px);height:auto;aspect-ratio:16/9;background:#000}
-.mobile-replay-video::-webkit-media-controls-start-playback-button{display:none!important;-webkit-appearance:none;opacity:0;pointer-events:none}
-.mobile-replay-video::-webkit-media-controls-overlay-play-button{display:none!important;opacity:0;pointer-events:none}
-.mobile-replay-controls{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%}
-.mobile-replay-toggle{min-width:82px;font-size:13px}
-.mobile-replay-seek{display:block;min-width:0;width:100%;height:40px;margin:0;padding:0;border:0;background:transparent;accent-color:#5fa8ff;touch-action:pan-y}
-.mobile-replay-time{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mobile-replay-video:fullscreen{width:100vw;height:100dvh;max-width:none;max-height:none;aspect-ratio:auto;object-fit:contain;background:#000}
 .mobile-replay-status{margin:0;font-size:13px;line-height:1.5;text-align:center}
 </style>'''
 
@@ -39,6 +34,10 @@ def apply(page,day):
     page=re.sub(r'<body\b','<body data-history-layout="'+MARKER+'"',page,count=1)
     page=page.replace('選手名の下は期別、S、B、逃、捲、差、マの順です。',
                       'Sは競走得点と車番の間です。選手名の下は期別、B、逃、捲、差、マの順です。')
+    page=page.replace('PCは750×470の別ウィンドウ、スマートフォンは同じ画面で表示します。',
+                      'PCは750×470の別ウィンドウ、スマートフォンは標準プレーヤーで全画面再生します。')
+    page=page.replace('PCは別ウィンドウ、スマートフォンは同じ画面でKドリームスの映像ページを開きます',
+                      'PCは楽天の映像ページ、スマートフォンは標準プレーヤーで全画面再生します')
     page=page.replace('</head>',STYLE+'</head>',1)
     script=(Path(__file__).resolve().parents[1]/'site/mobile-replay.js').read_text()
     return page.replace('</body>','<script>'+script+'</script></body>',1)
