@@ -1,3 +1,8 @@
+# Mobile replay seeking without a central overlay
+
+- The latest user reports a central native play triangle remaining over the picture after seeking. Keep the exact official video used by the original Rakuten player. The inline video now has controls=false, with play/pause, a seek bar and time below the image; hide WebKit start/overlay play pseudo-elements. Resume a playing video after seeking, but keep an intentionally paused video paused. Preserve one-tap start, desktop popup, source race identity and all other page/data/automation behavior.
+- Keep an optional full-screen control and the original Rakuten-page fallback. Native controls are enabled only during explicitly requested full-screen playback and removed on return. Verify real mobile-touch seeks during playback and while paused, pause/resume, the bar below the image, no inline native controls, and equality with the MP4 source parsed from the original Rakuten digest page. Do not claim an iPhone hardware test from Chrome emulation.
+
 # Compact history and one-touch mobile replay from November13
 
 - Latest user direction supersedes the earlier pink/ordering/S-position guidance for normal pages from 20261113. Apply scripts/compact_presentation.py with body data-history-layout="compact-20261113". Keep previous dated pages and the independent November12 index2 trial on their existing presentation, and keep source records/numerical race data immutable.

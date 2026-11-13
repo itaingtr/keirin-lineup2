@@ -71,4 +71,5 @@ jobs:
             /tmp/previous-mobile.png
             /tmp/formal-ten-mobile.png
             /tmp/mobile-replay.png
+            /tmp/mobile-replay-paused.png
           if-no-files-found: ignore
