@@ -30,6 +30,40 @@ def history_for(card,races):
 
 
 class DailyHistoryTests(unittest.TestCase):
+    def test_prepared_history_is_reused_across_three_days_races_and_car_changes(self):
+        card,races=card_for();data=history_for(card,races)
+        data['races'][0]['players'][0]['meetings']=[{'position':'previous','start_date':'2026-10-20','days':[
+            {'race_date':'2026-10-20','order':1,'final_half_record':'11.8','source_url':races[0]['source']}]}]
+        with tempfile.TemporaryDirectory() as folder:
+            first=ensure_daily(card,races,'run-200-1',folder,collector=lambda *_:data)
+            original=(Path(folder)/first['path']).read_bytes();read=Mock(side_effect=AssertionError('Meeting history is already prepared'))
+            for offset in (2,3):
+                members=deepcopy(races);members[0]['source']='https://keirin.kdreams.jp/takeo/racedetail/8420261111'+f'{offset:02}{offset+6:04}/'
+                members[0]['players'][0]['no']=offset
+                newer={'target_date':f'2026-11-{10+offset:02}','html':'const races='+json.dumps(members,ensure_ascii=False)+';\nconst body='}
+                seed_daily(newer,members,f'run-{200+offset}-1',folder)
+                result=ensure_daily(newer,members,f'run-{210+offset}-1',folder,collector=read,refresh=True)
+                row=result['data']['races'][0]['players'][0]
+                self.assertEqual(row['no'],offset);self.assertEqual(row['meetings'],data['races'][0]['players'][0]['meetings'])
+                self.assertNotIn('pending_history',result['data'])
+            read.assert_not_called();self.assertEqual((Path(folder)/first['path']).read_bytes(),original)
+
+    def test_new_meeting_requires_its_own_template_and_only_missing_races_are_read(self):
+        card,races=card_for()
+        with tempfile.TemporaryDirectory() as folder:
+            ensure_daily(card,races,'run-200-1',folder,collector=lambda *_:history_for(card,races))
+            members=deepcopy(races);added=deepcopy(races[0]);added['source']=added['source'].replace('0006/','0007/')
+            added['players'][0].update(playerId='014498',name='追加選手');members.append(added)
+            newer={**card,'html':'const races='+json.dumps(members,ensure_ascii=False)+';\nconst body='}
+            seed_daily(newer,members,'run-201-1',folder)
+            read=Mock(side_effect=lambda selected,target:history_for(newer,selected))
+            ensure_daily(newer,members,'run-202-1',folder,collector=read,refresh=True)
+            self.assertEqual([r['source'] for r in read.call_args.args[0]],[added['source']])
+            other,roster=card_for('20261120')
+            seeded=seed_daily(other,roster,'run-203-1',folder)
+            self.assertEqual(seeded['data']['races'][0]['players'][0]['meetings'],[])
+            self.assertEqual(len(seeded['data']['pending_history']),1)
+
     def test_new_card_seeds_missing_riders_without_waiting_for_history(self):
         card,races=card_for()
         with tempfile.TemporaryDirectory() as folder:

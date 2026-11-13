@@ -99,6 +99,32 @@ def _same_meeting(a,b):
     bi={d['race_id'] for d in b['days'] if d.get('race_id')}
     return bool(ai&bi) or a['start_date']==b['start_date']
 
+
+class HistoryConflict(ValueError):
+    pass
+
+
+def _identified_starts(meeting):
+    return sum(bool(d.get('race_id')) and d.get('race_date_inferred') is not True for d in meeting['days'])
+
+
+def _resolved_meetings(meetings):
+    """An inferred profile date must not duplicate an identified race."""
+    result=[]
+    for incoming in sorted(deepcopy(meetings),key=lambda m:(min(_dates(m)),m['start_date'])):
+        conflicts=[m for m in result if not (max(_dates(m))<min(_dates(incoming)) or max(_dates(incoming))<min(_dates(m)))]
+        discard=False
+        for old in conflicts:
+            a,b=_identified_starts(old),_identified_starts(incoming)
+            if a and not b:discard=True;break
+            if b and not a:continue
+            raise HistoryConflict('Conflicting historical meetings with equal race evidence')
+        if discard:continue
+        result=[m for m in result if m not in conflicts]+[incoming]
+    for a,b in zip(result,result[1:]):
+        if a['start_date']>=b['start_date']:raise HistoryConflict('Historical meeting starts are ambiguous')
+    return result
+
 def merge_meetings(old,new):
     """Append new completed meetings; preserve richer verified older rows."""
     result=deepcopy(old)
@@ -108,6 +134,7 @@ def merge_meetings(old,new):
         require(len(matches)<=1,'Ambiguous shared historical meeting')
         if not matches:result.append(deepcopy(incoming));continue
         i=matches[0];existing=result[i]
+        if _identified_starts(existing) and not _identified_starts(incoming):continue
         known={d.get('race_id'):(d.get('order'),d.get('accident','')) for d in existing['days'] if d.get('race_id')}
         fresh={d.get('race_id'):(d.get('order'),d.get('accident','')) for d in incoming['days'] if d.get('race_id')}
         if (set(fresh)<=set(known) and all(known[k]==v for k,v in fresh.items())
@@ -136,8 +163,7 @@ def merge_meetings(old,new):
         if existing.get('start_date_inferred') is not True:
             updated['start_date']=existing['start_date'];updated['start_date_inferred']=False
         result[i]=updated
-    result.sort(key=lambda m:(min(_dates(m)),m['start_date']))
-    return result[-10:]
+    return _resolved_meetings(result)[-10:]
 
 def _previous_meetings(player):
     meetings=[]
@@ -173,6 +199,9 @@ def ensure(site,card,races,run_key):
     previous=load_daily(site,day,card['html'])
     require(previous is not None,'Checked previous meetings missing for shared history')
     recent={r['source_url']:{p['player_id']:p for p in r['players']} for r in previous['races']}
+    try:prepared=load_snapshot(site,day,card['html'])
+    except (ValueError,FileNotFoundError):prepared=None
+    prepared_refs={person(p):p['history_ref'] for r in (prepared or {}).get('races',[]) for p in r['players']}
     output=[];full=[];pending=0
     for race in races:
         ctx=context(race);players=[];full_players=[]
@@ -182,11 +211,19 @@ def ensure(site,card,races,run_key):
             cached=read_player(site,entry)['meetings'] if same else []
             checked=entry.get('checked_contexts',[]) if same else []
             waiting=entry.get('pending_contexts',[]) if same else []
-            if ctx not in checked:
-                cached=merge_meetings(cached,_previous_meetings(recent[race['source']][identifier]))
-                waiting=sorted(set(waiting+[ctx]))
+            fallback=None
+            try:
+                count_before=len(cached)
+                cached=merge_meetings(cached,[] if ctx in checked else _previous_meetings(recent[race['source']][identifier]))
+                if len(cached)<count_before:checked=[x for x in checked if x!=ctx]
+            except HistoryConflict as error:
+                print('SHARED HISTORY RIDER PENDING',identifier,ctx,str(error),flush=True)
+                checked=[x for x in checked if x!=ctx]
+                old_ref=prepared_refs.get(person(player))
+                fallback=(read_player(site,{**player,'player_id':identifier,**old_ref})['meetings'] if old_ref else [])
+            if ctx not in checked:waiting=sorted(set(waiting+[ctx]))
             entry=save_player(site,index,player,cached,checked=checked,pending=waiting)
-            view=_eligible(cached,race)
+            view=_eligible(cached if fallback is None else fallback,race)
             if view!=cached:
                 temporary={'players':{}}
                 ref=save_player(site,temporary,player,view)
@@ -302,7 +339,10 @@ def apply_official(site,data,races):
                 m.setdefault('provider','keirin.jp')
                 source=sources.get('https://keirin.jp/pc/racerprofile?snum='+identifier)
                 if source:m['rank_source']=source
-            merged=merge_meetings(old,newer)
+            try:merged=merge_meetings(old,newer)
+            except HistoryConflict as error:
+                print('SHARED HISTORY RIDER PENDING',identifier,ctx,str(error),flush=True)
+                continue
             checked=(entry.get('checked_contexts',[]) if same else [])+[ctx]
             current=save_player(site,index,player,merged,checked=checked,pending=[])
             changed=changed or current!=entry

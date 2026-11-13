@@ -4,7 +4,7 @@ import json,sys,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from rider_history import ensure,read_index,save_player,read_player,context,load_snapshot,hydrate,refresh_subset,apply_official,merge_meetings,encode
+from rider_history import ensure,read_index,save_player,read_player,context,load_snapshot,hydrate,refresh_subset,apply_official,merge_meetings,encode,HistoryConflict
 from previous_daily import ensure_daily
 from rider_history_worker import collect_batch
 
@@ -37,6 +37,33 @@ def prime(site,races):
     (site/'rider-history/current.json').write_text(encode(index))
 
 class SharedRiderHistoryTests(unittest.TestCase):
+    def test_inferred_profile_dates_do_not_duplicate_identified_races_at_another_venue(self):
+        exact=meeting('2026-10-24',provider='kdreams');inferred=deepcopy(exact)
+        inferred.update(venue='小田原',venue_code='36',provider='keirin.jp')
+        for d in inferred['days']:d.update(race_id=None,race_number=None,video_url=None,race_date_inferred=True)
+        self.assertEqual(merge_meetings([exact],[inferred]),[exact])
+        self.assertEqual(merge_meetings([inferred],[exact]),[exact])
+        weaker=deepcopy(inferred);weaker.update(venue=exact['venue'],venue_code=exact['venue_code'])
+        weaker['days'][0]['race_date']='2026-10-23';weaker['start_date']=exact['start_date']
+        self.assertEqual(merge_meetings([exact],[weaker]),[exact])
+        contradictory=deepcopy(inferred)
+        for d in contradictory['days']:d.update(race_id='0636'+d['race_date'].replace('-',''),race_number=6,race_date_inferred=False)
+        with self.assertRaises(HistoryConflict):merge_meetings([exact],[contradictory])
+
+    def test_one_conflicting_rider_reuses_the_prepared_cache_without_hiding_other_riders(self):
+        with tempfile.TemporaryDirectory() as folder:
+            site=Path(folder);card,races=card_for(players=2);prime(site,races);recent(site,card,races,[])
+            ensure(site,card,races,'run-101-1');before=load_snapshot(site,'20261113',card['html'])
+            ref=before['races'][0]['players'][0]['history_ref'];original=(site/ref['path']).read_bytes()
+            index=read_index(site);p=races[0]['players'][0];groups=read_player(site,index['players'][p['playerId']])['meetings']
+            conflict=deepcopy(groups[-1]);conflict.update(venue='小田原',venue_code='36')
+            for d in conflict['days']:d.update(race_id='0636'+d['race_date'].replace('-',''))
+            save_player(site,index,p,[*groups,conflict],checked=[context(races[0])]);(site/'rider-history/current.json').write_text(encode(index))
+            result=ensure(site,card,races,'run-102-1')
+            full=hydrate(site,load_snapshot(site,'20261113',card['html']),card['html'])
+            self.assertEqual([len(p['meetings']) for p in full['races'][0]['players']],[10,10])
+            self.assertEqual(result['pending'],1);self.assertEqual((site/ref['path']).read_bytes(),original)
+
     def test_same_meeting_on_next_day_reuses_exact_immutable_player_files(self):
         with tempfile.TemporaryDirectory() as folder:
             site=Path(folder);card,races=card_for();prime(site,races);recent(site,card,races,[])
