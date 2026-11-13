@@ -22,6 +22,16 @@ body[data-history-layout="compact-20261113"] .lineup .previous-heading{font-size
 .mobile-replay-video{display:block;width:100%;max-height:calc(100dvh - 150px);height:auto;aspect-ratio:16/9;background:#000}
 .mobile-replay-video:fullscreen{width:100vw;height:100dvh;max-width:none;max-height:none;aspect-ratio:auto;object-fit:contain;background:#000}
 .mobile-replay-status{margin:0;font-size:13px;line-height:1.5;text-align:center}
+.replay-mode-button{display:none}
+@media(max-width:640px){.replay-mode-button{display:inline-flex;align-items:center;justify-content:center}}
+.mobile-replay.mobile-replay-small{inset:0 auto auto 0;height:50dvh;max-height:50dvh;padding:8px;z-index:2147483000;box-shadow:0 3px 12px #0006}
+.mobile-replay.mobile-replay-small[open]{justify-content:flex-start;gap:8px}
+.mobile-replay-small .mobile-replay-toolbar{flex-shrink:0;font-size:13px;gap:8px}
+.mobile-replay-small .mobile-replay-toolbar>*{min-height:32px;padding:5px 9px}
+.mobile-replay-small .mobile-replay-video{flex:1;min-height:0;height:0;max-height:none;aspect-ratio:auto;object-fit:contain}
+.mobile-replay-small .mobile-replay-video:fullscreen{height:100dvh}
+.mobile-replay-small .mobile-replay-video::-webkit-media-controls-start-playback-button{display:none!important}
+.mobile-replay-small .mobile-replay-status{flex-shrink:0}
 </style>'''
 
 def apply(page,day):
@@ -35,7 +45,7 @@ def apply(page,day):
     page=page.replace('選手名の下は期別、S、B、逃、捲、差、マの順です。',
                       'Sは競走得点と車番の間です。選手名の下は期別、B、逃、捲、差、マの順です。')
     page=page.replace('PCは750×470の別ウィンドウ、スマートフォンは同じ画面で表示します。',
-                      'PCは750×470の別ウィンドウ、スマートフォンは標準プレーヤーで全画面再生します。')
+                      'PCは750×470の別ウィンドウ、スマートフォンは標準プレーヤーで再生します。「動画：全画面」で上半分の小窓に切り替えられます。')
     page=page.replace('PCは別ウィンドウ、スマートフォンは同じ画面でKドリームスの映像ページを開きます',
                       'PCは楽天の映像ページ、スマートフォンは標準プレーヤーで全画面再生します')
     page=page.replace('</head>',STYLE+'</head>',1)

@@ -205,6 +205,38 @@ const activeWindows=[];
     const direct='https://wm.st.keirin.jp/wm-keirin'+race.venueCode+'/'+day+'-'+race.venueCode+'-'+String(videoGrades[race.venueCode+race.meetingStart]).padStart(2,'0')+'-'+String(race.race).padStart(2,'0')+'-01-00.mp4';
     assert.equal(played,direct);assert.equal(dialog.querySelector('.mobile-replay-original').href,replay.href);
     dialog.querySelector('.mobile-replay-close').click();assert.equal(doc.querySelector('dialog.mobile-replay'),null);
+    if(replays===0){
+     // iPhone's native API is unavailable until the selected video metadata
+     // arrives. The first tap must unlock playback and then actually call it.
+     let unlocked=false,nativeEntries=0;
+     window.HTMLMediaElement.prototype.play=function(){unlocked=true;return Promise.resolve();};
+     window.HTMLVideoElement.prototype.webkitEnterFullscreen=function(){
+      assert.ok(unlocked);assert.ok(this.readyState>=1);nativeEntries++;
+      this.dispatchEvent(new window.Event('webkitbeginfullscreen'));
+     };
+     replay.click();let appleDialog=doc.querySelector('dialog.mobile-replay'),appleVideo=appleDialog.querySelector('video');
+     assert.ok(unlocked);assert.equal(nativeEntries,0);
+     Object.defineProperty(appleVideo,'readyState',{value:1});
+     appleVideo.dispatchEvent(new window.Event('loadedmetadata'));
+     assert.equal(nativeEntries,1);assert.equal(appleDialog.dataset.replayPresentation,'native-fullscreen');
+     appleVideo.dispatchEvent(new window.Event('playing'));assert.equal(nativeEntries,1);
+     appleVideo.dispatchEvent(new window.Event('webkitendfullscreen'));
+     assert.equal(doc.querySelector('dialog.mobile-replay'),null);
+     const mode=doc.querySelector('.replay-mode-button');assert.ok(mode);assert.equal(mode.textContent,'動画：全画面');
+     mode.click();assert.equal(mode.textContent,'動画：小窓');
+     replay.click();appleDialog=doc.querySelector('dialog.mobile-replay-small');appleVideo=appleDialog.querySelector('video');
+     assert.ok(appleDialog.open);assert.ok(appleVideo.playsInline&&appleVideo.controls);
+     Object.defineProperty(appleVideo,'readyState',{value:1});
+     appleVideo.dispatchEvent(new window.Event('loadedmetadata'));appleVideo.dispatchEvent(new window.Event('playing'));
+     assert.equal(nativeEntries,1,'Small-window playback must stay inline');
+     appleDialog.querySelector('.mobile-replay-fullscreen').click();assert.equal(nativeEntries,2);
+     appleVideo.dispatchEvent(new window.Event('webkitendfullscreen'));
+     assert.ok(appleDialog.isConnected);assert.equal(appleDialog.dataset.replayPresentation,'small-window');
+     appleDialog.querySelector('.mobile-replay-close').click();assert.equal(doc.querySelector('dialog.mobile-replay'),null);
+     mode.click();assert.equal(mode.textContent,'動画：全画面');
+     delete window.HTMLVideoElement.prototype.webkitEnterFullscreen;
+     window.HTMLMediaElement.prototype.play=function(){played=this.src;return Promise.resolve();};
+    }
     window.matchMedia=previousMatchMedia;
    }else{
     const mobileLocation={href:''};let prevented=false;
