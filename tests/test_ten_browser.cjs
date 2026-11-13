@@ -13,6 +13,7 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
 
 async function main(){
   const html=fs.readFileSync(path.join(publicDir,targetPage),'utf8');
+  const compact=html.includes('data-history-layout="compact-20261113"');
   assert.ok(html.includes('data-ten-meetings="true"'),'The checked experiment must be exported');
   const day=/<base href="\/keirin-lineup2\/data\/(\d{8})\//.exec(html)?.[1];
   assert.ok(day,'Experiment needs a date-bound data base');
@@ -63,18 +64,18 @@ async function main(){
       assert.ok(point.correct,'A real touch must hit the intended control');
       await page.touchscreen.tap(point.x,point.y);
     }
-    const initial=await page.evaluate(()=>({
+    const initial=await page.evaluate(compact=>({
       riders:document.querySelectorAll('.lineup .rider').length,
       controls:[...document.querySelectorAll('.lineup .rider')].map(rider=>({
         previous:rider.querySelector('.previous-toggle')?.textContent,
         ten:rider.querySelector('.ten-toggle')?.textContent,
-        order:rider.querySelector('.ten-controls')?.previousElementSibling?.classList.contains('previous-controls'),
+        order:(compact?rider.querySelector('.ten-controls')?.nextElementSibling:rider.querySelector('.ten-controls')?.previousElementSibling)?.classList.contains('previous-controls'),
         hidden:rider.querySelector('.ten-results')?.hidden,
       })),
-    }));
+    }),compact);
     assert.equal(initial.riders,data.races.reduce((sum,race)=>sum+race.players.length,0));
     assert.ok(initial.controls.every(item=>item.previous==='前回'&&item.ten==='成績'&&item.order&&item.hidden),
-      'Every rider initially needs collapsed 前回 then 成績 controls');
+      'Every rider needs the requested order with both history controls collapsed');
     const firstRow=page.locator('#rows > tr').first(),first=firstRow.locator('.ten-toggle').first();
     await tap(first);
     await page.waitForFunction(()=>document.querySelector('.ten-toggle')?.getAttribute('aria-expanded')==='true');
@@ -89,8 +90,9 @@ async function main(){
     }));
     assert.ok(geometry.open&&geometry.previousClosed,'One 成績 touch must open only its whole race ten-meeting panels');
     assert.ok(geometry.widths.every(width=>Math.abs(width-22)<0.1),'Original22px rider columns must remain');
-    assert.ok(geometry.panelHeights.every(height=>Math.abs(height-180)<0.2),'Ten two-line meetings should occupy180px');
-    assert.ok(geometry.groups.every(groups=>groups.length===10&&groups.every(group=>Math.abs(group.height-18)<0.1)));
+    const slotHeight=compact?15:18;
+    assert.ok(geometry.panelHeights.every(height=>Math.abs(height-slotHeight*10)<0.2),'Ten meeting panels must keep the requested compact height');
+    assert.ok(geometry.groups.every(groups=>groups.length===10&&groups.every(group=>Math.abs(group.height-slotHeight)<0.1)));
     for(let slot=0;slot<10;slot++){
       const tops=geometry.groups.map(groups=>groups[slot].top);
       assert.ok(Math.max(...tops)-Math.min(...tops)<1.6,'Meeting rows must stay aligned across all race members');
@@ -100,10 +102,14 @@ async function main(){
       g3:[...document.querySelectorAll('.ten-grade-g3')].map(node=>getComputedStyle(node).backgroundColor),
       high:[...document.querySelectorAll('.ten-grade-high')].map(node=>getComputedStyle(node).backgroundColor),
       back:[...document.querySelectorAll('.lineup .stat-b,.lineup .stat-b-zero')].map(node=>getComputedStyle(node).fontWeight),
+      venueFonts:[...document.querySelectorAll('.ten-venue')].map(node=>getComputedStyle(node).fontSize),
+      rankFonts:[...document.querySelectorAll('.ten-ranks .ten-rank')].map(node=>getComputedStyle(node).fontSize),
       links:[...document.querySelectorAll('a.ten-rank')].map(node=>({id:node.dataset.raceId,url:node.href})),
       otherOpen:[...document.querySelectorAll('#rows > tr')].slice(1).some(row=>[...row.querySelectorAll('.ten-results')].some(panel=>!panel.hidden)),
     }));
-    assert.ok(styles.highlights.every(item=>item.color===(item.semi?'rgb(232, 90, 154)':'rgb(211, 47, 47)')),'Only semifinals use pink; special and final ranks must be red');
+    const semifinalColor=compact?'rgb(212, 160, 0)':'rgb(232, 90, 154)';
+    assert.ok(styles.highlights.every(item=>item.color===(item.semi?semifinalColor:'rgb(211, 47, 47)')),'Only semifinals use the requested colour; special and final ranks must be red');
+    if(compact){assert.ok(styles.venueFonts.every(size=>size==='5.5px'));assert.ok(styles.rankFonts.every(size=>size==='8px'));}
     assert.ok(styles.g3.every(color=>color==='rgb(255, 235, 238)'));
     assert.ok(styles.high.every(color=>color==='rgb(243, 229, 245)'));
     assert.ok(styles.back.length>0&&styles.back.every(weight=>weight==='700'),'Aggregate B counts must be bold');
@@ -128,7 +134,7 @@ async function main(){
     assert.ok(await firstRow.locator('.ten-results').evaluateAll(panels=>panels.every(panel=>panel.hidden)),'The two toggles stay independent');
     assert.deepEqual(mutations,[],'The experiment test must issue no writes');
     assert.deepEqual(errors,[],'The actual experiment must execute without browser errors');
-    console.log('TEN BROWSER PASS',JSON.stringify({viewport:'390x844',riders:initial.riders,slots:10,slotHeight:18,
+    console.log('TEN BROWSER PASS',JSON.stringify({viewport:'390x844',riders:initial.riders,slots:10,slotHeight,
       page:targetPage,highlighted:styles.highlights.length,linked:styles.links.length,realTouch:true,writeRequests:0}));
   }finally{
     if(browser)await browser.close();server.closeAllConnections?.();

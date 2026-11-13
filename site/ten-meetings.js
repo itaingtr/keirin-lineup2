@@ -115,7 +115,8 @@
       else {
         block.title = meeting.venue+' '+meeting.start_date;
         const venue = /^(?:いわき平|いわき|平)$/.test(meeting.venue) ? '平' : Array.from(meeting.venue).slice(0,2).join('');
-        const prefix = meeting.grade_code === 2 ? String(Number(meeting.start_date.slice(5,7))) : '';
+        const compact = document.body.dataset.historyLayout === 'compact-20261113';
+        const prefix = meeting.grade_code === 2 || compact && meeting.grade_code === 3 ? String(Number(meeting.start_date.slice(5,7))) : '';
         const name = node('span','ten-venue',prefix+venue);name.title = block.title;
         if (meeting.grade_code === 3) name.classList.add('ten-grade-g3');
         else if (meeting.grade_code >= 4) name.classList.add('ten-grade-high');
@@ -127,7 +128,11 @@
           // the same two lines and the original rider-column width.
           const units = Array.from(prefix+venue).reduce((sum,char) => sum + (/\d/.test(char) ? 0.6 : 1),0);
           heading.classList.add('ten-heading-many');
-          heading.style.setProperty('--ten-heading-size',Math.min(7,22/(units+spill*0.7))+'px');
+          if (compact) {
+            const width=Math.max(1,(22-units*5.5)/spill);
+            heading.style.setProperty('--ten-spill-width',width+'px');
+            heading.style.setProperty('--ten-spill-size',Math.min(8,width/.7)+'px');
+          } else heading.style.setProperty('--ten-heading-size',Math.min(7,22/(units+spill*0.7))+'px');
         }
         meeting.days.forEach((result,number) => (number < spill ? heading : ranks).append(rankNode(result)));
       }
@@ -153,7 +158,9 @@
         panel.id = 'ten-'+source.replace(/\W/g,'-')+'-'+player.playerId;
         panel.hidden = !expanded.has(source);panel.setAttribute('aria-label',player.name+'の過去10場所の成績');
         button.setAttribute('aria-controls',panel.id);
-        controls.append(button,panel);previous.after(controls);
+        controls.append(button,panel);
+        if (document.body.dataset.historyLayout === 'compact-20261113') previous.before(controls);
+        else previous.after(controls);
         if (ready) populate(panel,records.get(source).get(number));
       }
     }

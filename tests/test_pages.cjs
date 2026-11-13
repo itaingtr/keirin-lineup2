@@ -12,6 +12,7 @@ const media=JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'media.jso
 const usesRakuten=day>='20261030';
 const usesConditions=day>='20261102';
 const usesRiderAppearance=day>='20261103';
+const usesCompact=html.includes('data-history-layout="compact-20261113"');
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
@@ -129,7 +130,8 @@ const activeWindows=[];
      if(usesRiderAppearance){
       const rider=car.closest('.rider'),period=rider.querySelector('.period'),s=rider.querySelector('.recent-s');
       if(riderDetails){
-       const profile=period.nextElementSibling;assert.ok(profile.classList.contains('rider-profile'));assert.equal(profile.nextElementSibling,s);
+       const profile=period.nextElementSibling;assert.ok(profile.classList.contains('rider-profile'));
+       assert.equal(profile.nextElementSibling,usesCompact?rider.querySelector('.stats'):s);
        const saved=riderDetails.races.find(r=>r.source_url===race.source).players.find(p=>p.no===player.no);
        assert.equal(period.type,'button');assert.equal(period.getAttribute('aria-expanded'),'false');assert.equal(profile.hidden,true);
        assert.equal(profile.querySelector('.rider-prefecture').textContent,Array.from(saved.prefecture).slice(0,2).join(''));assert.equal(profile.querySelector('.rider-age').textContent,String(saved.age));
@@ -139,9 +141,11 @@ const activeWindows=[];
        const other=members[(members.indexOf(period)+1)%members.length];other.click();
        for(const button of members){assert.equal(button.getAttribute('aria-expanded'),'false');assert.equal(doc.getElementById(button.getAttribute('aria-controls')).hidden,true);}
        assert.equal(profile.hidden,true);assert.equal(row.classList.contains('rider-details-open'),false);
-      }else assert.equal(period.nextElementSibling,s);
-      assert.ok(s.nextElementSibling.classList.contains('stats'));assert.equal(s.textContent,usesOfficial&&player.stats[0]===0?'':String(player.stats[0]));
-      const back=s.nextElementSibling.firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
+      }else assert.equal(period.nextElementSibling,usesCompact?rider.querySelector('.stats'):s);
+      if(usesCompact){assert.equal(s.previousElementSibling,rider.querySelector('.score'));assert.equal(s.nextElementSibling,car);}
+      else assert.ok(s.nextElementSibling.classList.contains('stats'));
+      assert.equal(s.textContent,usesOfficial&&player.stats[0]===0?'':String(player.stats[0]));
+      const back=rider.querySelector('.stats').firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
       assert.equal(window.getComputedStyle(back).fontSize,'10px');assert.equal(window.getComputedStyle(back).fontWeight,'400');
       assert.equal(window.getComputedStyle(today).fontSize,'8px');assert.equal(window.getComputedStyle(today).fontWeight,'400');assert.equal(window.getComputedStyle(today).color,'rgb(211, 47, 47)');
       for(const flag of rider.querySelectorAll('.meeting-back')){assert.equal(window.getComputedStyle(flag).fontSize,'8px');assert.equal(window.getComputedStyle(flag).fontWeight,'400');}
@@ -190,12 +194,25 @@ const activeWindows=[];
    assert.equal(replay.href,replay.dataset.sourceUrl);assert.equal(replay.target,'_blank');
    let opened;window.open=(...args)=>{opened=args;};replay.click();
    assert.deepEqual(opened,[replay.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
-   const mobileLocation={href:''};let prevented=false;
-   vm.runInNewContext('('+window.openVideo.toString()+')(event,url)',{
-    event:{preventDefault(){prevented=true;}},url:replay.href,location:mobileLocation,
-    window:{matchMedia(query){assert.equal(query,'(max-width: 640px)');return {matches:true};},open(){assert.fail('Mobile replay must use the same tab');}}
-   });
-   assert.ok(prevented);assert.equal(mobileLocation.href,replay.href);replays++;
+   if(usesCompact){
+    const previousMatchMedia=window.matchMedia;window.matchMedia=()=>({matches:true});let played;
+    window.HTMLMediaElement.prototype.play=function(){played=this.src;return Promise.resolve();};
+    window.HTMLMediaElement.prototype.pause=function(){};window.HTMLMediaElement.prototype.load=function(){};
+    replay.click();const dialog=doc.querySelector('dialog.mobile-replay[open]');assert.ok(dialog);
+    const player=dialog.querySelector('video');assert.ok(player.controls&&player.autoplay&&player.playsInline);
+    const direct='https://wm.st.keirin.jp/wm-keirin'+race.venueCode+'/'+day+'-'+race.venueCode+'-'+String(videoGrades[race.venueCode+race.meetingStart]).padStart(2,'0')+'-'+String(race.race).padStart(2,'0')+'-01-00.mp4';
+    assert.equal(played,direct);assert.equal(dialog.querySelector('.mobile-replay-original').href,replay.href);
+    dialog.querySelector('.mobile-replay-close').click();assert.equal(doc.querySelector('dialog.mobile-replay'),null);
+    window.matchMedia=previousMatchMedia;
+   }else{
+    const mobileLocation={href:''};let prevented=false;
+    vm.runInNewContext('('+window.openVideo.toString()+')(event,url)',{
+     event:{preventDefault(){prevented=true;}},url:replay.href,location:mobileLocation,
+     window:{matchMedia(query){assert.equal(query,'(max-width: 640px)');return {matches:true};},open(){assert.fail('Mobile replay must use the same tab');}}
+    });
+    assert.ok(prevented);assert.equal(mobileLocation.href,replay.href);
+   }
+   replays++;
    row.querySelector('.odds-toggle').click();await pause();
    const snapshot=expected.get(new URL(race.source).pathname);
    if(!snapshot||snapshot.status!=='snapshot')continue;

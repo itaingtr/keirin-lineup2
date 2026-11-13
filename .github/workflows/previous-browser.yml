@@ -8,6 +8,11 @@ on:
       - 'scripts/previous_daily.py'
       - 'scripts/previous_presentation.py'
       - 'scripts/export_pages.py'
+      - 'scripts/compact_presentation.py'
+      - 'site/mobile-replay.js'
+      - 'tests/test_mobile_replay.cjs'
+      - 'site/ten-meetings.js'
+      - 'site/ten-meetings.css'
       - 'scripts/official_publication.py'
       - 'scripts/rider_history.py'
       - 'scripts/recent_flags.py'
@@ -55,6 +60,8 @@ jobs:
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_previous_browser.cjs public /tmp/previous-mobile.png
       - name: Verify shared ten-meeting histories on the formal top page
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_ten_browser.cjs public /tmp/formal-ten-mobile.png index.html
+      - name: Verify one-touch official replay in the current phone viewport
+        run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_mobile_replay.cjs public /tmp/mobile-replay.png
       - name: Save the review screenshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -63,4 +70,5 @@ jobs:
           path: |
             /tmp/previous-mobile.png
             /tmp/formal-ten-mobile.png
+            /tmp/mobile-replay.png
           if-no-files-found: ignore

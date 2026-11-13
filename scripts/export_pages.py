@@ -116,6 +116,9 @@ def public_html(page,day,marks=None,identities=None,details=None):
         result,expected=apply_details(result,details)
         if result.count(TOP_BUTTON)!=1:raise ValueError('Top navigation renderer differs')
         result=result.replace(TOP_BUTTON,TOP_BUTTON+CALENDAR_BUTTON,1)
+    if day>='20261113':
+        from compact_presentation import apply as apply_compact_presentation
+        result=apply_compact_presentation(result,day)
     if day>='20261109' and 'data-auto-odds="true"' not in result:
         result=re.sub(r'<body\b','<body data-auto-odds="true"',result,count=1)
     if 'data-contest-odds="true"' in result:

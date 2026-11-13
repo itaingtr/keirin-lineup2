@@ -137,8 +137,13 @@ async function main() {
       if(heading.high)assert.equal(heading.color,'rgb(243, 229, 245)');
     }
     assert.ok(styled.ranks.every(color=>color==='rgb(211, 47, 47)'), 'Special/final ranks must be red');
-    const semifinalColor=await page.evaluate(()=>document.body.dataset.tenMeetings==='true'?'rgb(232, 90, 154)':'rgb(239, 108, 0)');
+    const semifinalColor=await page.evaluate(()=>document.body.dataset.historyLayout==='compact-20261113'?'rgb(212, 160, 0)':document.body.dataset.tenMeetings==='true'?'rgb(232, 90, 154)':'rgb(239, 108, 0)');
     assert.ok(styled.semifinals.every(color=>color===semifinalColor), 'Semifinal rank colour must match the adopted page style');
+    const compactGeometry=await page.evaluate(()=>document.body.dataset.historyLayout==='compact-20261113'?{
+      s:[...document.querySelectorAll('.lineup .rider')].map(r=>({before:r.querySelector('.recent-s')?.previousElementSibling?.classList.contains('score'),after:r.querySelector('.recent-s')?.nextElementSibling?.classList.contains('car')})),
+      ranks:[...document.querySelectorAll('.previous-rank,.meeting-rank')].map(n=>getComputedStyle(n).fontSize),
+    }:null);
+    if(compactGeometry){assert.ok(compactGeometry.s.every(n=>n.before&&n.after),'S counts must sit between score and car');assert.ok(compactGeometry.ranks.every(size=>size==='8px'),'Accident and numeric placings must share8px text');}
     console.log('PREVIOUS BROWSER COLORS',JSON.stringify({specialFinal:styled.ranks.length,semifinals:styled.semifinals.length}));
     for(const members of styled.s){
       const maximum=Math.max(0,...members.map(item=>item.value));

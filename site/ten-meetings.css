@@ -23,3 +23,17 @@ body[data-ten-meetings="true"] .previous-rank.previous-semifinal-rank,body[data-
 body[data-ten-meetings="true"] .previous-rank-solid.previous-important-rank,body[data-ten-meetings="true"] .meeting-rank-solid.previous-important-rank{background:#ffebee;border-color:#d32f2f;color:#d32f2f}
 body[data-ten-meetings="true"] .previous-rank-solid.previous-semifinal-rank,body[data-ten-meetings="true"] .meeting-rank-solid.previous-semifinal-rank{background:#fce9f1;border-color:#e85a9a;color:#e85a9a}
 body[data-ten-meetings="true"] .lineup .stat-b,body[data-ten-meetings="true"] .lineup .stat-b-zero{font-weight:700}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-meeting{height:15px}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-heading{height:7px;min-height:7px;line-height:7px}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-ranks{height:8px;min-height:8px;line-height:8px}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-venue,
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-venue.ten-month-venue,
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-heading-many .ten-venue{font-size:5.5px;line-height:7px}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-rank{font-size:8px;line-height:8px}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-heading .ten-rank{line-height:7px}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-heading-many .ten-rank{font-size:var(--ten-spill-size);flex-basis:var(--ten-spill-width);width:var(--ten-spill-width)}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .ten-rank.ten-rank-semifinal,
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .previous-rank.previous-semifinal-rank,
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .meeting-rank.previous-semifinal-rank{color:#d4a000}
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .previous-rank-solid.previous-semifinal-rank,
+body[data-history-layout="compact-20261113"][data-ten-meetings="true"] .meeting-rank-solid.previous-semifinal-rank{background:#fff8d6;border-color:#d4a000;color:#d4a000}
