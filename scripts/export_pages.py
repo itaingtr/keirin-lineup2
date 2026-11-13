@@ -14,6 +14,7 @@ from rider_features import rider_features
 from official_page import official_page
 from rider_details_page import apply_details
 from calendar_export import export_calendar
+from daily_results import export_results
 
 BASE='/keirin-lineup2/'
 REPOSITORY='itaingtr/keirin-lineup2'
@@ -21,6 +22,7 @@ SHARED=('comments.css','comments.js','predictions.js','odds-current.js','odds-co
         'comments-passphrase.js','rider-condition.css','rider-condition.js')
 TOP_BUTTON=f'''<button type="button" class="refresh-button home-button" onclick="location.href='{BASE}'" aria-label="トップページへ">トップ</button>'''
 CALENDAR_BUTTON=f'''<button type="button" class="refresh-button calendar-button" onclick="location.href='{BASE}calendar/index.html'" aria-label="日程カレンダーへ">日程</button>'''
+RESULTS_BUTTON=f'''<button type="button" class="refresh-button results-button" onclick="location.href='{BASE}daily-results/index.html'" aria-label="S級全選手の成績一覧へ">全選手成績</button>'''
 PREVIOUS_CUTOVER='20261110'
 PREVIOUS_ASSETS=('previous-meetings.js','previous-meetings.css')
 MOBILE_STYLE='''<style id="mobile-readability-style">
@@ -116,6 +118,9 @@ def public_html(page,day,marks=None,identities=None,details=None):
         result,expected=apply_details(result,details)
         if result.count(TOP_BUTTON)!=1:raise ValueError('Top navigation renderer differs')
         result=result.replace(TOP_BUTTON,TOP_BUTTON+CALENDAR_BUTTON,1)
+    if day>='20261114':
+        anchor=CALENDAR_BUTTON if details is not None else TOP_BUTTON
+        result=result.replace(anchor,anchor+RESULTS_BUTTON,1)
     if day>='20261113':
         from compact_presentation import apply as apply_compact_presentation
         result=apply_compact_presentation(result,day)
@@ -252,11 +257,13 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
     from ten_preview_gate import ready_for_export
     ten_preview=export_ten_preview(site,output) if ready_for_export(site) else None
     if ten_preview is not None:preview=ten_preview
+    daily_results=export_results(site,output,dates)
     return {'target_date':current_day[:4]+'-'+current_day[4:6]+'-'+current_day[6:],
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
             'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days']),
-            'previous_preview':preview,'previous_daily':previous,'ten_preview':ten_preview,'ten_daily':ten_daily}
+            'previous_preview':preview,'previous_daily':previous,'ten_preview':ten_preview,'ten_daily':ten_daily,
+            'daily_results':daily_results}
 
 
 if __name__=='__main__':

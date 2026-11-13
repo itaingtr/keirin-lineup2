@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="当日のS級全出走選手について、今場所・前回2場所・過去10場所の確認済み成績をまとめた一覧です。">
+  <title>S級 全選手成績一覧</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./model.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">KEIRIN / DAILY RIDER RESULTS</p>
+    <h1>S級 全選手成績一覧</h1>
+    <p>今場所・前回2場所・過去10場所を、当日の全出走選手から探せます。</p>
+    <nav aria-label="ページ移動"><a href="/keirin-lineup2/">トップ</a><a href="/keirin-lineup2/calendar/index.html">日程</a><a id="card-link" hidden>この日の出走表</a></nav>
+  </header>
+  <form id="filters" aria-label="成績の検索">
+    <label>対象日 <input id="date" type="date" required></label>
+    <button type="button" id="today">日本時間の今日</button>
+    <label>競輪場 <select id="venue"><option value="">全場</option></select></label>
+    <label>レース <select id="race"><option value="">全R</option></select></label>
+    <label>選手 <input id="search" type="search" placeholder="氏名・JKA番号" autocomplete="off"></label>
+    <button type="button" id="reload">再読込</button>
+  </form>
+  <p id="status" role="status" aria-live="polite">公開日を確認しています…</p>
+  <div class="downloads" aria-label="全員分のダウンロード">
+    <button type="button" id="json" disabled>全員 JSON</button>
+    <button type="button" id="riders-csv" disabled>全員 riders.csv</button>
+    <button type="button" id="results-csv" disabled>全成績 results.csv</button>
+    <span id="export-status"></span>
+  </div>
+  <p class="guide">今場所は対象日より前の確認済み成績です。前回と過去10場所には同じレースを含みます。S/B/逃/捲/差/マは集計値、着順横のSHBは各レースの確認値です。空欄は不明で、0とは区別しています。</p>
+  <p id="condition-status" class="guide">調子は読取専用です。共有記録が読めなくても成績は表示します。</p>
+  <div class="table-wrap">
+    <table>
+      <caption id="count">出走選手</caption>
+      <thead><tr><th scope="col">当日出走</th><th scope="col">選手</th><th scope="col">得点・集計</th><th scope="col">今場所</th><th scope="col">前々回 → 前回</th><th scope="col">過去10場所（古 → 新）</th></tr></thead>
+      <tbody id="entries"></tbody>
+    </table>
+  </div>
+  <p class="guide">未公開の日は別の日で代用しません。履歴の未取得・照合保留は選手ごとに表示します。映像は照合済みのレースだけ、同じタブで公式MP4を開きます。</p>
+  <p class="guide">CSVはUTF-8です。JKA番号・競輪場コード・上がりは文字列として取り込んでください。SHBは1=確認済みtrue、0=確認済みfalse、空欄=不明。調子0は表示を消した保存値です。絞り込み中でもダウンロードはこの日の全員分です。</p>
+  <noscript>成績一覧の読込と出力にはJavaScriptを有効にしてください。</noscript>
+</main>
+</body>
+</html>

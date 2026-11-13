@@ -53,6 +53,15 @@ def verification_files(site):
     # link index before a separate calendar UI is supplied.
     if (site/'calendar').is_dir():
         files.extend(p.relative_to(site).as_posix() for p in sorted((site/'calendar').rglob('*')) if p.is_file())
+    if (site/'daily-results').is_dir():
+        files.extend(p.relative_to(site).as_posix() for p in sorted((site/'daily-results').iterdir()) if p.is_file())
+        for path in sorted((site/'data').glob('*/all-rider-results.json')):
+            files.append(path.relative_to(site).as_posix())
+            data=json.loads(path.read_text())
+            if path.parent.name==day:
+                ref=data['assets'].get('previous')
+                if ref:files.append(ref['path'])
+                files.extend(p['history_ref']['path'] for r in data['races'] for p in r['players'] if p.get('history_ref'))
     return list(dict.fromkeys(files))
 
 
