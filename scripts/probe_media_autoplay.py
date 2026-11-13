@@ -4,6 +4,8 @@ from pathlib import Path
 from urllib.parse import urljoin,urlsplit,urlunsplit
 from urllib.request import Request,urlopen
 from source_http import Document
+from published_card import parse_page
+from venues import identity
 
 def clean_url(url):
     p=urlsplit(url);return urlunsplit((p.scheme,p.netloc,p.path,'',''))
@@ -18,7 +20,16 @@ def snippets(text):
     return output
 
 def main():
-    url='https://my.keirin.kdreams.jp/stadium/digest/?kyogijoCd=28&kaisaiDate=20261112&gradeCd=2&raceNo=1&l-id=Highlightreel'
+    from urllib.parse import urlencode
+    page=Path('site/index.html').read_text();grades=json.loads(re.search(r'const videoGrades=(.*);\n',page)[1])
+    candidates=[]
+    for race in parse_page(page):
+        ident=identity(race['source']);grade=grades[ident['code']+ident['start']]
+        for person in race['players']:
+            for result in person.get('meetingResults',[]):
+                candidates.append((result['race_date'].replace('-',''),ident['code'],grade,result['race_number']))
+    raw,code,grade,number=max(candidates,key=lambda row:row[0])
+    url='https://my.keirin.kdreams.jp/stadium/digest/?'+urlencode({'kyogijoCd':code,'kaisaiDate':raw,'gradeCd':grade,'raceNo':number,'l-id':'Highlightreel'})
     report=[]
     for label,agent in [('desktop','Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36'),
                         ('iphone','Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 Version/18.6 Mobile/15E148 Safari/604.1')]:
