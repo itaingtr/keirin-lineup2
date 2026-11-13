@@ -10,7 +10,7 @@ def clean_url(url):
 
 def snippets(text):
     output=[]
-    for match in list(re.finditer(r'autoplay|autostart|playsinline|muted|userAgent|location\.search',text,re.I))[:35]:
+    for match in list(re.finditer(r'autoplay|autostart|playsinline|muted|userAgent|location\.search|動画|映像|再生|player|movie',text,re.I))[:35]:
         value=text[max(0,match.start()-90):match.end()+120]
         value=re.sub(r'https?://[^\s\"\'<>]+',lambda m:clean_url(m[0]),value)
         value=re.sub(r'[A-Za-z0-9_+/=-]{40,}','[opaque omitted]',value)
@@ -26,17 +26,22 @@ def main():
             text=response.read(2_000_000).decode('utf-8');final=response.url
         doc=Document(text).root
         scripts=[urljoin(final,n.attrs['src']) for n in doc.find_all('script') if n.attrs.get('src')]
-        item={'client':label,'page':clean_url(final),'snippets':snippets(text),
+        item={'client':label,'page':clean_url(final),'title':next((n.text() for n in doc.find_all('title')),''),
+              'visible_text':re.sub(r'\s+',' ',doc.visible_text())[-4500:],'snippets':snippets(text),
               'media_tags':[{k:n.attrs.get(k) for k in ('autoplay','muted','playsinline','controls')} for n in doc.find_all('video')],
               'frames':[clean_url(urljoin(final,n.attrs.get('src',''))) for n in doc.find_all('iframe')],
               'scripts':[clean_url(s) for s in scripts]}
         details=[]
         for source in scripts:
             p=urlsplit(source)
-            if p.scheme!='https' or not p.hostname.endswith('kdreams.jp'):continue
-            if not re.search(r'digest|video|player|movie|stadium',p.path,re.I):continue
+            if p.scheme!='https' or not (p.hostname.endswith('kdreams.jp') or p.hostname=='kdreams.r10s.jp'):continue
+            if not re.search(r'digest|video|player|movie|stadium|common\.js|zipccheck',p.path,re.I):continue
             with urlopen(Request(source,headers={'User-Agent':agent}),timeout=30) as response:
-                script=response.read(2_000_000).decode('utf-8')
+                raw=response.read(2_000_000)
+                if raw.startswith(b'\x1f\x8b'):
+                    import gzip
+                    raw=gzip.decompress(raw)
+                script=raw.decode('utf-8')
             details.append({'script':clean_url(source),'snippets':snippets(script)})
         item['player_scripts']=details;report.append(item)
     Path('/tmp/media-autoplay-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
