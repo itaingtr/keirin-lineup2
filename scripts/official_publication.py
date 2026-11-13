@@ -355,7 +355,7 @@ def main():
         # Validate the complete exported page before advancing either shared
         # card pointers or the main branch. A rejected layout keeps both old
         # published records intact.
-        report = (export(ROOT/'site',ROOT/'public',repository,omit_current_history=True) if history_error
+        report = (export(ROOT/'site',ROOT/'public',repository,allow_missing_current_history=True) if history_error
                   else export(ROOT/'site',ROOT/'public',repository))
         local_odds = args.work / 'display-odds.json'
         local_odds.write_text(encode(odds_feed) if odds_feed else card['assets']['odds.json'])

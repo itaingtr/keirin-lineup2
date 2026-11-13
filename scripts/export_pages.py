@@ -185,7 +185,22 @@ def daily_previous_page(site,output,page,day):
     return page,{'target_date':data['target_date'],'data_path':relative,**data.get('summary',{})}
 
 
-def export(site,output,repository=REPOSITORY,*,omit_current_history=False):
+def _history_layers(site,output,page,day,*,allow_missing=False):
+    """Use each checked history independently, including the last valid cache."""
+    from rider_history import export_daily
+    results=[]
+    for label,reader in (('previous',daily_previous_page),('ten',export_daily)):
+        try:
+            page,data=reader(site,output,page,day)
+        except (ValueError,FileNotFoundError) as error:
+            if not allow_missing:raise
+            print('OPTIONAL HISTORY UNAVAILABLE',label,day,type(error).__name__,str(error),flush=True)
+            data=None
+        results.append(data)
+    return page,*results
+
+
+def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=False):
     site,output=Path(site),Path(output)
     output.mkdir(parents=True,exist_ok=True)
     for name in SHARED:
@@ -205,11 +220,8 @@ def export(site,output,repository=REPOSITORY,*,omit_current_history=False):
         marks=json.loads((directory/'rakuten-marks.json').read_text()) if day>=CUTOVER else None
         identities=json.loads((directory/'rider-identities.json').read_text()) if day>=CONDITION_CUTOVER else None
         details=json.loads((directory/'rider-details.json').read_text()) if (directory/'rider-details.json').exists() else None
-        rendered=public_html(page,day,marks,identities,details);previous=None;ten_daily=None
-        from rider_history import export_daily
-        if not (omit_current_history and day==current_day):
-            rendered,previous=daily_previous_page(site,output,rendered,day)
-            rendered,ten_daily=export_daily(site,output,rendered,day)
+        rendered,previous,ten_daily=_history_layers(site,output,public_html(page,day,marks,identities,details),day,
+            allow_missing=allow_missing_current_history and day==current_day)
         if previous is not None:daily_reports[day]=previous
         (output/('line'+day+'.html')).write_text(rendered)
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
@@ -227,11 +239,7 @@ def export(site,output,repository=REPOSITORY,*,omit_current_history=False):
     details_path=site/('line'+current_day+'.html')/'rider-details.json'
     details=json.loads(details_path.read_text()) if details_path.exists() else None
     page=public_html(current,current_day,marks,identities,details)
-    from rider_history import export_daily
-    previous=None;ten_daily=None
-    if not omit_current_history:
-        page,previous=daily_previous_page(site,output,page,current_day)
-        page,ten_daily=export_daily(site,output,page,current_day)
+    page,previous,ten_daily=_history_layers(site,output,page,current_day,allow_missing=allow_missing_current_history)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')
