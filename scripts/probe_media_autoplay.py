@@ -57,5 +57,23 @@ def main():
         item['player_scripts']=details;report.append(item)
     Path('/tmp/media-autoplay-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print('PUBLIC PLAYER CONFIGURATION',json.dumps(report,ensure_ascii=False),flush=True)
+    catalogue=json.loads(Path('site/rider-history/current.json').read_text());examples={}
+    for entry in catalogue['players'].values():
+        person=json.loads((Path('site')/entry['path']).read_text())
+        for meeting in person['meetings']:
+            grade=int(meeting['grade_code'])
+            for day in meeting['days']:
+                if not day.get('video_url'):continue
+                if grade not in examples or examples[grade][1]['race_date']<day['race_date']:examples[grade]=(meeting,day)
+    verified=[]
+    for grade,(meeting,day) in sorted(examples.items()):
+        with urlopen(Request(day['video_url'],headers={'User-Agent':agent}),timeout=30) as response:
+            text=response.read(2_000_000).decode('utf-8')
+        doc=Document(text).root
+        sources=[n.attrs.get('src','') for n in doc.find_all('source') if n.attrs.get('type')=='video/mp4']
+        raw=day['race_date'].replace('-','');code=meeting['venue_code'];number=day['race_number']
+        expected=f'https://wm.st.keirin.jp/wm-keirin{code}/{raw}-{code}-{grade:02}-{number:02}-01-00.mp4'
+        verified.append({'grade':grade,'date':raw,'venue_code':code,'race':number,'sources':sources,'matches_template':sources==[expected]})
+    print('VERIFIED DIRECT REPLAY SOURCES',json.dumps(verified,ensure_ascii=False),flush=True)
 
 if __name__=='__main__':main()
