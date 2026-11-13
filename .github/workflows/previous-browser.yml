@@ -11,6 +11,12 @@ on:
       - 'scripts/compact_presentation.py'
       - 'scripts/direct_replay.py'
       - 'tests/test_mobile_replay.cjs'
+      - 'scripts/race_results_page.py'
+      - 'site/race-results.js'
+      - 'site/race-results.css'
+      - 'site/race-results-config.json'
+      - 'supabase/functions/race-results/**'
+      - 'tests/test_race_results_browser.cjs'
       - 'site/ten-meetings.js'
       - 'site/ten-meetings.css'
       - 'scripts/official_publication.py'
@@ -24,7 +30,7 @@ permissions:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:
@@ -62,6 +68,10 @@ jobs:
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_ten_browser.cjs public /tmp/formal-ten-mobile.png index.html
       - name: Verify plain MP4 navigation, native autoplay, seeking and return without background players
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_mobile_replay.cjs public /tmp/mobile-replay.png
+      - name: Verify live on-demand results, partial states and the JST all-results page
+        run: |
+          python3 tests/check_live_race_results.py
+          NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_race_results_browser.cjs public /tmp/race-results-mobile.png
       - name: Save the review screenshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,4 +81,5 @@ jobs:
             /tmp/previous-mobile.png
             /tmp/formal-ten-mobile.png
             /tmp/mobile-replay.png
+            /tmp/race-results-mobile.png
           if-no-files-found: ignore

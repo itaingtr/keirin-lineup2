@@ -1,3 +1,9 @@
+# On-demand inline results and all-results pages from November14
+
+- The user requests one left-aligned 22px by12px 「結果」 button per race below the complete lineup/previous-results area. Opening it reads that exact public Rakuten result through the existing Supabase project's read-only race-results Edge Function, with platform JWT verification using its existing public anon key. Do not write result records, change Auth/RLS/comments or use a service key. Bound source URLs, redirects, request duration/size and concurrency; render public fields with textContent.
+- Show rank/car/full name/margin/individual time/finish/verified SHB/win-loss reason in placing order, then published2車単 and3連単 payouts, including ties. No published rows/payouts means only 「未定にゃ！」. Payouts may appear independently of placings. Source failures are errors, never unconfirmed results. Never invent H when Rakuten only publishes S/B.
+- The venue navigation includes 「今日の全結果」. results.html selects the actual JST date, independently of a top card advanced to tomorrow. New resultsYYYYMMDD.html outputs reuse the full verified card with every result initially expanded and both 前回/成績 initially closed. Keep normal index/current-date identical and enable future automatic exports. Existing dated HTML before the cutover and the index2 experiment remain byte-identical; separately adding all-results outputs does not change their source cards or historical data.
+
 # Publish the card before collecting optional history
 
 - Latest correction: previous-two histories are prepared once per venue/meeting-start/JKA-ID/name/period and reused across all days, races and car-number changes of that meeting. seed_daily reads checked in-meeting daily records locally, retaining their original source receipts; a new meeting gets a new template. history mode reads only races containing unresolved riders and never discards a checked meeting because a later source response is incomplete.

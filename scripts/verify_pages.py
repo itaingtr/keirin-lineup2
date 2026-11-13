@@ -18,6 +18,11 @@ def verification_files(site):
     if 'data-replay-links="mp4"' in current:
         for name in ('previous-meetings-mp4.js','ten-meetings-mp4.js'):
             if (site/name).is_file():files.append(name)
+    if 'data-race-results="true"' in current:
+        from race_results_page import ASSETS
+        files.extend([*ASSETS,'results.html','results'+day+'.html'])
+        previous_results=(date(int(day[:4]),int(day[4:6]),int(day[6:]))-timedelta(days=1)).strftime('%Y%m%d')
+        if (site/('results'+previous_results+'.html')).exists():files.append('results'+previous_results+'.html')
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     if (site/'data'/day/'rider-details.json').exists():files.append('data/'+day+'/rider-details.json')
