@@ -250,7 +250,10 @@ def export_daily(site,output,page,day):
     page,n=re.subn(r'<body\b','<body data-ten-meetings="true"',page,count=1)
     require(n==1,'Shared-history page body missing')
     for name in ('ten-meetings.css','ten-meetings.js'):
-        content=(Path(site)/name).read_bytes();version=hashlib.sha256(content).hexdigest()[:12]
+        content=(Path(site)/name).read_bytes()
+        from direct_replay import history_asset
+        name,content=history_asset(name,content,day)
+        version=hashlib.sha256(content).hexdigest()[:12]
         (Path(output)/name).write_bytes(content)
         tag=(f'<link rel="stylesheet" href="{BASE}{name}?v={version}">' if name.endswith('.css')
              else f'<script src="{BASE}{name}?v={version}"></script>')

@@ -13,6 +13,8 @@ const usesRakuten=day>='20261030';
 const usesConditions=day>='20261102';
 const usesRiderAppearance=day>='20261103';
 const usesCompact=html.includes('data-history-layout="compact-20261113"');
+const usesDirect=html.includes('data-replay-links="mp4"');
+const directUrl=(code,date,grade,race)=>'https://wm.st.keirin.jp/wm-keirin'+code+'/'+date+'-'+code+'-'+String(grade).padStart(2,'0')+'-'+String(race).padStart(2,'0')+'-01-00.mp4';
 const rakutenMarks=usesRakuten?JSON.parse(fs.readFileSync(path.join(publicDir,'data',day,'rakuten-marks.json'),'utf8')):null;
 const sourceRaces=JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const usesOfficial=sourceRaces.every(r=>new URL(r.source).hostname.endsWith('kdreams.jp'));
@@ -60,6 +62,15 @@ const activeWindows=[];
   }});
   activeWindows.push(dom.window);
   const {window}=dom;const doc=window.document;
+  function plainReplay(anchor,destination){
+   assert.equal(anchor.href,destination);assert.equal(anchor.target,'_self');assert.equal(anchor.getAttribute('onclick'),null);
+   let prevented;
+   window.addEventListener('click',event=>{prevented=event.defaultPrevented;event.preventDefault();},{once:true});
+   anchor.click();assert.equal(prevented,false,'Replay navigation must use the browser default');
+   assert.equal(doc.querySelector('video,dialog,iframe,.replay-mode-button'),null);
+  }
+  if(usesDirect){assert.equal(typeof window.openVideo,'undefined');assert.doesNotMatch(html,/mobile-replay|requestFullscreen|webkitEnterFullscreen|createElement\(['"]video/);}
+
   if(riderDetails){
    const calendar=doc.querySelector('.calendar-button'),home=doc.querySelector('.home-button');
    assert.ok(calendar);assert.equal(calendar.textContent,'日程');assert.equal(home.nextElementSibling,calendar);
@@ -169,76 +180,39 @@ const activeWindows=[];
     for(const result of player.meetingResults){
      const order=rider.querySelector('.meeting-result[data-meeting-day="'+result.meeting_day+'"] .meeting-order');
      assert.ok(order);const historyVideo=new URL(order.href);
-     assert.equal(historyVideo.origin,'https://my.keirin.kdreams.jp');assert.equal(historyVideo.pathname,'/stadium/digest/');
-     assert.equal(historyVideo.searchParams.get('kyogijoCd'),race.venueCode);
-     assert.equal(historyVideo.searchParams.get('kaisaiDate'),result.race_date.replaceAll('-',''));
-     assert.equal(historyVideo.searchParams.get('raceNo'),String(result.race_number));
-     assert.equal(historyVideo.searchParams.get('gradeCd'),videoGrades[race.venueCode+race.meetingStart]);
-     assert.equal(historyVideo.searchParams.get('l-id'),'Highlightreel');
-     assert.equal(order.href,order.dataset.sourceUrl);assert.equal(order.target,'_blank');
+     if(usesDirect){
+      plainReplay(order,directUrl(race.venueCode,result.race_date.replaceAll('-',''),videoGrades[race.venueCode+race.meetingStart],result.race_number));
+     }else{
+      assert.equal(historyVideo.origin,'https://my.keirin.kdreams.jp');assert.equal(historyVideo.pathname,'/stadium/digest/');
+      assert.equal(historyVideo.searchParams.get('kyogijoCd'),race.venueCode);
+      assert.equal(historyVideo.searchParams.get('kaisaiDate'),result.race_date.replaceAll('-',''));
+      assert.equal(historyVideo.searchParams.get('raceNo'),String(result.race_number));
+      assert.equal(historyVideo.searchParams.get('gradeCd'),videoGrades[race.venueCode+race.meetingStart]);
+      assert.equal(historyVideo.searchParams.get('l-id'),'Highlightreel');assert.equal(order.target,'_blank');
+     }
+     assert.equal(order.href,order.dataset.sourceUrl);
      assert.equal(order.querySelector('.meeting-rank').textContent,result.has_accident?result.accident:String(result.order));
      assert.equal(Boolean(order.querySelector('.meeting-back:not(.meeting-start):not(.meeting-home)')),result.back);
      if(usesOfficial){assert.equal(Boolean(order.querySelector('.meeting-start')),Boolean(result.start));assert.equal(Boolean(order.querySelector('.meeting-home')),Boolean(result.home));assert.equal(window.getComputedStyle(order.parentElement).justifyContent,'flex-start');}
-     let opened;window.open=(...args)=>{opened=args;};order.click();
-     assert.deepEqual(opened,[order.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
+     if(!usesDirect){let opened;window.open=(...args)=>{opened=args;};order.click();
+      assert.deepEqual(opened,[order.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);}
      historyReplays++;
     }
    }
    const replay=row.querySelector('.video-link:not(.live-link)'),video=new URL(replay.href);
-   assert.equal(video.origin,'https://my.keirin.kdreams.jp');assert.equal(video.pathname,'/stadium/digest/');
-   assert.equal(video.searchParams.get('kyogijoCd'),race.venueCode);
-   assert.equal(video.searchParams.get('kaisaiDate'),day);
-   assert.equal(video.searchParams.get('raceNo'),String(race.race));
-   assert.equal(video.searchParams.get('gradeCd'),videoGrades[race.venueCode+race.meetingStart]);
-   assert.equal(video.searchParams.get('l-id'),'Highlightreel');
-   assert.equal(replay.href,replay.dataset.sourceUrl);assert.equal(replay.target,'_blank');
-   let opened;window.open=(...args)=>{opened=args;};replay.click();
-   assert.deepEqual(opened,[replay.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
-   if(usesCompact){
-    const previousMatchMedia=window.matchMedia;window.matchMedia=()=>({matches:true});let played;
-    window.HTMLMediaElement.prototype.play=function(){played=this.src;return Promise.resolve();};
-    window.HTMLMediaElement.prototype.pause=function(){};window.HTMLMediaElement.prototype.load=function(){};
-    replay.click();const dialog=doc.querySelector('dialog.mobile-replay[open]');assert.ok(dialog);
-    const player=dialog.querySelector('video');assert.ok(player.controls&&player.autoplay&&!player.playsInline);
-    assert.equal(player.hasAttribute('playsinline'),false);assert.equal(player.hasAttribute('webkit-playsinline'),false);
-    assert.equal(dialog.querySelector('.mobile-replay-seek'),null);
-    const direct='https://wm.st.keirin.jp/wm-keirin'+race.venueCode+'/'+day+'-'+race.venueCode+'-'+String(videoGrades[race.venueCode+race.meetingStart]).padStart(2,'0')+'-'+String(race.race).padStart(2,'0')+'-01-00.mp4';
-    assert.equal(played,direct);assert.equal(dialog.querySelector('.mobile-replay-original').href,replay.href);
-    dialog.querySelector('.mobile-replay-close').click();assert.equal(doc.querySelector('dialog.mobile-replay'),null);
-    if(replays===0){
-     // iPhone's native API is unavailable until the selected video metadata
-     // arrives. The first tap must unlock playback and then actually call it.
-     let unlocked=false,nativeEntries=0;
-     window.HTMLMediaElement.prototype.play=function(){unlocked=true;return Promise.resolve();};
-     window.HTMLVideoElement.prototype.webkitEnterFullscreen=function(){
-      assert.ok(unlocked);assert.ok(this.readyState>=1);nativeEntries++;
-      this.dispatchEvent(new window.Event('webkitbeginfullscreen'));
-     };
-     replay.click();let appleDialog=doc.querySelector('dialog.mobile-replay'),appleVideo=appleDialog.querySelector('video');
-     assert.ok(unlocked);assert.equal(nativeEntries,0);
-     Object.defineProperty(appleVideo,'readyState',{value:1});
-     appleVideo.dispatchEvent(new window.Event('loadedmetadata'));
-     assert.equal(nativeEntries,1);assert.equal(appleDialog.dataset.replayPresentation,'native-fullscreen');
-     appleVideo.dispatchEvent(new window.Event('playing'));assert.equal(nativeEntries,1);
-     appleVideo.dispatchEvent(new window.Event('webkitendfullscreen'));
-     assert.equal(doc.querySelector('dialog.mobile-replay'),null);
-     const mode=doc.querySelector('.replay-mode-button');assert.ok(mode);assert.equal(mode.textContent,'動画：全画面');
-     mode.click();assert.equal(mode.textContent,'動画：小窓');
-     replay.click();appleDialog=doc.querySelector('dialog.mobile-replay-small');appleVideo=appleDialog.querySelector('video');
-     assert.ok(appleDialog.open);assert.ok(appleVideo.playsInline&&appleVideo.controls);
-     Object.defineProperty(appleVideo,'readyState',{value:1});
-     appleVideo.dispatchEvent(new window.Event('loadedmetadata'));appleVideo.dispatchEvent(new window.Event('playing'));
-     assert.equal(nativeEntries,1,'Small-window playback must stay inline');
-     appleDialog.querySelector('.mobile-replay-fullscreen').click();assert.equal(nativeEntries,2);
-     appleVideo.dispatchEvent(new window.Event('webkitendfullscreen'));
-     assert.ok(appleDialog.isConnected);assert.equal(appleDialog.dataset.replayPresentation,'small-window');
-     appleDialog.querySelector('.mobile-replay-close').click();assert.equal(doc.querySelector('dialog.mobile-replay'),null);
-     mode.click();assert.equal(mode.textContent,'動画：全画面');
-     delete window.HTMLVideoElement.prototype.webkitEnterFullscreen;
-     window.HTMLMediaElement.prototype.play=function(){played=this.src;return Promise.resolve();};
-    }
-    window.matchMedia=previousMatchMedia;
+   if(usesDirect){
+    const destination=directUrl(race.venueCode,day,videoGrades[race.venueCode+race.meetingStart],race.race);
+    plainReplay(replay,destination);
+    const previousMatchMedia=window.matchMedia;window.matchMedia=()=>({matches:true});
+    plainReplay(replay,destination);window.matchMedia=previousMatchMedia;
    }else{
+    assert.equal(video.origin,'https://my.keirin.kdreams.jp');assert.equal(video.pathname,'/stadium/digest/');
+    assert.equal(video.searchParams.get('kyogijoCd'),race.venueCode);
+    assert.equal(video.searchParams.get('kaisaiDate'),day);assert.equal(video.searchParams.get('raceNo'),String(race.race));
+    assert.equal(video.searchParams.get('gradeCd'),videoGrades[race.venueCode+race.meetingStart]);
+    assert.equal(video.searchParams.get('l-id'),'Highlightreel');assert.equal(replay.target,'_blank');
+    let opened;window.open=(...args)=>{opened=args;};replay.click();
+    assert.deepEqual(opened,[replay.href,'kdreams-video','width=750,height=470,toolbar=no,location=no,menubar=no,status=no,scrollbars=yes,resizable=yes']);
     const mobileLocation={href:''};let prevented=false;
     vm.runInNewContext('('+window.openVideo.toString()+')(event,url)',{
      event:{preventDefault(){prevented=true;}},url:replay.href,location:mobileLocation,
@@ -246,6 +220,7 @@ const activeWindows=[];
     });
     assert.ok(prevented);assert.equal(mobileLocation.href,replay.href);
    }
+   assert.equal(replay.href,replay.dataset.sourceUrl);
    replays++;
    row.querySelector('.odds-toggle').click();await pause();
    const snapshot=expected.get(new URL(race.source).pathname);

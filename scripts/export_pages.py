@@ -119,6 +119,8 @@ def public_html(page,day,marks=None,identities=None,details=None):
     if day>='20261113':
         from compact_presentation import apply as apply_compact_presentation
         result=apply_compact_presentation(result,day)
+        from direct_replay import apply as apply_direct_replay
+        result=apply_direct_replay(result,day)
     if day>='20261109' and 'data-auto-odds="true"' not in result:
         result=re.sub(r'<body\b','<body data-auto-odds="true"',result,count=1)
     if 'data-contest-odds="true"' in result:
@@ -166,6 +168,8 @@ def daily_previous_page(site,output,page,day):
     if count!=1:raise ValueError('Daily previous-meeting body is missing')
     for name in PREVIOUS_ASSETS:
         content=(Path(site)/name).read_bytes()
+        from direct_replay import history_asset
+        name,content=history_asset(name,content,day)
         version=hashlib.sha256(content).hexdigest()[:12]
         (Path(output)/name).write_bytes(content)
         if name.endswith('.css'):

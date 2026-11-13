@@ -139,8 +139,9 @@ async function actual(htmlPath,jsonPath){
     :url.pathname.endsWith('/ten-meetings.json')?sourceData:prior};};
  }});
  try{
-  dom.window.eval(fs.readFileSync(path.join(project,'site/previous-meetings.js'),'utf8'));
-  dom.window.eval(script);
+  const direct=dom.window.document.body.dataset.replayLinks==='mp4';
+  dom.window.eval(fs.readFileSync(direct?path.join(publicRoot,'previous-meetings-mp4.js'):path.join(project,'site/previous-meetings.js'),'utf8'));
+  dom.window.eval(direct?fs.readFileSync(path.join(publicRoot,'ten-meetings-mp4.js'),'utf8'):script);
   for(let i=0;i<40&&dom.window.document.body.dataset.tenMeetingsStatus!=='ready';i++)await pause();
   assert.equal(dom.window.document.body.dataset.tenMeetingsStatus,'ready');
   const rows=[...dom.window.document.querySelectorAll('#rows > tr')];let riders=0,results=0,linked=0;
@@ -154,7 +155,11 @@ async function actual(htmlPath,jsonPath){
     const expected=player.meetings.flatMap(m=>m.days),actual=[...panel.querySelectorAll('.ten-rank')];
     assert.equal(actual.length,expected.length);
     actual.forEach((node,i)=>{const r=expected[i];assert.equal(node.textContent,r.order?String(r.order):r.accident||'');
-      assert.equal(node.tagName==='A',Boolean(r.video_url));if(r.video_url){assert.equal(node.href,r.video_url);linked++;}results++;});
+      assert.equal(node.tagName==='A',Boolean(r.video_url));if(r.video_url){
+       const q=new URL(r.video_url).searchParams,code=q.get('kyogijoCd');
+       const expected=direct?'https://wm.st.keirin.jp/wm-keirin'+code+'/'+q.get('kaisaiDate')+'-'+code+'-'+q.get('gradeCd').padStart(2,'0')+'-'+String(+q.get('raceNo')).padStart(2,'0')+'-01-00.mp4':r.video_url;
+       assert.equal(node.href,expected);assert.equal(node.target,'_self');assert.equal(node.getAttribute('onclick'),null);linked++;
+      }results++;});
    }
   }
   console.log('ACTUAL TEN MEETINGS DOM PASS',JSON.stringify({races:data.races.length,riders,results,linked}));

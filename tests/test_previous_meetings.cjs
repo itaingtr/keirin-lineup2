@@ -195,7 +195,8 @@ async function actualPrototype(htmlPath,jsonPath){
  }});
  try{
   const style=dom.window.document.createElement('style');style.textContent=css;dom.window.document.head.append(style);
-  dom.window.eval(script);
+  const reader=/src="[^" ]*\/(previous-meetings-mp4\.js)\?/.exec(html)?.[1];
+  dom.window.eval(reader?fs.readFileSync(path.join(path.dirname(htmlPath),reader),'utf8'):script);
   for(let i=0;i<40&&!dom.window.document.body.dataset.previousMeetingsStatus;i++)await pause();
   assert.equal(dom.window.document.body.dataset.previousMeetingsStatus,'ready','actual prototype data must pass every identity check');
   let riders=0,results=0,linked=0;
@@ -218,6 +219,10 @@ async function actualPrototype(htmlPath,jsonPath){
       assert.equal(node.querySelector('.previous-time').textContent,result.final_half_record||'');
       assert.equal([...node.querySelectorAll('.previous-flag')].map(flag=>flag.textContent).join(''),(result.start?'S':'')+(result.home?'H':'')+(result.back?'B':''));
       assert.equal(Boolean(node.querySelector('a.previous-order')),Boolean(result.video_url||result.result_url));
+      if(result.video_url&&dom.window.document.body.dataset.replayLinks==='mp4'){
+       const q=new URL(result.video_url).searchParams,code=q.get('kyogijoCd');
+       assert.equal(node.querySelector('a.previous-order').href,'https://wm.st.keirin.jp/wm-keirin'+code+'/'+q.get('kaisaiDate')+'-'+code+'-'+q.get('gradeCd').padStart(2,'0')+'-'+String(+q.get('raceNo')).padStart(2,'0')+'-01-00.mp4');
+      }
       results++;if(node.querySelector('a.previous-order'))linked++;
      }
     });

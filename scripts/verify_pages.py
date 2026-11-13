@@ -15,6 +15,9 @@ def verification_files(site):
     """Public artifacts which must match the checked export before receipt."""
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
+    if 'data-replay-links="mp4"' in current:
+        for name in ('previous-meetings-mp4.js','ten-meetings-mp4.js'):
+            if (site/name).is_file():files.append(name)
     if day>='20261030':files.append('data/'+day+'/rakuten-marks.json')
     if day>='20261102':files.append('data/'+day+'/rider-identities.json')
     if (site/'data'/day/'rider-details.json').exists():files.append('data/'+day+'/rider-details.json')

@@ -117,6 +117,11 @@ async function main(){
     for(const item of styles.links){
       const expected=known.get(item.id);assert.ok(expected,'A linked placing needs checked source evidence');
       const url=new URL(item.url);
+      if(html.includes('data-replay-links="mp4"')){
+        const code=expected.meeting.venue_code,date=expected.result.race_date.replaceAll('-','');
+        assert.equal(item.url,'https://wm.st.keirin.jp/wm-keirin'+code+'/'+date+'-'+code+'-'+String(expected.meeting.grade_code).padStart(2,'0')+'-'+String(expected.result.race_number).padStart(2,'0')+'-01-00.mp4');
+        continue;
+      }
       assert.ok(['keirin.kdreams.jp','my.keirin.kdreams.jp'].includes(url.hostname));
       assert.equal(url.pathname,'/stadium/digest/');
       assert.equal(url.searchParams.get('kaisaiDate'),expected.result.race_date.replaceAll('-',''));
