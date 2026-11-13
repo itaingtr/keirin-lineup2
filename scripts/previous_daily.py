@@ -9,6 +9,8 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from copy import deepcopy
+from datetime import datetime,timezone
 
 from previous_flags import enrich
 from previous_meetings import collect
@@ -138,7 +140,36 @@ def _matching_preview(site, target, page):
     return validate_data(data, page)
 
 
-def ensure_daily(card, races, run_key, site, *, collector=None):
+def seed_daily(card,races,run_key,site):
+    """Bind cached rows to the new card without making a historical request."""
+    raw,target=_day(card['target_date'])
+    if raw<CUTOVER:return {'changed':False,'data':None,'path':None,'summary':None}
+    checked=_read_checked(site,raw)
+    if checked is not None and checked[0]['identity_sha256']==identity_digest(races):
+        return {'changed':False,'data':checked[1],'path':checked[0]['path'],'summary':summary(checked[1])}
+    old={}
+    if checked is not None:
+        for race in checked[1]['races']:
+            for p in race['players']:
+                old[(race['source_url'],p['no'],p['name'],str(p['period']),p['player_id'])]=p
+    data={'schema_version':1,'provider':'kdreams','target_date':target,
+          'checked_at':datetime.now(timezone.utc).isoformat(),
+          'sources':deepcopy(checked[1].get('sources',[])) if checked else [],'races':[],'pending_history':[]}
+    for race in races:
+        players=[]
+        for p in race['players']:
+            identifier=p.get('playerId') or p.get('player_id')
+            key=(race['source'],p['no'],p['name'],str(p['period']),identifier)
+            row=deepcopy(old.get(key))
+            if row is None:
+                row={'no':p['no'],'name':p['name'],'period':int(p['period']),'player_id':identifier,'meetings':[]}
+                data['pending_history'].append({'source_url':race['source'],'player_id':identifier})
+            players.append(row)
+        data['races'].append({'source_url':race['source'],'players':players})
+    return _save_daily(card,races,run_key,site,data)
+
+
+def ensure_daily(card, races, run_key, site, *, collector=None, refresh=False,allow_partial=False):
     """Prepare one complete verified history before a card can be advanced."""
     raw, target = _day(card['target_date'])
     if raw < CUTOVER:
@@ -151,7 +182,7 @@ def ensure_daily(card, races, run_key, site, *, collector=None):
         raise ValueError('Daily history card/races differ')
     checked = _read_checked(site, raw)
     reused_preview = False
-    if checked is not None and checked[0]['identity_sha256'] == expected:
+    if checked is not None and checked[0]['identity_sha256'] == expected and not refresh:
         pointer, data = checked
         validate_data(data, page)
         from recent_flags import enrich as enrich_recent_flags
@@ -163,10 +194,17 @@ def ensure_daily(card, races, run_key, site, *, collector=None):
         data = _matching_preview(site, target, page)
         reused_preview = data is not None
         if data is None:
-            data = enrich((collector or collect)(races, target), site)
+            reader=collector or (lambda rows,day:collect(rows,day,allow_partial=allow_partial))
+            data = enrich(reader(races, target), site)
         from recent_flags import enrich as enrich_recent_flags
         data = enrich_recent_flags(data, site)
-    validate_data(data, page)
+    return _save_daily(card,races,run_key,site,data,reused_preview=reused_preview)
+
+
+def _save_daily(card,races,run_key,site,data,*,reused_preview=False):
+    raw,target=_day(card['target_date']);expected=identity_digest(races)
+    if not re.fullmatch(r'run-\d+-\d+',run_key):raise ValueError('Invalid immutable daily history run key')
+    validate_data(data, card['html'])
     # A rider with no prior starts legitimately contributes no result rows.
     data = dict(data)
     data['summary'] = summary(data)

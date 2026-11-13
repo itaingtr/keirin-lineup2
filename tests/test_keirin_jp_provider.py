@@ -51,6 +51,15 @@ class OfficialJpTests(unittest.TestCase):
         self.assertEqual(fukaya['meeting_results'][0]['order'], 1)
         self.assertEqual(fukaya['meeting_results'][0]['race_id'], '124520261103')
         self.assertEqual(fukaya['identity_source']['provider'], 'keirin.jp')
+        class CardOnly(Client):
+            def cards(self,code,day):
+                assert day=='20261104', 'The initial card must not collect prior days'
+                return super().cards(code,day)
+            def results(self,*args,**kwargs):
+                raise AssertionError('Collect results only after card publication')
+        first=enrich_cards(dataset,CardOnly(),include_history=False)
+        self.assertEqual(first['races'][0]['players'][0]['player_id'],'014534')
+        self.assertEqual(first['races'][0]['players'][0]['meeting_results'],[])
 
     def test_wrong_official_identity_or_incomplete_results_are_rejected(self):
         entries = self.cards('20261103')[12]['players']

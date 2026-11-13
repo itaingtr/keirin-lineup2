@@ -6,10 +6,10 @@ import shutil
 import sys
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock,patch
 
 sys.path.insert(0,str(Path(__file__).parents[1]/'scripts'))
-from previous_daily import ensure_daily,load_daily,identity_digest
+from previous_daily import ensure_daily,seed_daily,load_daily,identity_digest
 from published_card import parse_page
 
 ROOT=Path(__file__).parents[1]
@@ -30,6 +30,24 @@ def history_for(card,races):
 
 
 class DailyHistoryTests(unittest.TestCase):
+    def test_new_card_seeds_missing_riders_without_waiting_for_history(self):
+        card,races=card_for()
+        with tempfile.TemporaryDirectory() as folder:
+            first=ensure_daily(card,races,'run-100-1',folder,collector=lambda *_:history_for(card,races))
+            original=(Path(folder)/first['path']).read_bytes()
+            members=deepcopy(races);members[0]['players'].append({'no':2,'name':'追加選手','period':97,'playerId':'014498'})
+            newer={**card,'html':'const races='+json.dumps(members,ensure_ascii=False)+';\nconst body='}
+            with patch('previous_daily.collect',side_effect=AssertionError('Card publication must not collect history')):
+                seeded=seed_daily(newer,members,'run-101-1',folder)
+            data=load_daily(folder,'20261111',newer['html'])
+            self.assertTrue(seeded['changed']);self.assertEqual(len(data['races'][0]['players']),2)
+            self.assertEqual(data['races'][0]['players'][0],first['data']['races'][0]['players'][0])
+            self.assertEqual(data['races'][0]['players'][1]['meetings'],[])
+            self.assertEqual(data['pending_history'],[{'source_url':races[0]['source'],'player_id':'014498'}])
+            later=ensure_daily(newer,members,'run-102-1',folder,collector=lambda *_:history_for(newer,members),refresh=True)
+            self.assertTrue(later['changed']);self.assertNotIn('pending_history',later['data'])
+            self.assertEqual((Path(folder)/first['path']).read_bytes(),original)
+
     def test_future_day_collects_once_and_unchanged_stats_reuse_checked_history(self):
         card,races=card_for();data=history_for(card,races);read=Mock(return_value=data)
         with tempfile.TemporaryDirectory() as folder:

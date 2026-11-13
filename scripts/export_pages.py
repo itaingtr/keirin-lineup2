@@ -185,7 +185,7 @@ def daily_previous_page(site,output,page,day):
     return page,{'target_date':data['target_date'],'data_path':relative,**data.get('summary',{})}
 
 
-def export(site,output,repository=REPOSITORY):
+def export(site,output,repository=REPOSITORY,*,omit_current_history=False):
     site,output=Path(site),Path(output)
     output.mkdir(parents=True,exist_ok=True)
     for name in SHARED:
@@ -205,9 +205,11 @@ def export(site,output,repository=REPOSITORY):
         marks=json.loads((directory/'rakuten-marks.json').read_text()) if day>=CUTOVER else None
         identities=json.loads((directory/'rider-identities.json').read_text()) if day>=CONDITION_CUTOVER else None
         details=json.loads((directory/'rider-details.json').read_text()) if (directory/'rider-details.json').exists() else None
-        rendered,previous=daily_previous_page(site,output,public_html(page,day,marks,identities,details),day)
+        rendered=public_html(page,day,marks,identities,details);previous=None;ten_daily=None
         from rider_history import export_daily
-        rendered,ten_daily=export_daily(site,output,rendered,day)
+        if not (omit_current_history and day==current_day):
+            rendered,previous=daily_previous_page(site,output,rendered,day)
+            rendered,ten_daily=export_daily(site,output,rendered,day)
         if previous is not None:daily_reports[day]=previous
         (output/('line'+day+'.html')).write_text(rendered)
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
@@ -225,9 +227,11 @@ def export(site,output,repository=REPOSITORY):
     details_path=site/('line'+current_day+'.html')/'rider-details.json'
     details=json.loads(details_path.read_text()) if details_path.exists() else None
     page=public_html(current,current_day,marks,identities,details)
-    page,previous=daily_previous_page(site,output,page,current_day)
     from rider_history import export_daily
-    page,ten_daily=export_daily(site,output,page,current_day)
+    previous=None;ten_daily=None
+    if not omit_current_history:
+        page,previous=daily_previous_page(site,output,page,current_day)
+        page,ten_daily=export_daily(site,output,page,current_day)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')

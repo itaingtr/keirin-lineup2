@@ -7,7 +7,7 @@ on:
       mode:
         description: 'publish: saved card / cards: next day / odds: current race day'
         type: choice
-        options: [publish, cards, odds, preview]
+        options: [publish, cards, odds, preview, history]
         default: publish
       date:
         description: 'Optional YYYY-MM-DD for manual cards only'
@@ -94,6 +94,12 @@ jobs:
       - name: Confirm publication only after anonymous HTTP checks
         if: steps.update.outputs.publish == 'true'
         run: python3 scripts/publication_state.py --site public --report /tmp/lineup2-publication/report.json --work /tmp/lineup2-confirmation
+      - name: Collect optional history only after the checked card is public
+        if: steps.update.outputs.card_history_refresh == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HISTORY_DATE: ${{ steps.update.outputs.target_date }}
+        run: gh workflow run update.yml --ref main -f mode=history -f date="$HISTORY_DATE"
       - name: Refresh missing shared rider histories in the background
         if: steps.update.outputs.history_refresh == 'true'
         env:

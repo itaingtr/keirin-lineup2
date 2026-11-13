@@ -1,5 +1,6 @@
 """Publish verified K Dreams cards and odds without a legacy-provider fallback."""
 import argparse
+from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
@@ -23,7 +24,7 @@ from kdreams_history import enrich_start_flags
 from rider_details import collect_details, details_from_dataset, stage_details, validate_details
 from lineup_refresh import refresh_lineups
 from publication_state import card_digest,artifact_digest,is_confirmed,read_receipt
-from previous_daily import ensure_daily,load_daily,CUTOVER as PREVIOUS_CUTOVER
+from previous_daily import ensure_daily,seed_daily,load_daily,CUTOVER as PREVIOUS_CUTOVER
 
 ROOT = Path(__file__).resolve().parents[1]
 JST = ZoneInfo('Asia/Tokyo')
@@ -71,6 +72,19 @@ def card_fingerprint(card):
     for name in ('rakuten-marks.json','rider-details.json'):
         if name in card['assets']:data[name]=json.loads(card['assets'][name])
     return hashlib.sha256(json.dumps(clean(data),sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+
+
+def reuse_results(dataset,card,races):
+    """Keep checked current-meeting results until the later history job."""
+    old={(r['source'],p['no'],p['name'],str(p['period']),p.get('playerId')):p for r in races for p in r['players']}
+    used=False
+    for race in dataset['races']:
+        for p in race['players']:
+            previous=old.get((race['source'],p['no'],p['name'],str(p['period']),p.get('player_id')))
+            if previous and previous.get('meetingResults'):
+                p['meeting_results']=deepcopy(previous['meetingResults']);used=True
+    if used:dataset.setdefault('history_sources',[]).extend(deepcopy(card.get('history_sources',[])))
+    return dataset
 
 
 def build_card(dataset, checked_at, known_dates=()):
@@ -140,6 +154,7 @@ def build_card(dataset, checked_at, known_dates=()):
     validate_details(details,races,target)
     card['assets']['rider-details.json']=encode(details)
     card['summary']['source_providers'] = sorted(providers)
+    card['summary']['card_first_pipeline'] = 1
     card['sources'] = dataset.get('sources',[])
     card['history_sources'] = history_sources
     return official_card(card, races), races
@@ -181,7 +196,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--event', required=True)
     parser.add_argument('--schedule', default='')
-    parser.add_argument('--mode', choices=('publish', 'cards', 'odds','preview'), default='publish')
+    parser.add_argument('--mode', choices=('publish', 'cards', 'odds','preview','history'), default='publish')
     parser.add_argument('--date', default='')
     parser.add_argument('--run-key', required=True)
     parser.add_argument('--work', type=Path, required=True)
@@ -206,7 +221,11 @@ def main():
         mode='publish'
     collection_date = None
     migration = False
-    if mode == 'cards':
+    pipeline_transition=(mode=='publish' and not card['summary'].get('card_first_pipeline')
+                         and now.astimezone(JST).date().isoformat()<=target)
+    if mode == 'history':
+        collection_date=date.fromisoformat(args.date or target)
+    elif mode == 'cards':
         collection_date = (date.fromisoformat(args.date) if args.date else
                            scheduled_target(now, args.schedule) if args.event == 'schedule' else
                            now.astimezone(JST).date() + timedelta(days=1))
@@ -214,6 +233,8 @@ def main():
         recovery = morning_recovery_date(target, now)
         if recovery:
             collection_date = date.fromisoformat(recovery)
+        elif pipeline_transition:
+            collection_date=date.fromisoformat(target)
         elif card.get('provider') != PROVIDER:
             collection_date = date.fromisoformat(target)
             migration = True
@@ -228,22 +249,19 @@ def main():
     history_error = None
     shared_history = None
     if collected:
-        require(can_replace(collection_date, now, target, migration=migration,refresh_card=mode=='cards'),
+        require(can_replace(collection_date, now, target, migration=migration,refresh_card=mode in ('cards','history') or pipeline_transition),
                 'Refusing a past/in-progress card rewrite or date regression')
         from kdreams_provider import collect_cards
         try:
-            dataset = enrich_start_flags(enrich_cards(collect_cards(collection_date.isoformat())))
+            dataset=collect_cards(collection_date.isoformat())
+            if mode=='history':dataset=enrich_start_flags(enrich_cards(dataset))
+            else:dataset=reuse_results(enrich_cards(dataset,include_history=False),card,races)
             names = git('ls-tree', '--name-only', ref + ':fallback/cards').splitlines()
             candidate, candidate_races = build_card(dataset, datetime.now(timezone.utc).isoformat(),
                                      [name for name in names if re.fullmatch(r'\d{8}', name)])
-            # Bind previous meetings to the complete candidate roster before
-            # advancing its immutable card pointer or replacing any page.
-            previous_history=ensure_daily(candidate,candidate_races,args.run_key,ROOT/'site')
-            from rider_history import ensure as ensure_shared_history
-            shared_history=ensure_shared_history(ROOT/'site',candidate,candidate_races,args.run_key)
-            card_changed=card_fingerprint(candidate)!=card_fingerprint(card)
+            card_changed=pipeline_transition or card_fingerprint(candidate)!=card_fingerprint(card)
         except Exception as error:
-            if not (mode=='cards' and target==collection_date.isoformat()
+            if not ((mode in ('cards','history') or pipeline_transition) and target==collection_date.isoformat()
                     and now.astimezone(JST).date()<=collection_date<=now.astimezone(JST).date()+timedelta(days=1)):raise
             card_check_error=type(error).__name__+': '+str(error)[:300]
             print('CARD CHECK FAILED: retain checked card and update its odds',card_check_error,flush=True)
@@ -270,11 +288,12 @@ def main():
                 load_daily(ROOT/'site',target,card['html'])
                 previous_history={'changed':False}
             else:
-                previous_history=ensure_daily(card,races,args.run_key,ROOT/'site')
+                previous_history=(ensure_daily(card,races,args.run_key,ROOT/'site',refresh=True,allow_partial=True)
+                                  if mode=='history' else seed_daily(card,races,args.run_key,ROOT/'site'))
         except Exception as error:
             history_error=type(error).__name__+': '+str(error)[:300]
-            card_check_error=card_check_error or 'Previous meetings: '+history_error
-            print('PREVIOUS MEETINGS CHECK FAILED: preserve published pages and continue saved-card odds',history_error,flush=True)
+            previous_history={'changed':False}
+            print('PREVIOUS MEETINGS UNAVAILABLE: publish the checked card first',history_error,flush=True)
     publication_pending=not is_confirmed(read_receipt(ref,git_read),card,
                                        source_commit=git('rev-parse','HEAD'))
     if shared_history is None and not history_error:
@@ -287,15 +306,14 @@ def main():
             else:shared_history=ensure_shared_history(ROOT/'site',card,races,args.run_key)
         except Exception as error:
             history_error=type(error).__name__+': '+str(error)[:300]
-            card_check_error=card_check_error or 'Shared rider history: '+history_error
-            print('SHARED HISTORY CHECK FAILED: retain published pages and continue saved-card odds',history_error,flush=True)
-    publish_pages = not history_error and (mode == 'publish' or collected or publication_pending
+            print('SHARED HISTORY UNAVAILABLE: publish the checked card first',history_error,flush=True)
+    publish_pages = (mode == 'publish' or collected or publication_pending
                                            or previous_history.get('changed',False)
                                            or bool(shared_history and shared_history['changed']))
     odds_stats = {}
     odds_feed = saved_odds(ref, target)
     odds_schedule = args.schedule if args.event == 'schedule' and mode == 'odds' else ''
-    if (mode in ('odds','cards') or migration or recovered_today) and should_collect(target, now, odds_schedule):
+    if (mode in ('odds','history') or mode=='cards' and not collected) and should_collect(target, now, odds_schedule):
         fresh, odds_stats = refresh(races, odds_feed)
         if odds_stats['observations']:
             run_path = ODDS_PREFIX + '/' + target.replace('-', '') + '/runs/' + args.run_key + '.json'
@@ -337,7 +355,8 @@ def main():
         # Validate the complete exported page before advancing either shared
         # card pointers or the main branch. A rejected layout keeps both old
         # published records intact.
-        report = export(ROOT / 'site', ROOT / 'public', repository)
+        report = (export(ROOT/'site',ROOT/'public',repository,omit_current_history=True) if history_error
+                  else export(ROOT/'site',ROOT/'public',repository))
         local_odds = args.work / 'display-odds.json'
         local_odds.write_text(encode(odds_feed) if odds_feed else card['assets']['odds.json'])
         report['local_odds_file'] = str(local_odds)
@@ -373,6 +392,8 @@ def main():
             handle.write('card_check_failed='+str(card_check_error is not None).lower()+'\n')
             handle.write('history_refresh='+str(bool(shared_history and shared_history.get('pending'))).lower()+'\n')
             handle.write('recent_flags_refresh='+str(bool(recent_pending)).lower()+'\n')
+            handle.write('card_history_refresh='+str(bool(card_checked and not card_check_error and mode!='history')).lower()+'\n')
+            handle.write('target_date='+target+'\n')
     print('OFFICIAL PUBLIC UPDATE READY', json.dumps(report, ensure_ascii=False), flush=True)
 
 

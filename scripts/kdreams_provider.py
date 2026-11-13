@@ -341,7 +341,7 @@ def _number(node):
     return number if number is not None else int(text) if re.fullmatch(r'[1-9]', text) else None
 
 
-def parse_exacta(doc, url, observed_at):
+def parse_exacta(doc, url, observed_at, *, withdrawn=()):
     if isinstance(doc, str):doc = Document(doc).root
     check_url(url);_canonical(doc, url)
     sections = [n for n in doc.find_all() if n.attrs.get('id') == 'JS_ODDSCONTENTS_2shatan']
@@ -366,7 +366,8 @@ def parse_exacta(doc, url, observed_at):
             if first == second:continue
             require((first,second) not in seen, 'Duplicate K Dreams exacta pair');seen.add((first,second))
             value = compact(cell.text()).replace(',', '')
-            if re.fullmatch(r'\d+(?:\.\d+)?', value):
+            if not value and (first in withdrawn or second in withdrawn):value = None
+            elif re.fullmatch(r'\d+(?:\.\d+)?', value):
                 value = float(value);require(math.isfinite(value) and value > 0, 'Invalid K Dreams price')
             elif value in ('-', '--', '―', '—', '欠場', '欠車', '発売なし', '未発売'):value = None
             else:raise ValueError('Unrecognized K Dreams quote; do not invent a price')
@@ -395,7 +396,7 @@ def collect_quote(race, read=fetch):
         require(p['name'] == saved['name'] and str(p['period']) == str(saved['period']), 'K Dreams quote rider differs from card')
         identifier = saved.get('player_id') or saved.get('playerId')
         require(not identifier or not p.get('player_id') or p['player_id'] == identifier, 'K Dreams quote rider ID differs from card')
-    quote = parse_exacta(doc, odds_url, observed)
+    quote = parse_exacta(doc, odds_url, observed, withdrawn={p['no'] for p in actual if p['absent']})
     require(quote['rider_numbers'] == sorted(expected), 'K Dreams quote matrix cars differ from card')
     return quote
 

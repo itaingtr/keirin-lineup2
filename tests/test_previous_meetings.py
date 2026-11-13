@@ -105,6 +105,15 @@ class PreviousMeetingsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_previous(Document(markup()).root, URL, wrong, STAMP)
 
+    def test_bad_optional_video_does_not_hide_other_verified_meetings_or_riders(self):
+        source=markup().replace('kaisaiDate=20261001','kaisaiDate=20261002',1)
+        rows=parse_previous(Document(source).root,URL,PLAYERS,STAMP,allow_partial=True)
+        self.assertEqual(rows[0]['unavailable_meetings'],['previous_previous'])
+        self.assertEqual([m['position'] for m in rows[0]['meetings']],['previous'])
+        self.assertEqual(len(rows[1]['meetings']),2)
+        wrong=deepcopy(PLAYERS);wrong[0]['playerId']='999999'
+        with self.assertRaises(ValueError):parse_previous(Document(source).root,URL,wrong,STAMP,allow_partial=True)
+
     def test_collection_keeps_original_observation_receipts_and_validates_target(self):
         calls = []
         def read(url):

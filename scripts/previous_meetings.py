@@ -137,7 +137,7 @@ def _meeting(cell, before, player_id, source, observed):
             'grade_code': next(iter(grades), None), 'days': records}
 
 
-def parse_previous(doc, source, expected, observed):
+def parse_previous(doc, source, expected, observed, *, allow_partial=False):
     if isinstance(doc, str):
         doc = Document(doc).root
     ident = race_identity(source); _title(doc, source)
@@ -184,7 +184,13 @@ def parse_previous(doc, source, expected, observed):
         meetings = []
         # The source is [current, previous, previous-previous]. Show older first.
         for position, cell in (('previous_previous', values[index + 4]), ('previous', values[index + 3])):
-            meeting = _meeting(cell, before, output[number]['player_id'], source, observed)
+            try:
+                meeting = _meeting(cell, before, output[number]['player_id'], source, observed)
+            except ValueError as error:
+                if not allow_partial:raise
+                output[number].setdefault('unavailable_meetings',[]).append(position)
+                print('PREVIOUS MEETING UNAVAILABLE',source,number,position,str(error),flush=True)
+                continue
             if meeting:
                 meeting['position'] = position
                 meetings.append(meeting)
@@ -195,7 +201,7 @@ def parse_previous(doc, source, expected, observed):
     return [output[no] for no in sorted(output)]
 
 
-def collect(races, target, read=fetch):
+def collect(races, target, read=fetch, *, allow_partial=False):
     target_day = date.fromisoformat(target)
     output = []; sources = []; cache = {}
     for race in races:
@@ -206,7 +212,7 @@ def collect(races, target, read=fetch):
                 time.sleep(1)
             cache[source] = _doc_read(source, read)
         doc, observed = cache[source]
-        players = parse_previous(doc, source, race['players'], observed)
+        players = parse_previous(doc, source, race['players'], observed,allow_partial=allow_partial)
         output.append({'source_url': source, 'players': players})
         sources.append({'provider': PROVIDER, 'url': source, 'observed_at': observed,
                         'kind': 'previous_meetings'})

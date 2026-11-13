@@ -58,6 +58,24 @@ def contested_lineup():
 
 
 class KdreamsProviderTests(unittest.TestCase):
+    def test_empty_withdrawn_rows_and_columns_keep_active_exacta_prices(self):
+        from source_http import cells
+        doc=Document(matrix()).root
+        table=next(doc.find_all('table'))
+        rows=list(table.find_all('tr'))
+        for row in rows[1:]:
+            second=int(cells(row)[0].text())
+            for first,cell in enumerate(cells(row)[1:],1):
+                if first==2 or second==2:cell.children=[]
+        # Empty active prices still fail; only an independently observed
+        # withdrawal makes the empty row/column a cancelled combination.
+        with self.assertRaises(ValueError):parse_exacta(doc,ODDS,STAMP)
+        quote=parse_exacta(doc,ODDS,STAMP,withdrawn={2})
+        prices={(p['first'],p['second']):p['value'] for p in quote['odds']}
+        self.assertEqual(prices[1,3],13.125);self.assertEqual(prices[3,1],31.125)
+        self.assertTrue(all(v is None for pair,v in prices.items() if 2 in pair))
+        self.assertEqual(len(prices),6)
+
     def test_calendar_without_the_wrapper_still_requires_verified_race_date_and_venue(self):
         from datetime import date
         markup=calendar().replace('class="raceinfo_table"','class="raceinfo_new"')

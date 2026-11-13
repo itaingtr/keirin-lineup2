@@ -50,8 +50,8 @@ class PublicationStateTests(unittest.TestCase):
                      patch('official_publication.saved_odds',return_value=None), \
                      patch('official_publication.refresh',return_value=({}, {'observations':0})), \
                      patch('kdreams_provider.collect_cards',side_effect=ValueError('source unavailable') if source_failed else None,return_value=dataset()), \
-                     patch('official_publication.enrich_cards',side_effect=lambda d:d), \
-                     patch('official_publication.enrich_start_flags',side_effect=lambda d:d), \
+                     patch('official_publication.enrich_cards',side_effect=lambda d,**kwargs:d), \
+                     patch('official_publication.enrich_start_flags',side_effect=lambda d,**kwargs:d), \
                      patch('official_publication.export',return_value={'target_date':'2026-10-18'}) as export, \
                      patch('official_publication.artifact_digest',return_value='artifact-hash'):
                     clock.now.return_value=datetime.fromisoformat('2026-10-18T05:00:00+00:00')

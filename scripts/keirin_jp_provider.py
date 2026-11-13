@@ -254,7 +254,7 @@ class OfficialClient:
         return output
 
 
-def enrich_cards(dataset, client=None):
+def enrich_cards(dataset, client=None, *, include_history=True):
     """Verify the complete current card and attach only earlier meeting results."""
     require(dataset.get('provider') == 'kdreams', 'Official enrichment needs a fresh K Dreams card')
     result = deepcopy(dataset); client = client or OfficialClient()
@@ -284,7 +284,7 @@ def enrich_cards(dataset, client=None):
                 require(entry['player_id'] not in current, 'Duplicate official current rider')
                 current[entry['player_id']] = player
         first, last = datetime.strptime(start, '%Y%m%d').date(), datetime.strptime(target, '%Y%m%d').date()
-        for offset in range((last - first).days):
+        for offset in range((last - first).days if include_history else 0):
             day = (first + timedelta(days=offset)).strftime('%Y%m%d')
             previous, _ = client.cards(code, day)
             seen = set()
