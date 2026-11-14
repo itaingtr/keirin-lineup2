@@ -252,7 +252,7 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')
     calendar=export_calendar(site,output,dates,current_day,BASE)
-    from race_results_page import CUTOVER as RESULTS_CUTOVER,export_all_results
+    from race_results_page import OFFICIAL_CUTOVER as RESULTS_CUTOVER,export_all_results
     race_results=export_all_results(site,output,dates) if current_day>=RESULTS_CUTOVER else None
     (output/'.nojekyll').write_text('')
     races=parse_page(page)

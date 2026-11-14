@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import sys
@@ -56,7 +57,18 @@ class DailyHistoryExportTests(unittest.TestCase):
                     path=directory/name
                     return json.loads(path.read_text()) if path.exists() else None
                 expected=public_html(source,raw,asset('rakuten-marks.json'),asset('rider-identities.json'),asset('rider-details.json'))
-                self.assertEqual((output/('line'+raw+'.html')).read_text(),expected,'An earlier page must keep its previous export')
+                rendered=(output/('line'+raw+'.html')).read_text()
+                # The user explicitly added date-specific 全結果 navigation to
+                # archived official cards. That marker and script are the only
+                # authorized differences; all old display/data stays exact.
+                marker=' data-all-results-date="'+raw+'"'
+                if marker in rendered:
+                    self.assertEqual(rendered.count(marker),1)
+                    self.assertNotIn('data-race-results="true"',rendered)
+                    rendered=rendered.replace(marker,'',1)
+                    rendered,count=re.subn(r'<script src="/keirin-lineup2/all-results-nav\.js\?v=[0-9a-f]{12}"></script>','',rendered)
+                    self.assertEqual(count,1)
+                self.assertEqual(rendered,expected,'An earlier page must keep its previous export apart from the approved date-navigation marker and script')
             preview=(output/'index2.html').read_text()
             self.assertNotIn('data-previous-meetings-src',preview)
             self.assertTrue((output/'data/20261110/previous-meetings.json').exists())
