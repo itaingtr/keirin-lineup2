@@ -1,3 +1,8 @@
+# Name-based rider search
+
+- Latest user correction: daily-results/index.html is a rider-name/JKA-ID search across the whole stored catalogue, independent of race date and current entrants. Keep the former date-based view at daily-results/entries.html. Put the selected rider's latest techniques and up to ten meetings directly below their name, in compact vertical rows that fit 320px without horizontal scrolling. Keep existing cards, result pages, comments, odds and saved histories intact.
+- Prefer KEIRIN.JP public profiles, with an Enjoy profile link. The read-only rider-profile Edge Function uses the existing public anon JWT and touches no database/Auth/Storage. Preserve bounded official-only source URLs, request size/time/concurrency and opaque-navigation exclusion. Label official technique percentages as percentages with their scope and observation time; do not convert them to counts. A failed refresh retains the checked stock. Profile-only ride slots have unknown race dates/IDs/SHB; reuse stored links only after complete meeting/placing/accident matching. See RIDER_SEARCH_HANDOFF.md.
+
 # On-demand inline results and all-results pages from November14
 
 - The user requests one left-aligned 22px by12px 「結果」 button per race below the complete lineup/previous-results area. Opening it reads that exact public Rakuten result through the existing Supabase project's read-only race-results Edge Function, with platform JWT verification using its existing public anon key. Do not write result records, change Auth/RLS/comments or use a service key. Bound source URLs, redirects, request duration/size and concurrency; render public fields with textContent.

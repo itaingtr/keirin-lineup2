@@ -8,7 +8,7 @@
 
 公開先は https://itaingtr.github.io/keirin-lineup2/ です。GPTログインは不要で、`line20261025.html` のような日付ページも同じ場所に置きます。トップと最新日付ページのHTMLは同一です。
 
-S級全選手の今場所・前回2場所・過去10場所は [全選手成績一覧](https://itaingtr.github.io/keirin-lineup2/daily-results/index.html) から検索できます。日本時間の当日が初期日付で、JSON／CSVは選択日の全出走分を出力します。保存・照合・検証の引き継ぎは [DAILY_RESULTS_HANDOFF.md](DAILY_RESULTS_HANDOFF.md) を参照してください。
+選手名・JKA番号で調べる [選手検索](https://itaingtr.github.io/keirin-lineup2/daily-results/index.html) は、当日の出走に関係なく保存済みの選手台帳全体を対象に、過去10場所と最新の公式決まり手を表示します。成績は選手名の下に縦並びで表示し、プロフィールはKEIRIN.JP・エンジョイへリンクします。[RIDER_SEARCH_HANDOFF.md](RIDER_SEARCH_HANDOFF.md) に読取・保存・検証の契約をまとめています。初版の日別出走一覧は `daily-results/entries.html` に保持しています。
 
 誰か1人の期別を押すと、そのレース全員の期別の真下に県名の先頭2文字と年齢を表示し、もう一度どの期別を押しても全員分を閉じます。開閉は表示だけの操作です。「更新」「トップ」の横の「日程」は /keirin-lineup2/calendar/index.html へ移動します。カレンダー本体は別作業です。着順の左端はあがりタイムの十の位に合わせ、選手幅やライン間隔は維持します。
 

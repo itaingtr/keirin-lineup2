@@ -1,5 +1,9 @@
 # S級全選手成績一覧
 
+最新のユーザー訂正で、入口 `daily-results/index.html` は選手名検索になりました。
+以下の初版の日別一覧は `daily-results/entries.html?date=YYYYMMDD` に保持しています。
+新しい仕様・原稿・公式プロフィール確認は [RIDER_SEARCH_HANDOFF.md](RIDER_SEARCH_HANDOFF.md) を参照してください。
+
 一覧の原稿は `site/daily-results/`、公開先は
 `/keirin-lineup2/daily-results/index.html?date=YYYYMMDD`。
 日付省略時はAsia/Tokyoの当日を選び、`calendar/dates.json.days` にない日は未公開とする。
