@@ -60,6 +60,11 @@ def verification_files(site):
         files.extend(p.relative_to(site).as_posix() for p in sorted((site/'calendar').rglob('*')) if p.is_file())
     if (site/'daily-results').is_dir():
         files.extend(p.relative_to(site).as_posix() for p in sorted((site/'daily-results').iterdir()) if p.is_file())
+        catalogue=site/'daily-results/riders.json'
+        if catalogue.exists():
+            players=json.loads(catalogue.read_text())['players']
+            files.extend(p['profile_ref']['path'] for p in players if p.get('profile_ref'))
+            files.extend(p['history_ref']['path'] for p in players if p.get('history_ref'))
         for path in sorted((site/'data').glob('*/all-rider-results.json')):
             files.append(path.relative_to(site).as_posix())
             data=json.loads(path.read_text())

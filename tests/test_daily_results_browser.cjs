@@ -4,7 +4,7 @@ const path = require('node:path');
 const {chromium, devices} = require('playwright');
 const root = path.resolve(process.argv[2] || 'public');
 const index = JSON.parse(fs.readFileSync(path.join(root, 'data/20261114/all-rider-results.json')));
-const href = 'https://itaingtr.github.io/keirin-lineup2/daily-results/index.html';
+const href = 'https://itaingtr.github.io/keirin-lineup2/daily-results/entries.html';
 
 (async () => {
   const browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox']});

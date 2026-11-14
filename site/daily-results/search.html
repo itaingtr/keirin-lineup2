@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>選手検索・過去10場所</title>
+<link rel="stylesheet" href="./search.css">
+<script src="./model.js" defer></script><script src="./search-model.js" defer></script><script src="./search.js" defer></script>
+</head><body><main>
+<header><a href="/keirin-lineup2/">出走表</a><h1>選手検索</h1></header>
+<form id="rider-search" role="search"><label for="rider-query">選手名・JKA番号</label><div class="search-bar"><input id="rider-query" type="search" placeholder="例：脇本雄太" autocomplete="off"><button>検索</button></div></form>
+<p id="search-status" role="status" aria-live="polite">保存選手を確認しています…</p>
+<div id="matches" aria-label="検索候補"></div>
+<article id="rider" hidden>
+<div class="rider-heading"><h2 id="rider-name"></h2><a id="official-profile">公式プロフ</a><a id="enjoy-profile">エンジョイ</a></div>
+<p id="profile-summary"></p><div id="techniques"></div>
+<div class="history-heading"><h3>過去10場所</h3><span id="history-note"></span></div>
+<div id="rider-meetings"></div>
+<p id="profile-status" class="source-status" role="status"></p>
+<div class="actions"><button id="profile-refresh" type="button">最新プロフを確認</button><button id="rider-json" type="button" disabled>JSON</button><button id="rider-csv" type="button" disabled>CSV</button></div>
+</article>
+<p class="help">出走日を指定せず、保存済みの選手全体から検索します。成績は最新の開催から表示。上がり・SHB・映像は確認できた分だけ表示します。</p>
+</main></body></html>
