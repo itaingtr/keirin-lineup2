@@ -17,7 +17,7 @@ function payload(race,state='results'){
 }
 const rowHTML=race=>'<tr><td class="race"><a class="race-link" data-race-source="'+race.source+'" href="'+race.source+'">'+race.race+'R</a></td><td class="lineup-cell"><div class="lineup"><div class="previous-controls"><button class="previous-toggle" aria-expanded="false">前回</button><div class="previous-results" hidden>前回の成績</div></div><button class="ten-toggle" aria-expanded="false">成績</button><div class="ten-results" hidden>10場所</div></div></td></tr>';
 async function boot({all=false,reply=payload,fail=false}={}){
- const dom=new JSDOM('<!doctype html><html><head><style>'+fs.readFileSync(path.join(project,'site/race-results.css'),'utf8')+'</style></head><body data-race-results="true"'+(all?' data-race-results-all="true"':'')+' data-race-results-config="/keirin-lineup2/race-results-config.json"><nav id="venue-nav"><a>立川</a></nav><div class="table-wrap"><table><tbody id="rows">'+races.map(rowHTML).join('')+'</tbody></table></div></body></html>',{url:'https://itaingtr.github.io/keirin-lineup2/line20261114.html',runScripts:'outside-only'});
+ const dom=new JSDOM('<!doctype html><html><head><style>'+fs.readFileSync(path.join(project,'site/race-results.css'),'utf8')+'</style></head><body data-all-results-date="20261114" data-race-results="true"'+(all?' data-race-results-all="true"':'')+' data-race-results-config="/keirin-lineup2/race-results-config.json"><nav id="venue-nav"><a>立川</a></nav><div class="table-wrap"><table><tbody id="rows">'+races.map(rowHTML).join('')+'</tbody></table></div></body></html>',{url:'https://itaingtr.github.io/keirin-lineup2/line20261114.html',runScripts:'outside-only'});
  let configReads=0,reads=0,active=0,maxActive=0;
  dom.window.fetch=async(url,options)=>{
   if(String(url).includes('race-results-config.json')){configReads++;return {ok:true,json:async()=>({endpoint:'https://ritinxywblgsccjvqoeh.supabase.co/functions/v1/race-results',anon_key:'eyJ.public.anon'})};}
@@ -28,6 +28,7 @@ async function boot({all=false,reply=payload,fail=false}={}){
   return {ok:!fail,json:async()=>reply(race)};
  };
  dom.window.eval('var races='+JSON.stringify(races)+';'+fs.readFileSync(path.join(project,'site/race-results.js'),'utf8'));
+ dom.window.eval(fs.readFileSync(path.join(project,'site/all-results-nav.js'),'utf8'));
  await pause();
  return {dom,document:dom.window.document,reads:()=>reads,configReads:()=>configReads,maxActive:()=>maxActive};
 }
@@ -48,7 +49,7 @@ async function boot({all=false,reply=payload,fail=false}={}){
  let stage='results';const app=await boot({reply:r=>payload(r,stage)}),doc=app.document;
  assert.equal(app.reads(),0);assert.equal(app.configReads(),0,'normal page does not read result data until a click');
  assert.equal(doc.querySelectorAll('.race-result-toggle').length,races.length);assert.equal(doc.querySelectorAll('.race-result-panel:not([hidden])').length,0);
- assert.equal(doc.querySelectorAll('.all-results-button').length,1);assert.equal(new URL(doc.querySelector('.all-results-button').href).pathname,'/keirin-lineup2/results.html');
+ assert.equal(doc.querySelectorAll('.all-results-button').length,1);assert.equal(doc.querySelector('.all-results-button').textContent,'全結果');assert.equal(new URL(doc.querySelector('.all-results-button').href).pathname,'/keirin-lineup2/results20261114.html');
  let button=doc.querySelector('.race-result-toggle');button.click();await pause();
  assert.equal(app.reads(),1);assert.equal(app.configReads(),1);assert.equal(button.getAttribute('aria-expanded'),'true');
  let panel=doc.querySelector('.race-result-panel');assert.equal(panel.querySelectorAll('th').length,8);assert.equal(panel.querySelector('tbody tr td').textContent,'1');

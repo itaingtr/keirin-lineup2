@@ -53,6 +53,8 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   await page.goto(prefix,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('.race-result-toggle');
   const count=await page.locator('#rows > tr').count();
+  const cardDate=await page.locator('body').getAttribute('data-all-results-date');
+  assert.equal(await page.locator('.all-results-button').textContent(),'全結果');
   assert.equal(await page.locator('.race-result-toggle').count(),count);
   assert.equal(await page.locator('.race-result-panel:not([hidden])').count(),0);
   assert.equal(requests.length,0,'normal page reads no race result until a tap');
@@ -75,28 +77,33 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   assert.equal(await page.locator('.race-result-error').count(),0,'every current-day result must load or explicitly remain pending');
   assert.equal(await page.locator('.previous-results:not([hidden]),.ten-results:not([hidden])').count(),0);
   assert.ok((await page.locator('.previous-toggle[aria-expanded="true"],.ten-toggle[aria-expanded="true"]').count())===0);
-  const today=new Date(Date.now()+9*3600000).toISOString().slice(0,10).replaceAll('-','');
-  assert.ok(page.url().includes('results'+today+'.html'),'today selector must use JST rather than the top-card date');
+  assert.ok(page.url().includes('results'+cardDate+'.html'),'all-results must use the displayed card date');
   const pending=await page.locator('.race-results-cell[data-result-state="pending"] .race-result-panel').allTextContents();
   assert.ok(pending.every(text=>text==='未定にゃ！'));
   // A completed meeting proves the actual result and both payout tables render,
   // independently of whether today's first race has already finished.
-  await page.goto(prefix+'results20261112.html',{waitUntil:'domcontentloaded'});
+  await page.goto(prefix+'line20261113.html',{waitUntil:'domcontentloaded'});
+  await page.waitForSelector('.all-results-button');
+  assert.equal(await page.locator('.all-results-button').textContent(),'全結果');
+  assert.ok((await page.locator('.all-results-button').getAttribute('href')).endsWith('/results20261113.html'));
+  assert.equal(await page.locator('.race-result-toggle').count(),0,'archived card receives navigation without changing its result presentation');
+  await tap(page.locator('.all-results-button'));
+  await page.waitForURL(/\/results20261113\.html$/);
   await page.waitForSelector('.race-result-table',{timeout:60000});
   await page.waitForFunction(()=>[...document.querySelectorAll('.race-results-cell')].every(cell=>['pending','payouts','results','error'].includes(cell.dataset.resultState)),null,{timeout:90000});
   assert.equal(await page.locator('.race-result-error').count(),0);
   const known=page.locator('#race-28-7 .race-results-cell');
-  assert.match(await known.innerText(),/湊聖二/);assert.match(await known.innerText(),/直線伸びて/);
-  assert.match(await known.innerText(),/3,760円/);assert.match(await known.innerText(),/63,040円/);
-  assert.equal(await known.locator('tbody > tr').count(),9);
-  assert.equal(await known.locator('tbody > tr').first().locator('.race-result-no').textContent(),'1');
+  assert.match(await known.innerText(),/2車単/);assert.match(await known.innerText(),/3連単/);
+  const resultRows=await known.locator('tbody > tr').count();
+  assert.equal(resultRows,await page.locator('#race-28-7 .lineup .car').count());
+  assert.equal(await known.locator('tbody > tr').first().locator('.race-result-rank').textContent(),'1');
   assert.equal(await known.locator('.race-result-shb').first().evaluate(node=>getComputedStyle(node).fontWeight),'400');
   assert.equal(await page.locator('video,audio,iframe').count(),0);
   assert.equal(mutations.length,0,'result display must not mutate any database or authentication state');
   assert.deepEqual(errors,[]);
   await page.locator('#race-28-7').scrollIntoViewIfNeeded();
   if(screenshot)await page.screenshot({path:screenshot});
-  console.log(JSON.stringify({pass:true,viewport:'iPhone14Pro 393x852',races:count,currentAllResults:current,geometry,knownRace:'2026-11-12 Tachikawa7R',resultRows:9,payouts:[3760,63040],mutations:mutations.length,mediaElements:0,pageErrors:errors.length}));
+  console.log(JSON.stringify({pass:true,viewport:'iPhone14Pro 393x852',races:count,currentAllResults:current,geometry,cardDate,archivedCard:'line20261113.html',archivedResults:'results20261113.html',resultRows,mutations:mutations.length,mediaElements:0,pageErrors:errors.length}));
   await context.close();
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

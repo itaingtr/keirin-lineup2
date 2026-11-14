@@ -13,6 +13,7 @@ on:
       - 'tests/test_mobile_replay.cjs'
       - 'scripts/race_results_page.py'
       - 'site/race-results.js'
+      - 'site/all-results-nav.js'
       - 'site/race-results.css'
       - 'site/race-results-config.json'
       - 'supabase/functions/race-results/**'

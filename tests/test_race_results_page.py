@@ -20,13 +20,20 @@ class RaceResultsPageTests(unittest.TestCase):
     def test_old_cards_and_original_data_stay_unchanged(self):
         with tempfile.TemporaryDirectory() as temp:
             output=Path(temp)
-            original=page('20261113')
-            self.assertEqual(apply(original,ROOT/'site',output,'20261113'),original)
+            original=page('20261103')
+            self.assertEqual(apply(original,ROOT/'site',output,'20261103'),original)
             self.assertEqual(list(output.iterdir()),[])
+            previous=page('20261113')
+            navigable=apply(previous,ROOT/'site',output,'20261113')
+            self.assertIn('data-all-results-date="20261113"',navigable)
+            self.assertNotIn('data-race-results="true"',navigable,'archived card gets navigation only')
+            self.assertEqual(parse_page(navigable),parse_page(previous))
+            self.assertIn('all-results-nav.js?v=',navigable)
             current=page('20261114')
             result=apply(current,ROOT/'site',output,'20261114')
             self.assertEqual(parse_page(result),parse_page(current))
             self.assertIn('data-race-results="true"',result)
+            self.assertIn('data-all-results-date="20261114"',result)
             self.assertNotIn('data-race-results-all=',result)
             for name in ASSETS:self.assertEqual((output/name).read_bytes(),(ROOT/'site'/name).read_bytes())
 

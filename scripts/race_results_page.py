@@ -10,15 +10,32 @@ from venues import identity
 CUTOVER = '20261114'
 OFFICIAL_CUTOVER = '20261104'
 BASE = '/keirin-lineup2/'
-ASSETS = ('race-results.js', 'race-results.css', 'race-results-config.json')
+NAV_ASSET = 'all-results-nav.js'
+ASSETS = ('race-results.js', 'race-results.css', 'race-results-config.json', NAV_ASSET)
 
 
 def apply(page, site, output, day, *, force=False, all_results=False):
+    if day < OFFICIAL_CUTOVER:
+        return page
+    identities = [identity(race['source']) for race in parse_page(page)]
+    if any(row['provider'] != 'kdreams' for row in identities):
+        if force or day >= CUTOVER:
+            raise ValueError('On-demand results require verified K Dreams race sources')
+        return page
+    if {row['date'] for row in identities} != {day}:
+        raise ValueError('All-results navigation date differs from card')
+    site, output = Path(site), Path(output)
+    marker = 'data-all-results-date="'+day+'"'
+    if marker not in page:
+        if 'data-all-results-date=' in page:
+            raise ValueError('All-results navigation has another date')
+        content = (site/NAV_ASSET).read_bytes()
+        (output/NAV_ASSET).write_bytes(content)
+        version = hashlib.sha256(content).hexdigest()[:12]
+        page = page.replace('<body', '<body '+marker, 1)
+        page = page.replace('</body>', '<script src="'+BASE+NAV_ASSET+'?v='+version+'"></script></body>', 1)
     if not force and day < CUTOVER:
         return page
-    if any(identity(race['source'])['provider'] != 'kdreams' for race in parse_page(page)):
-        raise ValueError('On-demand results require verified K Dreams race sources')
-    site, output = Path(site), Path(output)
     if 'data-race-results="true"' not in page:
         versions = {}
         for name in ASSETS:
@@ -53,7 +70,7 @@ def export_all_results(site, output, dates):
         available.append(day)
     if available:
         links = ''.join('<li><a href="'+BASE+'results'+day+'.html">'+day[:4]+'/'+day[4:6]+'/'+day[6:]+'</a></li>' for day in reversed(available))
-        page = '''<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>今日の全結果</title><body><p id="status">今日の全結果を開くにゃ…</p><ul>'''+links+'''</ul><script>
+        page = '''<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>全結果</title><body><p id="status">全結果を開くにゃ…</p><ul>'''+links+'''</ul><script>
 const dates='''+json.dumps(available)+''';
 const today=new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10).replaceAll('-','');
 const requested=new URLSearchParams(location.search).get('date')||today;

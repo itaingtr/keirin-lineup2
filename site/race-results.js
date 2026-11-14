@@ -24,14 +24,6 @@
     const link = row.querySelector('.race-link');
     return link?.dataset.raceSource || link?.href;
   }
-  function addNavigation() {
-    const nav = document.getElementById('venue-nav');
-    if (!nav || nav.querySelector('.all-results-button')) return;
-    const link = element('a','venue-button all-results-button','今日の全結果');
-    link.href = '/keirin-lineup2/results.html';
-    link.setAttribute('aria-label','今日の全出走表と全結果を開く');
-    nav.append(link);
-  }
   function validate(payload,race) {
     const source = new URL(race.source);
     const m = /^\/[a-z]+\/racedetail\/(\d{2})(\d{8})(\d{2})(\d{4})\/$/.exec(source.pathname);
@@ -169,10 +161,7 @@
       paint(row);
       if (all && !value.loading && !value.value && !value.error) load(source);
     }
-    addNavigation();
   }
   new MutationObserver(changes=>{if(changes.some(change=>change.target===root))attach();}).observe(root,{childList:true});
-  const nav = document.getElementById('venue-nav');
-  if (nav) new MutationObserver(addNavigation).observe(nav,{childList:true});
   attach();
 })();
