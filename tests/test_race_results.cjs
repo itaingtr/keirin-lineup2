@@ -15,7 +15,7 @@ function payload(race,state='results'){
   rows:state==='results'?[{rank:'2',no:2,name:'川越勇星',margin:'1/2車輪',time:'11.7',finish:'ク',shb:'S',reason:'前に続いて'},{rank:'1',no:1,name:'湊聖二',margin:'',time:'11.8',finish:'差',shb:'B',reason:'直線伸びて'},{rank:'失',no:3,name:'松永将',margin:'',time:'',finish:'',shb:'',reason:'失格'}]:[],
   payouts:state==='pending'?{exacta:[],trifecta:[]}:{exacta:[{combination:'1-2',yen:3760}],trifecta:[{combination:'1-2-3',yen:63040}]}};
 }
-const rowHTML=race=>'<tr><td class="race"><a class="race-link" data-race-source="'+race.source+'" href="'+race.source+'">'+race.race+'R</a></td><td class="lineup-cell"><div class="lineup"><div class="previous-controls"><button class="previous-toggle" aria-expanded="false">前回</button><div class="previous-results" hidden>前回の成績</div></div><button class="ten-toggle" aria-expanded="false">成績</button><div class="ten-results" hidden>10場所</div></div></td></tr>';
+const rowHTML=race=>'<tr><td class="race"><a class="race-link" data-race-source="'+race.source+'" href="'+race.source+'">'+race.race+'R</a><span class="video-actions"><a class="video-link" href="https://wm.st.keirin.jp/wm-keirin28/20261114-28-03-'+String(race.race).padStart(2,'0')+'-01-00.mp4">映像</a></span></td><td class="lineup-cell"><div class="lineup"><div class="previous-controls"><button class="previous-toggle" aria-expanded="false">前回</button><div class="previous-results" hidden>前回の成績</div></div><button class="ten-toggle" aria-expanded="false">成績</button><div class="ten-results" hidden>10場所</div></div></td></tr>';
 async function boot({all=false,reply=payload,fail=false}={}){
  const dom=new JSDOM('<!doctype html><html><head><style>'+fs.readFileSync(path.join(project,'site/race-results.css'),'utf8')+'</style></head><body data-all-results-date="20261114" data-race-results="true"'+(all?' data-race-results-all="true"':'')+' data-race-results-config="/keirin-lineup2/race-results-config.json"><nav id="venue-nav"><a>立川</a></nav><div class="table-wrap"><table><tbody id="rows">'+races.map(rowHTML).join('')+'</tbody></table></div></body></html>',{url:'https://itaingtr.github.io/keirin-lineup2/line20261114.html',runScripts:'outside-only'});
  let configReads=0,reads=0,active=0,maxActive=0;
@@ -53,6 +53,11 @@ async function boot({all=false,reply=payload,fail=false}={}){
  let button=doc.querySelector('.race-result-toggle');button.click();await pause();
  assert.equal(app.reads(),1);assert.equal(app.configReads(),1);assert.equal(button.getAttribute('aria-expanded'),'true');
  let panel=doc.querySelector('.race-result-panel');assert.equal(panel.querySelectorAll('th').length,8);assert.equal(panel.querySelector('tbody tr td').textContent,'1');
+ assert.deepEqual(Array.from(panel.querySelectorAll('th'),node=>node.textContent),['着順','車番','選手名','あがり','勝敗因','決','SHB','着差']);
+ assert.equal(panel.querySelector('tr[data-car-number="2"] .race-result-margin').textContent,'1/2W');
+ assert.equal(panel.querySelector('tr[data-car-number="2"] .race-result-margin').title,'1/2車輪','source margin remains available');
+ assert.ok(panel.querySelector('.race-result-car').classList.contains('c1'));
+ const replay=doc.querySelector('.race-result-video');assert.equal(replay.href,doc.querySelector('.video-actions .video-link').href);assert.equal(replay.target,'_self');assert.equal(replay.getAttribute('onclick'),null);
  assert.equal(panel.querySelector('.race-result-name').textContent,'湊聖二');assert.match(panel.textContent,/63,040円/);assert.match(panel.textContent,/直線伸びて/);
  const style=app.dom.window.getComputedStyle(button);assert.equal(style.width,'22px');assert.equal(style.height,'12px');assert.equal(style.fontSize,'8px');
  button.click();stage='payouts';button.click();await pause();assert.equal(app.reads(),2,'reopening reads the latest result');
@@ -61,6 +66,12 @@ async function boot({all=false,reply=payload,fail=false}={}){
  doc.getElementById('venue-nav').innerHTML='<a>立川</a>';await pause();assert.equal(doc.querySelectorAll('.all-results-button').length,1,'search redraw retains one navigation button');
  doc.getElementById('rows').innerHTML=races.slice(0,1).map(rowHTML).join('');await pause();assert.equal(doc.querySelector('.race-result-toggle').getAttribute('aria-expanded'),'true');assert.equal(app.reads(),3,'redraw preserves the checked result without duplicate reads');
  app.dom.window.close();
+ for(const [source,expected] of [['３/４車身','3/4B'],['タイヤ差','ﾀｲﾔ'],['微差','微差'],['1車身1/2','1B1/2']]){
+  const sample=await boot({reply:r=>{const p=payload(r);p.rows.find(row=>row.no===2).margin=source;return p;}});
+  sample.document.querySelector('.race-result-toggle').click();await pause();
+  const margin=sample.document.querySelector('tr[data-car-number="2"] .race-result-margin');
+  assert.equal(margin.textContent,expected);assert.equal(margin.title,source);sample.dom.window.close();
+ }
  const bulk=await boot({all:true,reply:r=>payload(r,'pending')});await pause();
  assert.equal(bulk.reads(),races.length);assert.equal(bulk.configReads(),1);assert.ok(bulk.maxActive()<=3);
  assert.equal(bulk.document.querySelectorAll('.race-result-panel:not([hidden])').length,races.length);assert.ok([...bulk.document.querySelectorAll('.race-result-panel')].every(x=>x.textContent==='未定にゃ！'));

@@ -58,14 +58,26 @@
   function resultTable(payload) {
     const table = element('table','race-result-table');
     table.setAttribute('aria-label','着順順のレース結果');
+    const columns = [['rank','着順'],['no','車番'],['name','選手名'],['time','あがり'],['reason','勝敗因'],['finish','決'],['shb','SHB'],['margin','着差']];
+    const widths = element('colgroup');
+    for (const [field] of columns) widths.append(element('col','race-result-col-'+field));
+    table.append(widths);
     const head = element('thead'), headings = element('tr');
-    for (const label of ['着順','車番','選手名','着差','あがり','決まり手','SHB','勝敗因']) headings.append(element('th','',label));
+    for (const [field,label] of columns) headings.append(element('th','race-result-head-'+field,label));
     head.append(headings);table.append(head);
     const body = element('tbody');
     const sorted = [...payload.rows].sort((a,b)=>(/^[1-9]$/.test(a.rank)?Number(a.rank):99)-(/^[1-9]$/.test(b.rank)?Number(b.rank):99));
     for (const result of sorted) {
       const row = element('tr');row.dataset.carNumber = String(result.no);
-      for (const field of ['rank','no','name','margin','time','finish','shb','reason']) row.append(element('td','race-result-'+field,String(result[field])));
+      for (const [field] of columns) {
+        const cell = element('td','race-result-'+field);
+        if (field === 'no') cell.append(element('span','race-result-car c'+result.no,String(result.no)));
+        else if (field === 'margin') {
+          cell.textContent = result.margin.normalize('NFKC').replace(/\s+/g,'').replace(/車身(?:差)?/g,'B').replace(/車輪(?:差)?/g,'W').replace(/タイヤ(?:差)?/g,'ﾀｲﾔ');
+          cell.title = result.margin;
+        } else cell.textContent = result[field];
+        row.append(cell);
+      }
       body.append(row);
     }
     table.append(body);return table;
@@ -154,7 +166,15 @@
         panel.setAttribute('role','region');panel.setAttribute('aria-label',race.venue+' '+race.race+'R 結果');
         button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-label',race.venue+' '+race.race+'Rの結果を開閉');
         button.addEventListener('click',()=>{value.open=!value.open;paint(row);if(value.open)load(source);});
-        cell.append(button,panel);
+        const actions = element('div','race-result-actions');actions.append(button);
+        const replay = row.querySelector('.video-actions .video-link');
+        if (replay) {
+          const video = element('a','race-result-video','映像');
+          video.href = replay.href;video.target = '_self';
+          video.setAttribute('aria-label',race.venue+' '+race.race+'Rのレース映像を開く');
+          actions.append(video);
+        }
+        cell.append(actions,panel);
         const lineup = row.querySelector('.lineup');
         if (lineup) lineup.after(cell);else row.querySelector('.lineup-cell')?.append(cell);
       }

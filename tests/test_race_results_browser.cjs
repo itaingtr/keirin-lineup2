@@ -98,12 +98,32 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   assert.equal(resultRows,await page.locator('#race-28-7 .lineup .car').count());
   assert.equal(await known.locator('tbody > tr').first().locator('.race-result-rank').textContent(),'1');
   assert.equal(await known.locator('.race-result-shb').first().evaluate(node=>getComputedStyle(node).fontWeight),'400');
+  assert.deepEqual(await known.locator('th').allTextContents(),['着順','車番','選手名','あがり','勝敗因','決','SHB','着差']);
+  const presentation=await known.evaluate(block=>{
+   const row=block.closest('#rows > tr'),table=block.querySelector('.race-result-table'),lineup=row.querySelector('.lineup');
+   const video=block.querySelector('.race-result-video'),header=row.querySelector('.video-actions .video-link'),button=block.querySelector('.race-result-toggle');
+   const body=table.querySelector('.race-result-time'),margin=table.querySelector('.race-result-margin');
+   const colors=[...table.querySelectorAll('.race-result-car')].every(badge=>{
+    const car=row.querySelector('.lineup .car.c'+badge.textContent);
+    return car&&getComputedStyle(car).backgroundColor===getComputedStyle(badge).backgroundColor&&getComputedStyle(car).color===getComputedStyle(badge).color;
+   });
+   return {tableWidth:table.getBoundingClientRect().width,lineupWidth:lineup.getBoundingClientRect().width,
+    timeWidth:body.getBoundingClientRect().width,marginWidth:margin.getBoundingClientRect().width,
+    font:parseFloat(getComputedStyle(body).fontSize),marginFont:parseFloat(getComputedStyle(margin).fontSize),colors,
+    replayMatches:video.href===header.href,replayTarget:video.target,replayHandler:video.getAttribute('onclick'),
+    videoHeight:video.getBoundingClientRect().height,headerHeight:header.getBoundingClientRect().height,gap:video.getBoundingClientRect().left-button.getBoundingClientRect().right};
+  });
+  assert.ok(Math.abs(presentation.tableWidth-presentation.lineupWidth)<1,'results must fit the lineup width');
+  assert.ok(Math.abs(presentation.timeWidth-presentation.marginWidth)<1,'margin and individual time use the same compact width');
+  assert.ok(presentation.font>8 && presentation.marginFont===presentation.font-1);
+  assert.ok(presentation.colors && presentation.replayMatches);assert.equal(presentation.replayTarget,'_self');assert.equal(presentation.replayHandler,null);
+  assert.ok(presentation.videoHeight<presentation.headerHeight && presentation.gap>=5);
   assert.equal(await page.locator('video,audio,iframe').count(),0);
   assert.equal(mutations.length,0,'result display must not mutate any database or authentication state');
   assert.deepEqual(errors,[]);
   await page.locator('#race-28-7').scrollIntoViewIfNeeded();
   if(screenshot)await page.screenshot({path:screenshot});
-  console.log(JSON.stringify({pass:true,viewport:'iPhone14Pro 393x852',races:count,currentAllResults:current,geometry,cardDate,archivedCard:'line20261113.html',archivedResults:'results20261113.html',resultRows,mutations:mutations.length,mediaElements:0,pageErrors:errors.length}));
+  console.log(JSON.stringify({pass:true,viewport:'iPhone14Pro 393x852',races:count,currentAllResults:current,geometry,presentation,cardDate,archivedCard:'line20261113.html',archivedResults:'results20261113.html',resultRows,mutations:mutations.length,mediaElements:0,pageErrors:errors.length}));
   await context.close();
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
