@@ -17,7 +17,7 @@
     slot:day.slot??i+1,race_date:day.race_date??null,race_number:day.race_number??null,race_id:day.race_id??null,
     order:day.order,accident:day.accident||'',accident_name:day.accident_name||'',final_half_record:day.final_half_record??null,
     start:day.start??null,home:day.home??null,back:day.back??null,race_date_inferred:day.race_date_inferred??null,
-    provider:day.provider||meeting.provider,source_url:day.source_url||meeting.rank_source?.url||player.profile_url,
+    provider:day.provider||meeting.provider,source_url:day.source_url||meeting.rank_source?.url||player.source_url||player.profile_url,
     observed_at:day.observed_at||meeting.rank_source?.observed_at||player.observed_at,video_url:day.video_url??null})));}
   const api={normalize,findPlayers,samePerson,mergeMeetings,resultRows};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.RiderSearch=api;

@@ -17,6 +17,7 @@ const M=require('../site/daily-results/search-model.js');
   assert.equal(profile.meetings[1].days[1].back,true);assert.equal(profile.meetings[1].days[0].start,null);
   assert.ok(profile.meetings.every(m=>m.days.every(d=>d.race_date===null&&d.race_id===null&&d.video_url===null)));
   assert.equal(profile.techniques.values.makuri,67);assert.equal(profile.techniques.unit,'percent');
+  assert.equal(M.resultRows(profile,profile.meetings)[0].source_url,profile.source_url);
   assert.throws(()=>parseProfile(view,'014397','2026-11-14T02:00:00Z'));
   assert.throws(()=>parseProfile(view,'014396','2026-11-14T02:00:00Z',{name:'別人'}));
   for(const url of ['https://example.com/pc/racerprofile?snum=014396','https://keirin.jp/pc/json?encp=opaque','https://keirin.jp/pc/racerprofile?snum=014397','https://keirin.jp/pc/racerprofile?snum=014396&other=1'])assert.throws(()=>allowedProfileUrl(url,'014396'));

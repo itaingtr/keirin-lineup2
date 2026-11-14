@@ -60,7 +60,11 @@
   }
   async function latest(active,force=false){
     const {player}=active;
-    if(!force&&profiles.has(player.player_id)){active.profile=profiles.get(player.player_id);if(selected===active)draw();return;}
+    if(!force&&profiles.has(player.player_id)){
+      active.profile=profiles.get(player.player_id);active.loading=false;
+      if(selected===active){draw();$('profile-status').textContent='このセッションで確認済みの公式プロフィールを表示しています。';}
+      return;
+    }
     try{
       const config=await json('daily-results/profile-config.json'),url=new URL(config.endpoint);
       url.searchParams.set('player_id',player.player_id);
