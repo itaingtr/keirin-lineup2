@@ -29,6 +29,8 @@ const M=require('../site/daily-results/search-model.js');
   const preserved={...profile.meetings[1],venue:'熊本',venue_label:undefined,venue_code:'87',days:profile.meetings[1].days.map((d,i)=>({...d,race_date:'2026-10-'+(22+i)}))};
   assert.equal(M.mergeMeetings({meetings:[preserved]},profile)[0].venue,'熊本');
   assert.equal(M.mergeMeetings({meetings:[preserved]},null)[0],preserved);
+  const newer={...preserved,start_date:'2026-11-12'};
+  assert.equal(M.mergeMeetings({meetings:[preserved,newer]},profile)[0].start_date,'2026-11-12','A delayed official profile must not remove a newer checked meeting');
   const wrong={...profile,meetings:[{...profile.meetings[1],days:[{order:8,accident:''}]}]};
   assert.equal(M.mergeMeetings({meetings:[preserved]},wrong)[0].venue_code,null,'Never bind a different result to a cached video');
   console.log('RIDER PROFILE PASS: full-name search, identity checks, source bounds, percentages, incidents, extra rides and unknown dates/SHB');

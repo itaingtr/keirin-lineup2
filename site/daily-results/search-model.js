@@ -5,12 +5,17 @@
   function samePerson(a,b){return a.player_id===b.player_id && normalize(a.name)===normalize(b.name) && String(a.period)===String(b.period);}
   function mergeMeetings(stock,profile){
     if(!profile?.meetings?.length)return (stock?.meetings||[]).slice(-10).reverse();
-    return profile.meetings.slice(-10).reverse().map(meeting=>{
+    const merged=profile.meetings.slice(-10).reverse().map(meeting=>{
       const matches=(stock?.meetings||[]).filter(old=>old.start_date===meeting.start_date && old.grade_code===meeting.grade_code
         && old.days.length===meeting.days.length && old.days.every((day,i)=>day.order===meeting.days[i].order && (day.accident||'')===(meeting.days[i].accident||''))
         && (old.venue===meeting.venue || old.venue?.startsWith(meeting.venue_label||meeting.venue) || old.venue==='いわき平' && meeting.venue==='平'));
       return matches.length===1?matches[0]:meeting;
     });
+    // Public profiles can lag a checked card. Keep newer stored meetings
+    // instead of losing them when the profile has not caught up yet.
+    const newest=merged.reduce((value,m)=>m.start_date>value?m.start_date:value,'');
+    for(const meeting of stock?.meetings||[])if(meeting.start_date>newest)merged.push(meeting);
+    return merged.sort((a,b)=>b.start_date.localeCompare(a.start_date)).slice(0,10);
   }
   function resultRows(player,meetings){return meetings.flatMap(meeting=>meeting.days.map((day,i)=>({
     player_id:player.player_id,name:player.name,meeting_start:meeting.start_date,venue:meeting.venue,
