@@ -16,6 +16,8 @@ assert.equal(repeated.at(-1).key,'period','Changing an already-active control ma
 assert.equal(M.REGIONS.length,8);assert.equal(new Set(M.REGIONS.flatMap(r=>r.prefectures)).size,47);
 assert.equal(M.regionOf(rider(1,{prefecture:'福井県'})),'近畿');assert.equal(M.regionOf(rider(1,{prefecture:'富山'})),'中部');
 assert.equal(M.regionOf(rider(1,{prefecture:'静岡県'})),'南関東');assert.equal(M.regionOf(rider(1,{prefecture:'北海道'})),'北日本');
+assert.equal(M.regionOf(rider(1,{prefecture:'京都'})),'近畿');assert.equal(M.regionOf(rider(1,{prefecture:'京都府'})),'近畿');
+for(const prefecture of M.PREFECTURES)assert.ok(M.regionOf(rider(1,{prefecture})),prefecture+' must belong to exactly one region');
 assert.equal(M.regionOf(rider(1,{prefecture:'不明'})),null);
 const north=[rider(1,{prefecture:'沖縄'}),rider(2,{prefecture:'北海道'}),rider(3,{prefecture:'宮城'}),rider(4,{prefecture:'不明'})];
 assert.deepEqual(M.sortPlayers(north,[{key:'prefecture',direction:'asc'}]).map(p=>p.player_id),['000002','000003','000001','000004']);
