@@ -28,6 +28,25 @@ def copy_checked(site, output, ref):
     return json.loads(payload)
 
 
+def matched_details(site, page, day):
+    """Read saved profile fields without collecting or rebinding another rider."""
+    path = page.parent/'rider-details.json'
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+        target = day[:4]+'-'+day[4:6]+'-'+day[6:]
+        if data.get('schema_version') != 1 or data.get('provider') != 'kdreams' or data.get('target_date') != target:
+            return {}
+        rows = data.get('races', [])
+        sources = [row['source_url'] for row in rows]
+        if len(set(sources)) != len(sources):
+            return {}
+        return {row['source_url']: row for row in rows}
+    except (ValueError, OSError, KeyError, TypeError):
+        return {}
+
+
 def export_search(site, output):
     site, output = Path(site), Path(output)
     destination = output/'daily-results'
@@ -35,7 +54,13 @@ def export_search(site, output):
     # Keep the first date-based view at its own URL; the existing entry point
     # now implements the user's corrected name-search request.
     (destination/'entries.html').write_bytes((site/'daily-results/index.html').read_bytes())
-    (destination/'index.html').write_bytes((site/'daily-results/search.html').read_bytes())
+    search_page = (site/'daily-results/search.html').read_text()
+    for name in ('search.css', 'model.js', 'search-model.js', 'search.js'):
+        asset = site/'daily-results'/name
+        if asset.is_file():
+            version = hashlib.sha256(asset.read_bytes()).hexdigest()[:12]
+            search_page = search_page.replace('./'+name+'"', './'+name+'?v='+version+'"')
+    (destination/'index.html').write_text(search_page)
     # A confirmed example identity also permits its on-demand official profile
     # before the optional immutable profile snapshot has been prepared.
     players = {'014396': {'player_id': '014396', 'name': '脇本雄太', 'period': 94,
@@ -57,6 +82,7 @@ def export_search(site, output):
     # fields. Never require the searched rider to be on the current card.
     for page in sorted(site.glob('line*.html/index.html')):
         day = page.parent.name[4:12]
+        details = matched_details(site, page, day)
         for race in parse_page(page.read_text()):
             if 'keirin.kdreams.jp' not in race['source']:
                 continue
@@ -71,9 +97,23 @@ def export_search(site, output):
                     'period': player['period'], 'profile_url': 'https://keirin.jp/pc/racerprofile?snum='+identifier})
                 person['last_card'] = {'date': day[:4]+'-'+day[4:6]+'-'+day[6:], 'source_url': race['source'],
                     'score_raw': player.get('rawScore'), 'stats': deepcopy(player.get('stats', []))}
+                row = details.get(race['source'], {})
+                matches = [p for p in row.get('players', []) if p.get('no') == player['no']
+                    and p.get('name') == player['name'] and str(p.get('period')) == str(player['period'])
+                    and (not p.get('player_id') or p['player_id'] == identifier)]
+                verified = matches[0] if len(matches) == 1 else {}
                 for key in ('prefecture', 'age'):
-                    if player.get(key) is not None:
-                        person[key] = player[key]
+                    value = verified.get(key, player.get(key))
+                    if key == 'age' and (type(value) is not int or not 18 <= value <= 100):
+                        continue
+                    if key == 'prefecture' and (not isinstance(value, str) or not value):
+                        continue
+                    person[key] = value
+                style = verified.get('style') or player.get('style')
+                if style in ('逃', '両', '追'):
+                    person['style'] = style
+                if verified:
+                    person['details_source'] = {'url': race['source'], 'observed_at': row.get('observed_at')}
     profiles = site/'rider-profiles/current.json'
     if profiles.exists():
         for identifier, entry in json.loads(profiles.read_text())['players'].items():
@@ -86,6 +126,9 @@ def export_search(site, output):
                 if (person['name'], str(person['period'])) != (record['name'], str(record['period'])):
                     continue
                 person['profile_ref'] = {'path': entry['path'], 'sha256': entry['sha256']}
+                for key in ('prefecture', 'age', 'style'):
+                    if person.get(key) is None and record.get(key) is not None:
+                        person[key] = record[key]
             except (ValueError, OSError, KeyError):
                 continue
     catalogue = {'schema_version': 1, 'kind': 'rider_search',

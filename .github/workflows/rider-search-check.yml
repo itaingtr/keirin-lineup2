@@ -1,7 +1,7 @@
 name: Verify name-based rider history search
 on:
   push:
-    branches: [main, feat/rider-name-search]
+    branches: [main, feat/rider-name-search, feat/rider-directory]
     paths:
       - 'site/daily-results/search*'
       - 'scripts/rider_search.py'
@@ -9,6 +9,8 @@ on:
       - 'supabase/functions/rider-profile/**'
       - 'tests/test_rider_search*'
       - 'tests/test_rider_profile.cjs'
+      - 'tests/test_rider_directory.cjs'
+      - 'tests/fixtures/rider-history-height-before.css'
       - '.github/workflows/rider-search-check.yml'
   workflow_dispatch:
 permissions:
@@ -23,6 +25,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -q
           node tests/test_rider_profile.cjs
+          node tests/test_rider_directory.cjs
       - name: Install pinned display and browser readers
         run: npm install --prefix /tmp/rider-search-qa --no-audit --no-fund linkedom@0.18.12 playwright-core@1.62.1
       - name: Check the real official profile without writing to the database
@@ -47,4 +50,6 @@ jobs:
             site/rider-profiles
             /tmp/rider-search-report.json
             /tmp/rider-search-mobile.png
+            /tmp/rider-directory-mobile.png
+            /tmp/rider-history-compact-mobile.png
           if-no-files-found: ignore

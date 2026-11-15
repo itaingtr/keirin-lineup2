@@ -1,0 +1,11 @@
+/* Previous published geometry for the requested half-height comparison. */
+.meeting{grid-template-columns:82px minmax(0,1fr);gap:4px;padding:5px 0}
+.meeting-label{display:block;font-size:11px;line-height:1.4}
+.meeting-label strong{font-size:12px;line-height:normal;padding:0 2px}
+.meeting-label small{font-size:10px;line-height:normal}
+.meeting-results{gap:3px 7px}
+.run{min-width:29px;line-height:1.25}
+.run-slot{display:block;font-size:9px;color:#738277}
+.placing{font-size:14px;line-height:normal}
+.run-flags{font-size:9px}
+.run-time,.run-time:empty{display:block;font-size:10px;line-height:normal;min-height:12px}
