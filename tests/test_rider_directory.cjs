@@ -28,15 +28,15 @@ assert.equal(M.roleOf(rider(1,{style:'追',stats:[0,5,3,0,0,0]})).kind,'chaser',
 assert.equal(M.roleOf(rider(1,{style:'両'})).kind,'self');assert.equal(M.roleOf(rider(1,{style:'逃'})).inferred,false);
 assert.equal(M.roleOf(rider(1,{stats:[0,1,0,0,0,0]})).kind,'self');assert.equal(M.roleOf(rider(1)).kind,'chaser');
 assert.equal(M.roleOf(rider(1,{stats:[0,0,0,0,0,0]})).kind,null);assert.equal(M.roleOf(rider(1)).inferred,true);
-for(const size of [0,30,49,50,51,101]){
+for(const size of [0,30,49,50,51,101,199,200,201,400,553]){
   const players=Array.from({length:size},(_,i)=>rider(i+1,{score:100+i/100}));
   const first=M.directory(players,{all:true,page:0}),second=M.directory(players,{all:true,page:1});
-  assert.equal(first.pageCount,size>=50?2:1);
-  if(size>=50){assert.equal(first.rows.length,Math.ceil(size/2));const all=[...first.rows,...second.rows].map(p=>p.player_id);assert.equal(new Set(all).size,size);}
+  assert.equal(first.pageCount,size>200?2:1);
+  if(size>200){assert.equal(first.rows.length,200);assert.equal(second.rows.length,size-200);const all=[...first.rows,...second.rows].map(p=>p.player_id);assert.equal(new Set(all).size,size);}
   else assert.equal(first.rows.length,size);
 }
 const many=Array.from({length:100},(_,i)=>rider(i+1,{score:80+i/10,prefecture:i%2?'北海道':'沖縄'}));
 const home=M.directory([...many,rider(999,{score:null})]);assert.equal(home.rows.length,30);assert.equal(home.rows[0].player_id,'000100');assert.equal(home.pageCount,1);
-const region=M.directory(many,{region:'北日本'});assert.equal(region.total,50);assert.equal(region.pageCount,2);assert.ok(region.rows.every(p=>p.prefecture==='北海道'));
+const region=M.directory(many,{region:'北日本'});assert.equal(region.total,50);assert.equal(region.pageCount,1);assert.ok(region.rows.every(p=>p.prefecture==='北海道'));
 assert.equal(M.directory(many,{query:'選手100'}).total,1);
-console.log('RIDER DIRECTORY PASS: eight regions, top30, last-click multi-sort, clear/ascending/descending loop, unknowns, role provenance, exact-50 threshold and no lost riders');
+console.log('RIDER DIRECTORY PASS: eight regions, top30, last-click multi-sort, clear/ascending/descending loop, unknowns, role provenance, 200-plus-overflow threshold and no lost riders');

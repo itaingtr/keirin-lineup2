@@ -46,7 +46,7 @@ const root=path.resolve(process.argv[2]||'public');
       assert.equal(await page.locator('#pages-top').isVisible(),false);
       if(width===390)await page.screenshot({path:'/tmp/rider-directory-mobile.png'});
       await page.locator('#show-all').tap();
-      const firstPage=await rowIds();assert.equal(firstPage.length,Math.ceil(catalogue.players.length/2));
+      const firstPage=await rowIds();assert.equal(firstPage.length,200);
       assert.equal(await page.locator('#pages-top button').count(),2);
       await page.locator('#pages-top button').nth(1).tap();
       const secondPage=await rowIds();assert.equal(new Set([...firstPage,...secondPage]).size,catalogue.players.length);
@@ -62,7 +62,7 @@ const root=path.resolve(process.argv[2]||'public');
       const ordered=(await rowIds()).map(id=>catalogue.players.find(p=>p.player_id===id));
       for(let i=1;i<ordered.length;i++){
         assert.ok(Number(ordered[i-1].period)>=Number(ordered[i].period));
-        if(Number(ordered[i-1].period)===Number(ordered[i].period))assert.ok(ordered[i-1].age>=ordered[i].age);
+        if(Number(ordered[i-1].period)===Number(ordered[i].period))assert.ok(M.ageOf(ordered[i-1])>=M.ageOf(ordered[i]));
       }
       await period.tap();assert.equal(await period.getAttribute('data-direction'),'off');
       assert.equal(await page.locator('#sort-order').textContent(),'並び：年齢↓ → 得点↓');
@@ -73,7 +73,8 @@ const root=path.resolve(process.argv[2]||'public');
       await page.locator('#rider-query').fill('脇本　雄太');await page.locator('#rider-search button').tap();
       await page.waitForFunction(()=>document.querySelector('#rider-name').textContent==='脇本雄太'&&/最新公開|このセッションで確認済み/.test(document.querySelector('#profile-status').textContent));
       assert.equal(await page.locator('#rider-meetings > .meeting').count(),profile.meetings.length);
-      assert.match(await page.locator('#techniques').textContent(),/%/);
+      assert.doesNotMatch(await page.locator('#techniques').textContent(),/%/);
+      assert.deepEqual(await page.locator('#techniques .count-item').evaluateAll(nodes=>nodes.map(n=>n.dataset.stat)),M.COUNT_FIELDS.map(([key])=>key));
       assert.equal(await page.locator('#official-profile').getAttribute('href'),'https://keirin.jp/pc/racerprofile?snum=014396');
       const geometry=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,name:document.querySelector('#rider-name').getBoundingClientRect().bottom,history:document.querySelector('#rider-meetings').getBoundingClientRect().top,first:document.querySelector('.meeting').getBoundingClientRect().height}));
       assert.ok(geometry.scroll<=geometry.width+1,JSON.stringify(geometry));

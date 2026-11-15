@@ -15,8 +15,12 @@ def encode(data):
 
 def recent_meetings(meetings):
     """Keep just display fields; profile slots never acquire invented race IDs."""
-    return [{key: deepcopy(meeting[key]) for key in ('venue', 'venue_label', 'grade_code', 'start_date', 'days') if key in meeting}
-            for meeting in sorted(meetings, key=lambda row: row['start_date'])[-2:]]
+    rows = []
+    for meeting in sorted(meetings, key=lambda row: row['start_date'])[-2:]:
+        row = {key: deepcopy(meeting[key]) for key in ('venue', 'venue_label', 'grade_code', 'start_date') if key in meeting}
+        row['days'] = [{key: day[key] for key in ('order', 'accident', 'accident_name') if key in day} for day in meeting['days']]
+        rows.append(row)
+    return rows
 
 
 def copy_checked(site, output, ref):
@@ -132,6 +136,8 @@ def export_search(site, output):
                 if (person['name'], str(person['period'])) != (record['name'], str(record['period'])):
                     continue
                 person['profile_ref'] = {'path': entry['path'], 'sha256': entry['sha256']}
+                if not person.get('last_card') and record.get('current_score') is not None:
+                    person['score_raw'] = record['current_score']
                 for key in ('prefecture', 'age', 'style', 'birth_date', 'summary'):
                     if person.get(key) is None and record.get(key) is not None:
                         person[key] = record[key]
@@ -155,6 +161,8 @@ def export_search(site, output):
             for key in ('birth_date', 'summary', 'style', 'age', 'prefecture'):
                 if fact.get(key) is not None:
                     person[key] = deepcopy(fact[key])
+            if not person.get('last_card') and fact.get('current_score') is not None:
+                person['score_raw'] = fact['current_score']
             card = person.get('last_card', {})
             counts = fact.get('counts')
             if counts and (not card or counts.get('source_url') == card.get('source_url')):

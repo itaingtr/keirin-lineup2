@@ -31,7 +31,7 @@ function attributes(view) {
       }
     });
   }
-  const value = key => {const values=[...(found.get(key)||[])];requireValue(values.length<=1,'Ambiguous official identity');return values[0] ?? null;};
+  const value = key => {const values=[...(found.get(key)||[])];requireValue(values.length<=1,'Ambiguous official identity: '+key);return values[0] ?? null;};
   return value;
 }
 

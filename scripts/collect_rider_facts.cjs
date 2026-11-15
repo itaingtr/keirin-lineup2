@@ -34,10 +34,12 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
     try{
       if(!fact.birth_date){
         const record=parseProfile(profileView(parseHTML(await readProfileHtml(person.player_id)).document),person.player_id,new Date().toISOString(),person);
-        for(const key of ['birth_date','age','prefecture','style','summary','observed_at','source_url'])fact[key]=record[key];
+        for(const key of ['birth_date','age','prefecture','style','summary','current_score','observed_at','source_url'])fact[key]=record[key];
         fact.recent_meetings=record.meetings.slice(-2).map(meeting=>({venue:meeting.venue,grade_code:meeting.grade_code,start_date:meeting.start_date,
           days:meeting.days.map(day=>({order:day.order,accident:day.accident,accident_name:day.accident_name}))}));
       }
+    }catch(error){failures++;console.log('FACT_PARTIAL',person.player_id,error.message);}
+    try{
       const saved=person.last_card;
       if(saved?.source_url&&fact.counts?.source_url!==saved.source_url){fact.counts=matchCounts(await card(saved.source_url),person,saved.car_number);fact.counts.card_date=saved.date;}
       else if(!saved&&!fact.counts){

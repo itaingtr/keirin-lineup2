@@ -4,6 +4,10 @@ const {parseHTML}=require('linkedom');
 (async()=>{
   const {readProfileHtml}=await import('../supabase/functions/rider-profile/source.mjs');
   const {profileView}=await import('../supabase/functions/rider-profile/parser.mjs');
+  for(const id of ['015197','015715']){
+    const view=profileView(parseHTML(await readProfileHtml(id)).document);
+    console.log('IDENTITY_PUBLIC_ROWS',id,JSON.stringify(view.tables.filter(rows=>rows.some(row=>row.some(value=>['氏名','登録番号','期別','府県','生年月日','年齢','級班','脚質','今期得点'].includes(value))))));
+  }
   const html=await readProfileHtml('014396'),{document}=parseHTML(html);
   const view=profileView(document);
   console.log('OFFICIAL_TABLES',JSON.stringify(view.tables.filter(rows=>rows.some(row=>row.some(value=>['生年月日','総出走回数','逃げ','マーク'].includes(value))))));

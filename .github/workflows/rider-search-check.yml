@@ -1,11 +1,13 @@
 name: Verify name-based rider history search
 on:
   push:
-    branches: [main, feat/rider-name-search, feat/rider-directory]
+    branches: [main, feat/rider-name-search, feat/rider-directory, feat/rider-counts-history]
     paths:
       - 'site/daily-results/search*'
       - 'scripts/rider_search.py'
       - 'scripts/collect_rider_profile.cjs'
+      - 'site/rider-facts/**'
+      - 'tests/check_live_rider_profile.cjs'
       - 'supabase/functions/rider-profile/**'
       - 'tests/test_rider_search*'
       - 'tests/test_rider_profile.cjs'
