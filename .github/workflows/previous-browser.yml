@@ -13,6 +13,9 @@ on:
       - 'tests/test_mobile_replay.cjs'
       - 'scripts/race_results_page.py'
       - 'site/race-results.js'
+      - 'scripts/compact_navigation.py'
+      - 'site/compact-navigation.js'
+      - 'site/compact-navigation.css'
       - 'site/all-results-nav.js'
       - 'site/race-results.css'
       - 'site/race-results-config.json'
@@ -69,7 +72,7 @@ jobs:
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_ten_browser.cjs public /tmp/formal-ten-mobile.png index.html
       - name: Verify plain MP4 navigation, native autoplay, seeking and return without background players
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_mobile_replay.cjs public /tmp/mobile-replay.png
-      - name: Verify live on-demand results, partial states and the JST all-results page
+      - name: Verify compact navigation, live results and displayed-date links
         run: |
           python3 tests/check_live_race_results.py
           NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_race_results_browser.cjs public /tmp/race-results-mobile.png
@@ -82,5 +85,5 @@ jobs:
             /tmp/previous-mobile.png
             /tmp/formal-ten-mobile.png
             /tmp/mobile-replay.png
-            /tmp/race-results-mobile.png
+            /tmp/race-results-mobile*.png
           if-no-files-found: ignore

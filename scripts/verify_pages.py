@@ -15,6 +15,11 @@ def verification_files(site):
     """Public artifacts which must match the checked export before receipt."""
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
+    if 'data-card-header="compact-20261115"' in current:
+        from compact_navigation import ASSETS,CUTOVER
+        files.extend(ASSETS)
+        for name in ('line'+CUTOVER+'.html','results'+CUTOVER+'.html'):
+            if (site/name).is_file():files.append(name)
     if 'data-replay-links="mp4"' in current:
         for name in ('previous-meetings-mp4.js','ten-meetings-mp4.js'):
             if (site/name).is_file():files.append(name)

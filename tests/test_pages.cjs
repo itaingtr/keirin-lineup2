@@ -74,10 +74,17 @@ const activeWindows=[];
   if(riderDetails){
    const calendar=doc.querySelector('.calendar-button'),home=doc.querySelector('.home-button');
    assert.ok(calendar);assert.equal(calendar.textContent,'日程');assert.equal(home.nextElementSibling,calendar);
-   assert.equal(doc.querySelector('.refresh-button:not(.home-button):not(.calendar-button)').nextElementSibling,home);
    assert.ok(calendar.classList.contains('refresh-button'));
-   const destination={href:''};vm.runInNewContext(calendar.getAttribute('onclick'),{location:destination});
-   assert.equal(destination.href,'/keirin-lineup2/calendar/index.html');
+   if(doc.body.dataset.cardHeader==='compact-20261115'){
+    assert.equal(calendar.getAttribute('href'),'/keirin-lineup2/calendar/index.html');
+    assert.deepEqual([...doc.querySelector('.compact-quick-row').children].map(n=>n.textContent),['トップ','日程','全選手成績']);
+    assert.deepEqual([...doc.querySelector('.compact-date-row').children].map(n=>n.id||n.textContent),['date-select','昨日','翌日','更新']);
+    assert.equal(doc.querySelector('h1').textContent,Number(day.slice(4,6))+'月'+Number(day.slice(6))+'日 全'+report.races+'レース・'+report.riders+'人');
+   }else{
+    assert.equal(doc.querySelector('.refresh-button:not(.home-button):not(.calendar-button)').nextElementSibling,home);
+    const destination={href:''};vm.runInNewContext(calendar.getAttribute('onclick'),{location:destination});
+    assert.equal(destination.href,'/keirin-lineup2/calendar/index.html');
+   }
   }
   for(const file of usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
   await pause();

@@ -50,11 +50,56 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
    assert.ok(point.correct,'The real touch position must reach the result control: '+JSON.stringify(point));
    await page.touchscreen.tap(point.x,point.y);
   }
+  async function compactNavigation(expectedDate,expectedTitle){
+   if(await page.locator('body').getAttribute('data-card-header')!=='compact-20261115')return;
+   await page.waitForFunction(()=>document.body.dataset.compactNavigationStatus==='ready'&&document.querySelector('#venue-nav-bottom .all-results-button'));
+   const info=await page.evaluate(()=>{
+    const top=document.querySelector('.compact-navigation'),foot=document.querySelector('.compact-page-footer');
+    const links=nav=>[...nav.querySelectorAll('a')].map(a=>[a.textContent,a.href]);
+    const rows=[...top.children].map(node=>{const r=node.getBoundingClientRect();return {top:r.top,bottom:r.bottom,right:r.right};});
+    const date=document.body.dataset.allResultsDate;
+    return {date,title:document.querySelector('h1').textContent,races:races.length,riders:races.reduce((n,r)=>n+r.players.length,0),
+      first:[...top.querySelector('.compact-date-row').children].map(n=>n.id||n.textContent),
+      quick:[...top.querySelector('.compact-quick-row').children].map(n=>n.textContent),rows,
+      topQuick:links(top.querySelector('.compact-quick-row')),footQuick:links(foot.querySelector('.compact-quick-row')),
+      topVenues:links(document.getElementById('venue-nav')),footVenues:links(document.getElementById('venue-nav-bottom')),
+      dateWidth:parseFloat(getComputedStyle(document.getElementById('date-select')).width),headingFont:parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),
+      noIntro:!document.querySelector('.eyebrow,.intro'),help:[...document.querySelectorAll('.condition-note')].map(n=>n.textContent).join(''),
+      last:document.querySelector('main').lastElementChild===foot,fullPlayers:new URL(top.querySelector('.results-button').href).pathname};
+   });
+   if(expectedDate)assert.equal(info.date,expectedDate);
+   assert.equal(info.title,expectedTitle||Number(info.date.slice(4,6))+'月'+Number(info.date.slice(6))+'日 全'+info.races+'レース・'+info.riders+'人');
+   assert.deepEqual(info.first,['date-select','昨日','翌日','更新']);assert.deepEqual(info.quick,['トップ','日程','全選手成績']);
+   assert.deepEqual(info.footQuick,info.topQuick);assert.deepEqual(info.footVenues,info.topVenues);
+   assert.ok(info.rows[1].top>=info.rows[0].bottom && info.rows[2].top>=info.rows[1].bottom,'top navigation has three separate rows');
+   assert.ok(info.dateWidth<=110 && info.headingFont<24 && info.noIntro && info.last);
+   assert.doesNotMatch(info.help,/車番を押すと調子が|数字は皆で共有/);
+   assert.equal(info.fullPlayers,'/keirin-lineup2/daily-results/index.html','keep the existing full-player destination');
+   console.log('COMPACT NAVIGATION PASS',JSON.stringify(info));
+  }
   await page.goto(prefix,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('.race-result-toggle');
+  await compactNavigation();
+  if(fs.existsSync(path.join(directory,'line20261115.html'))){
+   await page.goto(prefix+'line20261115.html',{waitUntil:'domcontentloaded'});
+   await compactNavigation('20261115','11月15日 全31レース・238人');
+   if(screenshot){
+    await page.screenshot({path:screenshot.replace(/\.png$/,'-header.png')});
+    await page.locator('.compact-page-footer').scrollIntoViewIfNeeded();
+    await page.screenshot({path:screenshot.replace(/\.png$/,'-footer.png')});
+   }
+   const venueNames=await page.locator('#venue-nav a').allTextContents();
+   assert.deepEqual(venueNames,['立川','富山','川崎','別府','全結果']);
+   assert.ok((await page.locator('.yesterday-button').getAttribute('href')).endsWith('/line20261114.html'));
+   if(fs.existsSync(path.join(directory,'line20261116.html'))){
+    await tap(page.locator('.tomorrow-button'));await page.waitForURL(/\/line20261116\.html$/);await compactNavigation('20261116');
+    await tap(page.locator('.yesterday-button'));await page.waitForURL(/\/line20261115\.html$/);await compactNavigation('20261115');
+   }
+   await tap(page.locator('.home-button').first());await page.waitForURL(prefix);await page.waitForSelector('.race-result-toggle');await compactNavigation();
+  }
   const count=await page.locator('#rows > tr').count();
   const cardDate=await page.locator('body').getAttribute('data-all-results-date');
-  assert.equal(await page.locator('.all-results-button').textContent(),'全結果');
+  assert.equal(await page.locator('.all-results-button').first().textContent(),'全結果');
   assert.equal(await page.locator('.race-result-toggle').count(),count);
   assert.equal(await page.locator('.race-result-panel:not([hidden])').count(),0);
   assert.equal(requests.length,0,'normal page reads no race result until a tap');
@@ -69,7 +114,7 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   });
   assert.ok(Math.abs(parseFloat(geometry.width)-22)<0.1);assert.ok(Math.abs(parseFloat(geometry.height)-12)<0.1);assert.equal(geometry.fontSize,'8px');
   if(geometry.previousWidth){assert.ok(Math.abs(geometry.actualWidth-geometry.previousWidth)<1);assert.ok(Math.abs(geometry.left-geometry.previousLeft)<1,'result button aligns with the first rider');}
-  await tap(page.locator('.all-results-button'));
+  await tap(page.locator('.all-results-button').first());
   await page.waitForURL(/\/results\d{8}\.html$/,{timeout:30000});
   await page.waitForFunction(()=>document.body.dataset.raceResultsAll==='true'&&[...document.querySelectorAll('.race-results-cell')].every(cell=>['pending','payouts','results','error'].includes(cell.dataset.resultState)),null,{timeout:90000});
   const current=await page.locator('#rows > tr').count();
@@ -80,18 +125,20 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   assert.ok(page.url().includes('results'+cardDate+'.html'),'all-results must use the displayed card date');
   const pending=await page.locator('.race-results-cell[data-result-state="pending"] .race-result-panel').allTextContents();
   assert.ok(pending.every(text=>text==='未定にゃ！'));
+  await compactNavigation();
   // A completed meeting proves the actual result and both payout tables render,
   // independently of whether today's first race has already finished.
   await page.goto(prefix+'line20261113.html',{waitUntil:'domcontentloaded'});
   await page.waitForSelector('.all-results-button');
-  assert.equal(await page.locator('.all-results-button').textContent(),'全結果');
-  assert.ok((await page.locator('.all-results-button').getAttribute('href')).endsWith('/results20261113.html'));
+  assert.equal(await page.locator('.all-results-button').first().textContent(),'全結果');
+  assert.ok((await page.locator('.all-results-button').first().getAttribute('href')).endsWith('/results20261113.html'));
   assert.equal(await page.locator('.race-result-toggle').count(),0,'archived card receives navigation without changing its result presentation');
-  await tap(page.locator('.all-results-button'));
+  await tap(page.locator('.all-results-button').first());
   await page.waitForURL(/\/results20261113\.html$/);
   await page.waitForSelector('.race-result-table',{timeout:60000});
   await page.waitForFunction(()=>[...document.querySelectorAll('.race-results-cell')].every(cell=>['pending','payouts','results','error'].includes(cell.dataset.resultState)),null,{timeout:90000});
   assert.equal(await page.locator('.race-result-error').count(),0);
+  await compactNavigation('20261113');
   const known=page.locator('#race-28-7 .race-results-cell');
   assert.match(await known.innerText(),/2車単/);assert.match(await known.innerText(),/3連単/);
   const resultRows=await known.locator('tbody > tr').count();

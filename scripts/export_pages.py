@@ -262,6 +262,8 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
     from ten_preview_gate import ready_for_export
     ten_preview=export_ten_preview(site,output) if ready_for_export(site) else None
     if ten_preview is not None:preview=ten_preview
+    from compact_navigation import export_navigation
+    compact_navigation=export_navigation(site,output,dates,current_day)
     daily_results=export_results(site,output,dates)
     from rider_search import export_search
     rider_search=export_search(site,output) if (site/'daily-results/search.html').is_file() else None
@@ -270,7 +272,8 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,
             'calendar_index':BASE+'calendar/dates.json','calendar_days':len(calendar['days']),
             'previous_preview':preview,'previous_daily':previous,'ten_preview':ten_preview,'ten_daily':ten_daily,
-            'daily_results':daily_results,'race_results':race_results,'rider_search':rider_search}
+            'daily_results':daily_results,'race_results':race_results,'rider_search':rider_search,
+            'compact_navigation':compact_navigation}
 
 
 if __name__=='__main__':

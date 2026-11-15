@@ -1,0 +1,16 @@
+body[data-card-header="compact-20261115"] .compact-card-heading{padding:10px clamp(12px,3vw,36px) 8px}
+body[data-card-header="compact-20261115"] .compact-card-heading h1{max-width:1108px;margin:0 auto;font-size:15px;font-weight:650;line-height:20px}
+body[data-card-header="compact-20261115"] .compact-navigation,body[data-card-header="compact-20261115"] .compact-page-footer{display:flex;flex-direction:column;gap:5px;min-width:0;margin:0 0 12px}
+body[data-card-header="compact-20261115"] .compact-page-footer{margin:14px 0 0}
+body[data-card-header="compact-20261115"] .compact-date-row,body[data-card-header="compact-20261115"] .compact-quick-row{display:flex;align-items:center;gap:5px;min-width:0}
+body[data-card-header="compact-20261115"] .compact-date-row{flex-wrap:nowrap}
+body[data-card-header="compact-20261115"] .compact-quick-row{flex-wrap:wrap}
+body[data-card-header="compact-20261115"] .compact-date-row #date-select{box-sizing:border-box;width:96px;min-width:96px;max-width:96px;height:28px;margin:0;padding:2px 3px;border:1px solid #c8d2df;border-radius:5px;background:#fff;color:#253247;font-family:inherit;font-size:16px;line-height:22px}
+body[data-card-header="compact-20261115"] .compact-navigation .refresh-button,body[data-card-header="compact-20261115"] .compact-page-footer .refresh-button{display:inline-flex;box-sizing:border-box;align-items:center;justify-content:center;height:28px;min-width:40px;margin:0;padding:3px 8px;border:1px solid #c8d2df;border-radius:5px;background:#eff6ff;color:#155eef;font-family:inherit;font-size:12px;font-weight:500;line-height:18px;text-decoration:none;white-space:nowrap}
+body[data-card-header="compact-20261115"] .compact-navigation .refresh-button:disabled{color:#8491a3;opacity:.6;cursor:default}
+body[data-card-header="compact-20261115"] .compact-venues{display:flex;flex-wrap:wrap;gap:4px;margin:0;min-width:0}
+body[data-card-header="compact-20261115"] .compact-venues .venue-button{display:inline-flex;box-sizing:border-box;align-items:center;justify-content:center;min-width:0;min-height:24px;margin:0;padding:3px 7px;border-radius:5px;font-size:11px;line-height:16px;white-space:nowrap;text-decoration:none}
+body[data-card-header="compact-20261115"] .condition-note{margin:0;font-size:0;line-height:0}
+body[data-card-header="compact-20261115"] .condition-note .condition-message{font-size:11px;line-height:1.5}
+body[data-card-header="compact-20261115"] .condition-note .condition-message:empty{display:none}
+@media(max-width:640px){body[data-card-header="compact-20261115"] .compact-card-heading{padding:9px 10px 7px}}
