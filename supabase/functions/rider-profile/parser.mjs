@@ -25,7 +25,7 @@ function attributes(view) {
   for (const rows of view.tables) for (let i=0;i<rows.length-1;i++) {
     if (rows[i].length !== rows[i+1].length) continue;
     rows[i].forEach((key,j) => {
-      if (['氏名','登録番号','期別','府県','年齢','級班','脚質','今期得点'].includes(key)) {
+      if (['氏名','登録番号','期別','府県','生年月日','年齢','級班','脚質','今期得点'].includes(key)) {
         if (!found.has(key)) found.set(key, new Set());
         found.get(key).add(rows[i+1][j]);
       }
@@ -85,7 +85,18 @@ export function parseProfile(view, playerId, observedAt, expected={}) {
     }
   }
   requireValue(techniques.length<=1,'Ambiguous official technique table');
+  const birth=value('生年月日')?.replaceAll('/','-')||null;
+  requireValue(!birth || /^\d{4}-\d{2}-\d{2}$/.test(birth) && !Number.isNaN(Date.parse(birth)) && new Date(birth).toISOString().slice(0,10)===birth && birth<target,'Official birthday differs');
+  const summaries=[];
+  for(const rows of view.tables)for(let i=0;i<rows.length-1;i++){
+    const labels=rows[i],values=rows[i+1];
+    if(!['1着','2着','3着','着外','棄権','失格','総出走回数','バック回数'].every(label=>labels.includes(label)) || labels.length!==values.length)continue;
+    const count=label=>{const text=values[labels.indexOf(label)];requireValue(/^\d+回$/.test(text),'Official summary count differs');return Number(text.slice(0,-1));};
+    summaries.push({scope:'直近4か月',total_starts:count('総出走回数'),back:count('バック回数')});
+  }
+  requireValue(summaries.length<=1,'Ambiguous official summary');
   return {schema_version:1,player_id:playerId,name,period:Number(period.slice(0,-1)),prefecture:value('府県'),
+    birth_date:birth,summary:summaries[0]||null,
     age:value('年齢')?Number(value('年齢').replace('歳','')):null,class_name:value('級班'),style:value('脚質'),
     current_score:value('今期得点'),provider:'keirin.jp',source_url:'https://keirin.jp/pc/racerprofile?snum='+playerId,
     observed_at:observedAt,source_updates:[...new Set(view.updates)],
