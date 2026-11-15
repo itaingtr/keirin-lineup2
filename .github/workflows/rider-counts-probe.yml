@@ -1,0 +1,16 @@
+name: Check public rider count fields
+on:
+  push:
+    branches: [feat/rider-counts-history]
+    paths: ['scripts/probe_rider_counts.cjs', '.github/workflows/rider-counts-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - run: npm install --prefix /tmp/rider-counts --no-audit --no-fund linkedom@0.18.12
+      - run: NODE_PATH=/tmp/rider-counts/node_modules node scripts/probe_rider_counts.cjs
