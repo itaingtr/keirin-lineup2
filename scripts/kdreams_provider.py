@@ -282,6 +282,15 @@ def parse_players(doc):
         player = {'no': number, 'name': rider[1], 'score': float(score), 'period': int(rider[2]),
                   'mark': marks[0], 'stats': list(map(int, stats)), 'absent': absent, 'meeting_results': [],
                   'prefecture': profile[2], 'age': int(profile[3])}
+        # Optional display metadata for the rider directory. Legacy saved cards
+        # remain valid; never reconstruct starts from rounded percentages.
+        if any([compact(c.text()) for c in cells(header)][:11] == ['競走得点','S','B','逃','捲','差','マ','1着','2着','3着','着外'] for header in rows):
+            finishes = [compact(c.text()) for c in values[index+11:index+15]]
+            if len(finishes) == 4 and all(re.fullmatch(r'\d+', value) for value in finishes):
+                player['total_starts'] = sum(map(int, finishes))
+        style = compact(values[index+2].text())
+        if style in ('逃', '両', '追'):
+            player['style'] = style
         identifier = _player_id(values[index])
         if identifier:
             player['player_id'] = identifier

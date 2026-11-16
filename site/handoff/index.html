@@ -151,10 +151,13 @@ https://itaingtr.github.io/keirin-lineup2/handoff/
 <li>入口 <code>daily-results/index.html</code> は保存済み台帳全体の名簿・選手名／JKA番号検索。当日の出走に限定しない。</li>
 <li>上に北日本・関東・南関東・中部・近畿・中国・四国・九州の8地区。福井は近畿、静岡は南関東。都道府県名の原本は省略しない。</li>
 <li>得点・期別・年齢・北からの県順で、解除→昇順→降順。最後に変更した並べ替えを主条件とし、先の条件は同値時の順序として保持する。初期は得点降順トップ30。</li>
-<li>50人以上は全員を保持したまま、ちょうど2ページへ均等分割。未知の得点・県・年齢を0で埋めず、不明は最後に置く。</li>
+<li>最新訂正（2026年11月16日）：200人までは1ページ。超えた場合は1ページ目200人、2ページ目に残り全員。553人なら200＋353人で、均等には分けない。未知の得点・県・年齢を0で埋めず、不明は最後に置く。</li>
 <li>自力型・追込型は公式脚質を優先。保存B・逃・捲・差・マから導いたものは目安と明記し、全0や不明を勝手に分類しない。</li>
 <li>選択した選手名の直下へ最新の決まり手と最大10場所をコンパクトな縦並びで表示する。名簿表示だけで全員の外部プロフィールを再収集しない。</li>
-<li>KEIRIN.JPの公開プロフィールを優先し、エンジョイへの参照リンクも使う。公式の決まり手割合は％と集計範囲・確認時刻を表示し、回数に換算しない。</li>
+<li>名前のすぐ隣に県・期・年齢。次にS・B・逃・捲・差・マ・総出走数、その右に競走得点、さらに右に前2場所を置く。上は前々場所、下は前場所。例：G3四 6 3 2 1。10場所の見出しも常にグレードが競輪場名の前。</li>
+<li>KEIRIN.JPの公開プロフィールを優先し、エンジョイへの参照リンクも使う。決まり手は割合を表示せず、確認済み楽天出走表の直近4か月の実数を使う。総出走数は同じ表の1着＋2着＋3着＋着外。％からの換算は禁止し、未確認は—で残す。</li>
+<li>公式生年月日から現在年齢と小さな「済」を計算する。「済」は日本時間の4月1日以降に誕生日を迎えた印。4月1日は全員リセットし、開いたままの画面にも反映する。</li>
+<li>この訂正のため台帳553人の生年月日と回数を一度照合した。<code>site/rider-facts/SHA256.json</code>へ表示フィールドだけを追記し、過去の版は保持する。一覧表示時の全員分の外部再取得や、新しい定時収集は追加しない。</li>
 <li>読取用 <code>rider-profile</code> はGETのみ・既存JWT検証。取得失敗時は確認済み保存表示を残す。プロフィールだけでは実施日・R・SHBを確定できないため、未照合の動画リンクを作らない。</li>
 </ul>
 <div class="table-wrap"><table><thead><tr><th>編集元</th><th>公開先・役割</th></tr></thead><tbody>
@@ -195,6 +198,7 @@ https://itaingtr.github.io/keirin-lineup2/handoff/
 <tr><td><code>site/ten-daily/YYYYMMDD/latest.json</code> と <code>runs/</code></td><td>その日の出走と共通選手版を結ぶ参照。公開側は <code>data/YYYYMMDD/ten-meetings.json</code>。</td></tr>
 <tr><td><code>site/result-flags/current.json</code> と <code>RACE_ID/SHA256.json</code></td><td>完全照合した個別レースのSHB証拠。</td></tr>
 <tr><td><code>site/rider-profiles/current.json</code> と <code>JKA番号/SHA256.json</code></td><td>明示的に確認した公開プロフィールの版。全員の定時一括取得ではない。</td></tr>
+<tr><td><code>site/rider-facts/current.json</code> と <code>SHA256.json</code></td><td>氏名・期別・登録番号を照合した生年月日、前2場所、実数のS/B/決まり手と同期間の総出走数。一覧用の不変メタデータ版。</td></tr>
 <tr><td><code>public/daily-results/riders.json</code></td><td>名簿用の小さい一覧。履歴・プロフィールは確認済み不変ファイルへの参照。</td></tr>
 <tr><td><code>public/data/YYYYMMDD/all-rider-results.json</code></td><td>旧日別全選手一覧の薄い索引。保存済み資料だけから生成。</td></tr>
 <tr><td><code>site/calendar/</code></td><td>カレンダー原稿。<code>calendar/dates.json</code> は予約された生成物。</td></tr>

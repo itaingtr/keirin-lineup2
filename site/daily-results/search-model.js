@@ -18,6 +18,43 @@
   function prefectureOf(player){const value=normalize(player.prefecture);return PREFECTURES.includes(value)?value:value.replace(/[都府県]$/,'');}
   function regionOf(player){const prefecture=prefectureOf(player);return REGIONS.find(region=>region.prefectures.includes(prefecture))?.name||null;}
   function numeric(value){return value!==null&&value!==undefined&&value!==''&&typeof value!=='boolean'&&Number.isFinite(Number(value))?Number(value):null;}
+  function jstDay(now=new Date()){return new Date(now.getTime()+9*3600000).toISOString().slice(0,10);}
+  function birthdayState(player,today=jstDay()){
+    const birth=player.birth_date;
+    if(typeof birth!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(birth)||Number.isNaN(Date.parse(birth))||new Date(birth).toISOString().slice(0,10)!==birth||birth>today)return {age:numeric(player.age),done:false};
+    const year=Number(today.slice(0,4)),month=Number(birth.slice(5,7)),day=Number(birth.slice(8,10));
+    const anniversary=anniversaryYear=>{
+      const last=new Date(Date.UTC(anniversaryYear,month,0)).getUTCDate();
+      return anniversaryYear+'-'+String(month).padStart(2,'0')+'-'+String(Math.min(day,last)).padStart(2,'0');
+    };
+    const current=anniversary(year),age=year-Number(birth.slice(0,4))-(today<current?1:0);
+    const fiscalYear=today.slice(5)>='04-01'?year:year-1;
+    const fiscalBirthday=anniversary(month>=4?fiscalYear:fiscalYear+1);
+    if(age<0||age>120)return {age:numeric(player.age),done:false};
+    return {age,done:today.slice(5)!=='04-01'&&fiscalBirthday<=today};
+  }
+  function ageOf(player,today=jstDay()){return birthdayState(player,today).age;}
+  const COUNT_FIELDS=[['s','S'],['b','B'],['nige','逃'],['makuri','捲'],['sashi','差'],['mark','マ'],['total_starts','総']];
+  function countsOf(player,profile=null){
+    const checked=profile?.counts||player.counts;
+    if(checked)return {...checked,values:Object.fromEntries(COUNT_FIELDS.map(([key])=>[key,numeric(checked.values?.[key])]))};
+    const saved=player.last_card;
+    if(Array.isArray(saved?.stats)&&saved.stats.length===6)return {scope:'直近4か月',provider:'kdreams',source_url:saved.source_url,observed_at:saved.observed_at,card_date:saved.date,
+      values:{...Object.fromEntries(COUNT_FIELDS.slice(0,6).map(([key],i)=>[key,numeric(saved.stats[i])])),total_starts:numeric(saved.total_starts)}};
+    const summary=profile?.summary||player.summary;
+    return {scope:'直近4か月',provider:'keirin.jp',values:{s:null,b:numeric(summary?.back),nige:null,makuri:null,sashi:null,mark:null,total_starts:numeric(summary?.total_starts)}};
+  }
+  function gradeName(code){return ({1:'F2',2:'F1',3:'G3',4:'G2',5:'G1',6:'GP'})[code]||'';}
+  function shortVenue(meeting){
+    const venue=meeting.venue||meeting.venue_label||'';
+    return ({'いわき平':'平','松戸':'戸','小田原':'小','小倉':'倉','小松島':'小松','西武園':'園'})[venue]||[...venue][0]||'—';
+  }
+  function previousSlots(player){
+    const meetings=[...(player.recent_meetings||[])].sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).slice(-2);
+    if(meetings.length===2)return meetings;
+    if(meetings.length===1)return meetings[0].position==='previous_previous'?[meetings[0],null]:[null,meetings[0]];
+    return [null,null];
+  }
   function scoreOf(player){return numeric(player.last_card?.score_raw??player.score_raw);}
   function roleOf(player){
     const style=normalize(player.style);
@@ -35,17 +72,19 @@
     const direction=!current?'asc':current.direction==='asc'?'desc':null;
     return direction?[...rest,{key,direction}]:rest;
   }
-  function sortValue(player,key){
+  function sortValue(player,key,today){
     if(key==='score')return scoreOf(player);
     if(key==='prefecture'){const index=PREFECTURES.indexOf(prefectureOf(player));return index<0?null:index;}
+    if(key==='age')return ageOf(player,today);
     return numeric(player[key]);
   }
   function sortPlayers(players,sorts=[]){
+    const today=jstDay();
     const priorities=[...sorts].reverse();
     if(!priorities.some(sort=>sort.key==='score'))priorities.push({key:'score',direction:'desc'});
     return [...players].sort((a,b)=>{
       for(const {key,direction}of priorities){
-        const first=sortValue(a,key),second=sortValue(b,key);
+        const first=sortValue(a,key,today),second=sortValue(b,key,today);
         if(first===null||second===null){if(first!==second)return first===null?1:-1;continue;}
         if(first!==second)return (first-second)*(direction==='desc'?-1:1);
       }
@@ -61,11 +100,10 @@
     rows=sortPlayers(rows,sorts);
     const scopeTotal=rows.length;
     if(home)rows=rows.slice(0,30);
-    // The requested threshold is inclusive: even exactly 50 riders get two
-    // balanced pages, retaining every rider instead of truncating at 50.
-    const total=rows.length,pageCount=total>=50?2:1,perPage=Math.ceil(total/pageCount);
+    // Keep the first 200 together; the second page contains only the overflow.
+    const total=rows.length,pageCount=total>200?2:1,perPage=200;
     const page=Math.min(pageCount-1,Math.max(0,Number(state.page)||0));
-    const start=page*perPage,end=Math.min(total,start+perPage);
+    const start=page*perPage,end=page===0?Math.min(total,perPage):total;
     return {rows:rows.slice(start,end),total,scopeTotal,home,page,pageCount,start:total?start+1:0,end};
   }
   function mergeMeetings(stock,profile){
@@ -89,6 +127,6 @@
     start:day.start??null,home:day.home??null,back:day.back??null,race_date_inferred:day.race_date_inferred??null,
     provider:day.provider||meeting.provider,source_url:day.source_url||meeting.rank_source?.url||player.source_url||player.profile_url,
     observed_at:day.observed_at||meeting.rank_source?.observed_at||player.observed_at,video_url:day.video_url??null})));}
-  const api={normalize,findPlayers,samePerson,mergeMeetings,resultRows,REGIONS,PREFECTURES,SORT_LABELS,prefectureOf,regionOf,scoreOf,roleOf,cycleSort,sortPlayers,directory};
+  const api={normalize,findPlayers,samePerson,mergeMeetings,resultRows,REGIONS,PREFECTURES,SORT_LABELS,prefectureOf,regionOf,scoreOf,roleOf,cycleSort,sortPlayers,directory,jstDay,birthdayState,ageOf,COUNT_FIELDS,countsOf,gradeName,shortVenue,previousSlots};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.RiderSearch=api;
 })(typeof window==='object'?window:globalThis);

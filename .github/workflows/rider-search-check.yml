@@ -1,15 +1,18 @@
 name: Verify name-based rider history search
 on:
   push:
-    branches: [main, feat/rider-name-search, feat/rider-directory]
+    branches: [main, feat/rider-name-search, feat/rider-directory, feat/rider-counts-history]
     paths:
       - 'site/daily-results/search*'
       - 'scripts/rider_search.py'
       - 'scripts/collect_rider_profile.cjs'
+      - 'site/rider-facts/**'
+      - 'tests/check_live_rider_profile.cjs'
       - 'supabase/functions/rider-profile/**'
       - 'tests/test_rider_search*'
       - 'tests/test_rider_profile.cjs'
       - 'tests/test_rider_directory.cjs'
+      - 'tests/test_rider_counts.cjs'
       - 'tests/fixtures/rider-history-height-before.css'
       - '.github/workflows/rider-search-check.yml'
   workflow_dispatch:
@@ -30,6 +33,7 @@ jobs:
         run: npm install --prefix /tmp/rider-search-qa --no-audit --no-fund linkedom@0.18.12 playwright-core@1.62.1
       - name: Check the real official profile without writing to the database
         run: |
+          NODE_PATH=/tmp/rider-search-qa/node_modules node tests/test_rider_counts.cjs
           NODE_PATH=/tmp/rider-search-qa/node_modules node scripts/collect_rider_profile.cjs 014396 脇本雄太 94
           python3 - <<'PY'
           import json,pathlib
@@ -40,6 +44,7 @@ jobs:
       - name: Verify mobile name search, density and error recovery
         run: NODE_PATH=/tmp/rider-search-qa/node_modules node tests/test_rider_search_browser.cjs public
       - name: Verify the read-only published profile API
+        if: ${{ !cancelled() }}
         run: node tests/check_live_rider_profile.cjs
       - name: Keep only normalized display evidence and screenshot
         if: always()

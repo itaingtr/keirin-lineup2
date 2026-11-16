@@ -16,7 +16,8 @@
 <div id="matches" aria-label="検索候補"></div>
 <article id="rider" hidden>
 <button id="directory-back" class="directory-back" type="button">一覧に戻る</button>
-<div class="rider-heading"><h2 id="rider-name"></h2><a id="official-profile">公式プロフ</a><a id="enjoy-profile">エンジョイ</a></div>
+<div class="rider-heading"><h2 id="rider-name"></h2><span id="rider-meta" class="person-meta"></span></div>
+<div class="profile-links"><a id="official-profile">公式プロフ</a><a id="enjoy-profile">エンジョイ</a></div>
 <p id="profile-summary"></p><div id="techniques"></div>
 <div class="history-heading"><h3>過去10場所</h3><span id="history-note"></span></div>
 <div id="rider-meetings"></div>
@@ -27,10 +28,11 @@
 <div class="directory-heading"><h2 id="directory-title">得点トップ30</h2><div class="directory-actions"><button id="show-all" type="button">全員</button><button id="show-top" type="button">トップ30・解除</button></div></div>
 <p id="directory-status" class="directory-status" role="status" aria-live="polite"></p>
 <nav id="pages-top" class="directory-pages" aria-label="一覧のページ"></nav>
-<table class="directory-table"><thead><tr><th scope="col">順</th><th scope="col">選手</th><th scope="col">県・期・年齢</th><th scope="col">競走得点</th><th scope="col">型</th></tr></thead><tbody id="rider-list"></tbody></table>
+<table class="directory-table"><thead><tr><th scope="col">順</th><th scope="col">選手・県・期・年齢</th><th scope="col">S・B・逃・捲・差・マ・総出走</th><th scope="col">競走得点</th><th scope="col">前々場所／前場所</th></tr></thead><tbody id="rider-list"></tbody></table>
 <nav id="pages-bottom" class="directory-pages" aria-label="一覧のページ（下）"></nav>
 </section>
 <p class="directory-help">並べ替えは解除→昇順→降順。後から押した項目が優先され、その中に前の並び順を残します。県順は北からの都道府県コード順。自力型・追込型は絞り込みです。</p>
 <p class="directory-help">型は公式脚質（逃・両／追）を優先。脚質が未保存の選手はB・逃・捲の実績があれば自力型、差・マのみなら追込型という目安で区別します（＊）。不明は推測せず残します。</p>
+<p class="directory-help">S・B・決まり手・総出走は直近4か月の回数（各選手の確認済み出走表時点）。—は未確認。年齢の小さな「済」は4月1日以降に誕生日を迎えた印で、毎年4月1日にリセットします。</p>
 <p class="help">出走日を指定せず、保存済みの選手全体から検索します。成績は最新の開催から表示。上がり・SHB・映像は確認できた分だけ表示します。</p>
 </main></body></html>

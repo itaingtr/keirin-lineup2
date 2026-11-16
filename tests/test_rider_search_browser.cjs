@@ -26,6 +26,7 @@ const root=path.resolve(process.argv[2]||'public');
         return route.fulfill({contentType:file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.json')?'application/json':'text/html',body:fs.readFileSync(file)});
       });
       const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+      if(width===390)await page.clock.install({time:new Date()});
       await page.goto('https://itaingtr.github.io/keirin-lineup2/daily-results/index.html');
       await page.waitForFunction(()=>document.querySelectorAll('#rider-list > tr').length===30);
       assert.equal(await page.locator('#region-buttons button').count(),8);
@@ -43,13 +44,33 @@ const root=path.resolve(process.argv[2]||'public');
       const rowIds=()=>page.locator('#rider-list > tr').evaluateAll(rows=>rows.map(row=>row.dataset.playerId));
       const top=M.sortPlayers(catalogue.players.filter(p=>M.scoreOf(p)!==null)).slice(0,30).map(p=>p.player_id);
       assert.deepEqual(await rowIds(),top);
+      const listed=await page.locator('#rider-list > tr').evaluateAll(rows=>rows.map(row=>({
+        id:row.dataset.playerId,marked:!!row.querySelector('.birthday-done'),
+        fields:[...row.querySelectorAll('.count-item')].map(node=>node.dataset.stat),
+        recent:[...row.querySelectorAll('.recent-line')].map(line=>({position:line.dataset.position,text:line.textContent})),
+        nameRight:row.querySelector('.directory-name-button').getBoundingClientRect().right,
+        metaLeft:row.querySelector('.person-meta').getBoundingClientRect().left,
+        countsLeft:row.querySelector('.directory-counts').getBoundingClientRect().left,
+        scoreLeft:row.querySelector('.directory-score').getBoundingClientRect().left,
+        recentLeft:row.querySelector('.directory-recent').getBoundingClientRect().left,
+      })));
+      for(const row of listed){
+        const person=catalogue.players.find(p=>p.player_id===row.id);
+        assert.equal(row.marked,M.birthdayState(person).done);assert.deepEqual(row.fields,M.COUNT_FIELDS.map(([key])=>key));
+        assert.ok(row.countsLeft<row.scoreLeft&&row.scoreLeft<row.recentLeft,'Counts, score and previous results stay in the requested order');
+        assert.deepEqual(row.recent.map(line=>line.position),['previous_previous','previous']);
+        assert.equal(row.recent.length,2);
+        assert.deepEqual(row.recent.map(line=>line.text),M.previousSlots(person).map(meeting=>meeting?M.gradeName(meeting.grade_code)+M.shortVenue(meeting)+meeting.days.map(day=>day.order||day.accident||'—').join(''):'—'));
+        if(row.metaLeft>=row.nameRight)assert.ok(row.metaLeft-row.nameRight<10,'County/period/age must immediately follow the name');
+      }
       assert.equal(await page.locator('#pages-top').isVisible(),false);
       if(width===390)await page.screenshot({path:'/tmp/rider-directory-mobile.png'});
       await page.locator('#show-all').tap();
-      const firstPage=await rowIds();assert.equal(firstPage.length,Math.ceil(catalogue.players.length/2));
+      const firstPage=await rowIds();assert.equal(firstPage.length,200);
       assert.equal(await page.locator('#pages-top button').count(),2);
       await page.locator('#pages-top button').nth(1).tap();
       const secondPage=await rowIds();assert.equal(new Set([...firstPage,...secondPage]).size,catalogue.players.length);
+      assert.equal(secondPage.length,catalogue.players.length-200);
       const kanto=page.locator('#region-buttons button[data-region="関東"]');await kanto.tap();
       assert.equal(await kanto.getAttribute('aria-pressed'),'true');
       assert.ok((await rowIds()).every(id=>M.regionOf(catalogue.players.find(p=>p.player_id===id))==='関東'));
@@ -62,7 +83,7 @@ const root=path.resolve(process.argv[2]||'public');
       const ordered=(await rowIds()).map(id=>catalogue.players.find(p=>p.player_id===id));
       for(let i=1;i<ordered.length;i++){
         assert.ok(Number(ordered[i-1].period)>=Number(ordered[i].period));
-        if(Number(ordered[i-1].period)===Number(ordered[i].period))assert.ok(ordered[i-1].age>=ordered[i].age);
+        if(Number(ordered[i-1].period)===Number(ordered[i].period))assert.ok(M.ageOf(ordered[i-1])>=M.ageOf(ordered[i]));
       }
       await period.tap();assert.equal(await period.getAttribute('data-direction'),'off');
       assert.equal(await page.locator('#sort-order').textContent(),'並び：年齢↓ → 得点↓');
@@ -73,7 +94,9 @@ const root=path.resolve(process.argv[2]||'public');
       await page.locator('#rider-query').fill('脇本　雄太');await page.locator('#rider-search button').tap();
       await page.waitForFunction(()=>document.querySelector('#rider-name').textContent==='脇本雄太'&&/最新公開|このセッションで確認済み/.test(document.querySelector('#profile-status').textContent));
       assert.equal(await page.locator('#rider-meetings > .meeting').count(),profile.meetings.length);
-      assert.match(await page.locator('#techniques').textContent(),/%/);
+      assert.doesNotMatch(await page.locator('#techniques').textContent(),/%/);
+      assert.deepEqual(await page.locator('#techniques .count-item').evaluateAll(nodes=>nodes.map(n=>n.dataset.stat)),M.COUNT_FIELDS.map(([key])=>key));
+      const headings=await page.locator('.meeting-label strong').allTextContents();assert.ok(headings.every(text=>/^(?:F[12]|G[123]|GP)/.test(text)),'Every detail heading puts grade before venue');
       assert.equal(await page.locator('#official-profile').getAttribute('href'),'https://keirin.jp/pc/racerprofile?snum=014396');
       const geometry=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,name:document.querySelector('#rider-name').getBoundingClientRect().bottom,history:document.querySelector('#rider-meetings').getBoundingClientRect().top,first:document.querySelector('.meeting').getBoundingClientRect().height}));
       assert.ok(geometry.scroll<=geometry.width+1,JSON.stringify(geometry));
@@ -91,6 +114,15 @@ const root=path.resolve(process.argv[2]||'public');
       const before=await page.locator('#rider-meetings').textContent();fail=true;
       await page.locator('#profile-refresh').tap();await page.waitForFunction(()=>document.querySelector('#profile-status').textContent.includes('失敗'));
       assert.equal(await page.locator('#rider-meetings').textContent(),before,'Source failure must retain the stock');
+      if(width===390){
+        await page.locator('#directory-back').tap();await page.locator('#show-top').tap();
+        await page.clock.setSystemTime(new Date('2027-03-31T14:59:00Z'));
+        await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+        assert.equal(await page.locator('#rider-list .birthday-done').count(),30,'All checked birthdays have passed by fiscal year end');
+        await page.clock.fastForward(60000);
+        assert.equal(await page.evaluate(()=>window.RiderSearch.jstDay()),'2027-04-01');
+        assert.equal(await page.locator('#rider-list .birthday-done').count(),0,'The open page resets every mark at April1 JST');
+      }
       assert.deepEqual(errors,[]);await context.close();
     }
     console.log('RIDER SEARCH BROWSER PASS: top30, eight regions, last-click multi-sort and loop, complete two-page lists, role filters, Wakimoto search, half-height histories, 320px without horizontal scrolling, safe refresh failure');

@@ -13,6 +13,16 @@ def encode(data):
     return json.dumps(data, ensure_ascii=False, separators=(',', ':'), allow_nan=False)+'\n'
 
 
+def recent_meetings(meetings):
+    """Keep just display fields; profile slots never acquire invented race IDs."""
+    rows = []
+    for meeting in sorted(meetings, key=lambda row: row['start_date'])[-2:]:
+        row = {key: deepcopy(meeting[key]) for key in ('venue', 'venue_label', 'grade_code', 'start_date') if key in meeting}
+        row['days'] = [{key: day[key] for key in ('order', 'accident', 'accident_name') if key in day} for day in meeting['days']]
+        rows.append(row)
+    return rows
+
+
 def copy_checked(site, output, ref):
     relative = ref['path']
     if not re.fullmatch(r'(?:rider-history|rider-profiles)/\d{6}/[a-f0-9]{64}\.json', relative):
@@ -74,7 +84,7 @@ def export_search(site, output):
                 raise ValueError('Too many stored meetings')
             ref = {'path': entry['path'], 'sha256': entry['sha256']}
             copy_checked(site, output, ref)
-            person.update(history_ref=ref, meeting_count=len(record['meetings']))
+            person.update(history_ref=ref, meeting_count=len(record['meetings']), recent_meetings=recent_meetings(record['meetings']))
         except (ValueError, OSError, KeyError):
             person['history_status'] = 'unavailable'
         players[identifier] = person
@@ -96,12 +106,14 @@ def export_search(site, output):
                 person = players.setdefault(identifier, {'player_id': identifier, 'name': player['name'],
                     'period': player['period'], 'profile_url': 'https://keirin.jp/pc/racerprofile?snum='+identifier})
                 person['last_card'] = {'date': day[:4]+'-'+day[4:6]+'-'+day[6:], 'source_url': race['source'],
-                    'score_raw': player.get('rawScore'), 'stats': deepcopy(player.get('stats', []))}
+                    'car_number': player['no'], 'score_raw': player.get('rawScore'), 'stats': deepcopy(player.get('stats', []))}
                 row = details.get(race['source'], {})
                 matches = [p for p in row.get('players', []) if p.get('no') == player['no']
                     and p.get('name') == player['name'] and str(p.get('period')) == str(player['period'])
                     and (not p.get('player_id') or p['player_id'] == identifier)]
                 verified = matches[0] if len(matches) == 1 else {}
+                if type(verified.get('total_starts')) is int and verified.get('stats') == person['last_card']['stats']:
+                    person['last_card']['total_starts'] = verified['total_starts']
                 for key in ('prefecture', 'age'):
                     value = verified.get(key, player.get(key))
                     if key == 'age' and (type(value) is not int or not 18 <= value <= 100):
@@ -126,11 +138,48 @@ def export_search(site, output):
                 if (person['name'], str(person['period'])) != (record['name'], str(record['period'])):
                     continue
                 person['profile_ref'] = {'path': entry['path'], 'sha256': entry['sha256']}
-                for key in ('prefecture', 'age', 'style'):
+                if not person.get('last_card') and record.get('current_score') is not None:
+                    person['score_raw'] = record['current_score']
+                for key in ('prefecture', 'age', 'style', 'birth_date', 'summary'):
                     if person.get(key) is None and record.get(key) is not None:
                         person[key] = record[key]
             except (ValueError, OSError, KeyError):
                 continue
+    facts_pointer = site/'rider-facts/current.json'
+    if facts_pointer.is_file():
+        ref = json.loads(facts_pointer.read_text())
+        if not re.fullmatch(r'rider-facts/[a-f0-9]{64}\.json', ref.get('path', '')):
+            raise ValueError('Invalid facts reference')
+        payload = (site/ref['path']).read_bytes()
+        if hashlib.sha256(payload).hexdigest() != ref['sha256']:
+            raise ValueError('Facts checksum differs')
+        facts = json.loads(payload)
+        if facts.get('schema_version') != 1 or facts.get('kind') != 'rider_facts':
+            raise ValueError('Invalid facts kind')
+        for identifier, fact in facts['players'].items():
+            person = players.get(identifier)
+            if not person or (fact.get('player_id'), fact.get('name'), str(fact.get('period'))) != (identifier, person['name'], str(person['period'])):
+                continue
+            for key in ('birth_date', 'summary', 'style', 'age', 'prefecture'):
+                if fact.get(key) is not None:
+                    person[key] = deepcopy(fact[key])
+            if not person.get('last_card') and fact.get('current_score') is not None:
+                person['score_raw'] = fact['current_score']
+            card = person.get('last_card', {})
+            counts = fact.get('counts')
+            if counts and (not card or counts.get('source_url') == card.get('source_url')):
+                person['counts'] = deepcopy(counts)
+            if fact.get('recent_meetings'):
+                stored = person.get('recent_meetings', [])
+                combined = {row['start_date']: row for row in fact['recent_meetings']}
+                # Identified stored results retain links/accident/source details.
+                for row in stored:
+                    old = combined.get(row['start_date'])
+                    same_venue = old and (row.get('venue') == old.get('venue') or row.get('venue', '').startswith(old.get('venue', '\0'))
+                                          or row.get('venue') == 'いわき平' and old.get('venue') == '平')
+                    if not old or (same_venue and [(d.get('order'), d.get('accident', '')) for d in row['days']] == [(d.get('order'), d.get('accident', '')) for d in old['days']] and row.get('grade_code') == old.get('grade_code')):
+                        combined[row['start_date']] = row
+                person['recent_meetings'] = recent_meetings(combined.values())
     catalogue = {'schema_version': 1, 'kind': 'rider_search',
         'players': sorted(players.values(), key=lambda player: (player['name'], player['player_id']))}
     (destination/'riders.json').write_text(encode(catalogue))

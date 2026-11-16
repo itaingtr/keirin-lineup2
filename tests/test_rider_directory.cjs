@@ -28,15 +28,38 @@ assert.equal(M.roleOf(rider(1,{style:'追',stats:[0,5,3,0,0,0]})).kind,'chaser',
 assert.equal(M.roleOf(rider(1,{style:'両'})).kind,'self');assert.equal(M.roleOf(rider(1,{style:'逃'})).inferred,false);
 assert.equal(M.roleOf(rider(1,{stats:[0,1,0,0,0,0]})).kind,'self');assert.equal(M.roleOf(rider(1)).kind,'chaser');
 assert.equal(M.roleOf(rider(1,{stats:[0,0,0,0,0,0]})).kind,null);assert.equal(M.roleOf(rider(1)).inferred,true);
-for(const size of [0,30,49,50,51,101]){
+for(const size of [0,30,49,50,51,101,199,200,201,400,553]){
   const players=Array.from({length:size},(_,i)=>rider(i+1,{score:100+i/100}));
   const first=M.directory(players,{all:true,page:0}),second=M.directory(players,{all:true,page:1});
-  assert.equal(first.pageCount,size>=50?2:1);
-  if(size>=50){assert.equal(first.rows.length,Math.ceil(size/2));const all=[...first.rows,...second.rows].map(p=>p.player_id);assert.equal(new Set(all).size,size);}
+  assert.equal(first.pageCount,size>200?2:1);
+  if(size>200){assert.equal(first.rows.length,200);assert.equal(second.rows.length,size-200);const all=[...first.rows,...second.rows].map(p=>p.player_id);assert.equal(new Set(all).size,size);}
   else assert.equal(first.rows.length,size);
 }
 const many=Array.from({length:100},(_,i)=>rider(i+1,{score:80+i/10,prefecture:i%2?'北海道':'沖縄'}));
 const home=M.directory([...many,rider(999,{score:null})]);assert.equal(home.rows.length,30);assert.equal(home.rows[0].player_id,'000100');assert.equal(home.pageCount,1);
-const region=M.directory(many,{region:'北日本'});assert.equal(region.total,50);assert.equal(region.pageCount,2);assert.ok(region.rows.every(p=>p.prefecture==='北海道'));
+const region=M.directory(many,{region:'北日本'});assert.equal(region.total,50);assert.equal(region.pageCount,1);assert.ok(region.rows.every(p=>p.prefecture==='北海道'));
 assert.equal(M.directory(many,{query:'選手100'}).total,1);
-console.log('RIDER DIRECTORY PASS: eight regions, top30, last-click multi-sort, clear/ascending/descending loop, unknowns, role provenance, exact-50 threshold and no lost riders');
+// JST and fiscal-year boundaries are derived from immutable dates, not flags.
+const birthday=(birth,today)=>M.birthdayState({birth_date:birth,age:31},today);
+assert.deepEqual(birthday('1995-05-10','2026-05-09'),{age:30,done:false});
+assert.deepEqual(birthday('1995-05-10','2026-05-10'),{age:31,done:true});
+assert.deepEqual(birthday('1995-05-10','2027-03-31'),{age:31,done:true});
+assert.deepEqual(birthday('1995-05-10','2027-04-01'),{age:31,done:false});
+assert.deepEqual(birthday('1995-05-10','2027-04-02'),{age:31,done:false});
+assert.deepEqual(birthday('1995-01-10','2026-01-09'),{age:30,done:false});
+assert.deepEqual(birthday('1995-01-10','2026-01-10'),{age:31,done:true});
+assert.equal(birthday('1995-04-01','2026-04-01').done,false);
+assert.equal(birthday('1995-04-01','2026-04-02').done,true);
+assert.deepEqual(birthday('2000-02-29','2027-02-28'),{age:27,done:true});
+assert.deepEqual(birthday('2026-02-30','2026-03-01'),{age:31,done:false});
+assert.deepEqual(birthday('1900-01-01','2026-11-01'),{age:31,done:false});
+assert.deepEqual(birthday(null,'2026-11-01'),{age:31,done:false});
+assert.equal(M.jstDay(new Date('2027-03-31T14:59:59Z')),'2027-03-31');
+assert.equal(M.jstDay(new Date('2027-03-31T15:00:00Z')),'2027-04-01');
+const counts=M.countsOf({last_card:{stats:[0,2,0,6,2,0]}},{techniques:{unit:'percent',values:{nige:0,makuri:67,sashi:33,mark:0}}});
+assert.equal(counts.values.s,0);assert.equal(counts.values.makuri,6);assert.equal(counts.values.total_starts,null);
+assert.equal(M.countsOf({},{techniques:{unit:'percent',values:{makuri:67}}}).values.makuri,null,'Rounded percentages never become counts');
+assert.deepEqual(M.previousSlots({recent_meetings:[{start_date:'2026-11-05',venue:'四日市'},{start_date:'2026-10-09',venue:'弥彦'}]}).map(m=>m.venue),['弥彦','四日市']);
+assert.equal(M.gradeName(3)+M.shortVenue({venue:'四日市'}),'G3四');
+assert.equal(M.gradeName(2)+M.shortVenue({venue:'いわき平'}),'F1平');
+console.log('RIDER DIRECTORY PASS: eight regions, top30, last-click multi-sort, clear/ascending/descending loop, unknowns, role provenance, 200-plus-overflow threshold and no lost riders');

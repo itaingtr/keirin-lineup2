@@ -1,0 +1,25 @@
+name: Collect checked rider directory facts
+on:
+  push:
+    branches: [feat/rider-counts-history]
+    paths: ['scripts/collect_rider_facts.cjs', 'supabase/functions/rider-profile/parser.mjs', 'supabase/functions/rider-profile/counts.mjs', '.github/workflows/rider-facts-collect.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - run: npm install --prefix /tmp/rider-facts --no-audit --no-fund linkedom@0.18.12
+      - run: python3 scripts/export_pages.py > /tmp/rider-facts-export.json
+      - run: NODE_PATH=/tmp/rider-facts/node_modules node scripts/collect_rider_facts.cjs
+      - name: Append only normalized facts on the feature branch
+        if: github.ref == 'refs/heads/feat/rider-counts-history'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add site/rider-facts
+          git commit -m 'Append checked rider birthdays and public count evidence [skip ci]'
+          git push origin HEAD:feat/rider-counts-history
