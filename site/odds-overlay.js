@@ -41,8 +41,6 @@
     if (!anchor?.node.isConnected) return;
     const delta = anchor.node.getBoundingClientRect().top - anchor.top;
     if (Math.abs(delta) > .5) window.scrollBy({left:0, top:delta, behavior:'auto'});
-    // At the beginning/end of the page, the browser may clamp the position.
-    anchor.top = anchor.node.getBoundingClientRect().top;
   }
 
   function finish() {
@@ -121,7 +119,6 @@
       decorate(state);
       synchronize(state);
     }
-    for (const state of pending) preserve(state);
     finish();
   }
 
@@ -147,7 +144,6 @@
       const state = prepare(event.target.closest('#rows > tr'));
       if (state) {
         synchronize(state);
-        preserve(state);
         finish();
       }
     }
