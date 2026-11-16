@@ -29,10 +29,11 @@
   }
   function countDisplay(counts,detail=false){
     const group=el('div','count-grid');
-    for(const [key,label]of M.COUNT_FIELDS){const value=counts.values[key],item=el('span','count-item');item.dataset.stat=key;
-      const threshold=key==='b'?15:key==='total_starts'?null:10;
+    for(const [key,label]of M.COUNT_FIELDS){const value=counts.values[key],item=el('span','count-item');item.dataset.stat=key;item.dataset.value=value===null?'':String(value);
+      const threshold=key==='b'?10:key==='total_starts'?null:5;
       if(value!==null&&threshold!==null&&value>=threshold)item.classList.add('count-high');
-      item.append(el('span','count-label',key==='total_starts'?'総':label),el('strong','count-value',value===null?'—':value));
+      if(key==='b'&&value===0)item.classList.add('count-empty-b');
+      item.append(el('span','count-label',key==='total_starts'?'総':label),el('strong','count-value',key==='b'&&value===0?'':value===null?'—':value));
       item.setAttribute('aria-label',(key==='total_starts'?'総出走数':label)+' '+(value===null?'未確認':value+'回'));group.append(item);
     }
     const date=counts.card_date||counts.observed_at?.slice(0,10);group.title=counts.scope+(date?' / 確認資料 '+date:'');
@@ -77,6 +78,7 @@
       const row=el('tr');row.dataset.playerId=player.player_id;
       const rank=el('td','directory-number',listing.start+index),name=el('td','directory-name'),button=el('button','directory-name-button',player.name);
       button.type='button';button.addEventListener('click',()=>choose(player));name.append(button);
+      const role=M.roleOf(player);name.dataset.role=role.kind||'';if(role.kind==='self')name.title=role.basis;
       const details=el('td','directory-meta');details.append(personMeta(player));
       const counts=el('td','directory-counts');counts.append(countDisplay(M.countsOf(player)));
       const score=M.scoreOf(player),points=el('td','directory-score',score===null?'—':score.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:3}));
