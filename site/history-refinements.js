@@ -93,10 +93,15 @@
         const current=group.querySelector(':scope > .line-separator');
         const backSeparator=group.querySelector(':scope > .line-back-separator');
         if (index===groups.length-1) {current?.remove();backSeparator?.remove();return;}
-        if (!current) {
-          const separator=document.createElement('span');separator.className='line-separator';separator.textContent='•';
+        let separator=current;
+        if (!separator) {
+          separator=document.createElement('span');separator.className='line-separator';separator.textContent='•';
           separator.setAttribute('aria-hidden','true');group.append(separator);
         }
+        const zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+        const owner=group.getBoundingClientRect(),next=groups[index+1].getBoundingClientRect();
+        const left=(Math.round(((owner.right+next.left)/2-owner.left)/zoom*100)/100)+'px';
+        if (separator.style.left!==left) separator.style.left=left;
         const back=group.querySelector('.stats .stat-b,.stats .stat-b-zero');
         if (back) {
           const separator=backSeparator || document.createElement('span');
