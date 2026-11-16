@@ -9,7 +9,7 @@
   const iso = date => date.toISOString().slice(0, 10);
   const shift = (day, n) => { const d = utc(day); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
   const node = (tag, className, text) => { const el = document.createElement(tag); if (className) el.className = className; if (text !== undefined) el.textContent = text; return el; };
-  let schedule, links, months = [], selected, entries = new Map(), verified = new Map(), colors = new Map();
+  let schedule, links, months = [], fixedMonths = new Set(), selected, entries = new Map(), verified = new Map(), colors = new Map();
 
   function check(condition, message) { if (!condition) throw new Error(message); }
   function publicHref(href) {
@@ -36,9 +36,20 @@
     while (iso(d).slice(0, 7) <= last) { output.push(iso(d).slice(0, 7)); d.setUTCMonth(d.getUTCMonth() + 1); }
     return output;
   }
+  function monthShift(month, offset) {
+    const day = utc(month + '-01'); day.setUTCMonth(day.getUTCMonth() + offset);
+    return iso(day).slice(0, 7);
+  }
+  const monthLabel = month => `${month.slice(0, 4)}年${Number(month.slice(5))}月`;
+  const monthHref = month => fixedMonths.has(month) ? './'+month.replace('-', '')+'.html' : './index.html?month='+month;
+  function entryMemberHref(meeting) {
+    // KEIRIN.JP's public entry-list link uses the meeting's first day, not
+    // the individual day clicked in the calendar (official Kokura link).
+    return 'https://keirin.jp/pc/dfw/dataplaza/guest/entrymember?' + new URLSearchParams({KCD: meeting.code, KST: meeting.start.replaceAll('-', '')});
+  }
   function venueLink(day, meeting) {
-    // Only saved, exported URLs are usable; future scheduled meetings are labels.
-    if (day > today) return null;
+    if (day > today) return {href: entryMemberHref(meeting), kind: 'entries'};
+    // Today and the archives still use only actually published date links.
     const d = entries.get(day);
     const venue = d?.venues.find(v => v.code === meeting.code);
     if (!venue) return null;
@@ -74,12 +85,12 @@
     section.setAttribute('aria-label', `${Number(start.slice(5,7))}月${Number(start.slice(8))}日からの週`);
     const headings = node('div', 'day-headings');
     for (let col = 0; col < 7; col++) {
-      const day = shift(start, col), outside = day < first || day > last;
-      const cell = node('div', 'day-heading' + (col === 0 ? ' sunday' : col === 6 ? ' saturday' : '') + (outside ? ' outside' : '') + (day === today ? ' today' : ''));
+      const day = shift(start, col), outside = day < first || day > last, isToday = day === today && !outside;
+      const cell = node('div', 'day-heading' + (col === 0 ? ' sunday' : col === 6 ? ' saturday' : '') + (outside ? ' outside' : '') + (isToday ? ' today' : ''));
       const d = outside || day > today ? null : entries.get(day);
       const number = node(d ? 'a' : 'span', 'day-number', String(Number(day.slice(8))));
       if (d) { number.href = d.href; number.setAttribute('aria-label', `${day}の掲載出走表`); }
-      if (day === today) { number.setAttribute('aria-current', 'date'); cell.append(number, node('span', 'today-label', '今日')); } else cell.append(number);
+      if (isToday) { number.setAttribute('aria-current', 'date'); cell.append(number, node('span', 'today-label', '今日')); } else cell.append(number);
       headings.append(cell);
     }
     const events = node('div', 'week-events');
@@ -103,8 +114,12 @@
         cell.dataset.date = day;
         const description = `${day} ${m.venue} ${m.grade}｜${m.title}（${m.start}〜${m.end}）`;
         const lastLabel = target?.last_race ? `${target.last_race}R` : 'レース';
-        cell.title = description + (href ? `｜最終掲載${lastLabel}の出走メンバーへ` : '｜出走表は未掲載');
-        if (href) { cell.href = href; cell.setAttribute('aria-label', `${day} ${m.venue} 最終掲載${lastLabel}の出走メンバー`); }
+        const destination = target?.kind === 'entries' ? 'KEIRIN.JPの出場予定選手一覧' : `最終掲載${lastLabel}の出走メンバー`;
+        cell.title = description + (href ? `｜${destination}へ` : '｜出走表は未掲載');
+        if (href) {
+          cell.href = href; cell.dataset.linkKind = target?.kind || 'race';
+          cell.setAttribute('aria-label', `${day} ${m.venue} ${destination}`);
+        }
         const venueName = Array.from(m.venue).slice(0, 3).join('');
         cell.append(node('span', 'venue-name', venueName + (m.night ? '🌛' : '')));
         if (!href) cell.setAttribute('aria-label', description + (m.night ? ' ナイター' : ''));
@@ -114,27 +129,46 @@
     }
     section.append(headings, events); return section;
   }
-  function render(month) {
-    selected = month;
+  function renderMonth(month) {
     const [year, mm] = month.split('-').map(Number), first = month + '-01', last = iso(new Date(Date.UTC(year, mm, 0)));
-    $('month-title').textContent = `${year}年 ${mm}月`;
-    document.title = `${year}年${mm}月の開催カレンダー｜競輪ラインナップ`;
-    $('month-select').value = month;
-    $('prev').disabled = months.indexOf(month) === 0; $('next').disabled = months.indexOf(month) === months.length - 1;
-    $('this-month').disabled = month === today.slice(0, 7) || !months.includes(today.slice(0, 7));
-    const header = node('div', 'weekdays');
-    weekdays.forEach((day, i) => header.append(node('div', 'weekday' + (i === 0 ? ' sunday' : i === 6 ? ' saturday' : ''), day)));
-    $('calendar').replaceChildren(header);
-    for (let start = shift(first, -utc(first).getUTCDay()); start <= last; start = shift(start, 7)) $('calendar').append(renderWeek(start, first, last));
-    $('calendar').setAttribute('aria-busy', 'false');
+    const panel = node('section', 'month-panel'); panel.dataset.month = month;
+    const heading = node('div', 'month-heading');
+    const title = node('h3', '', monthLabel(month)); title.id = 'calendar-month-'+month;
+    panel.setAttribute('aria-labelledby', title.id); heading.append(title);
+    if (month !== selected && months.includes(month)) {
+      const link = node('a', 'month-start-link', 'この月から見る →'); link.href = monthHref(month);
+      link.setAttribute('aria-label', `${monthLabel(month)}から3か月を表示`); heading.append(link);
+    }
     const full = schedule.monthly_coverage.includes(month);
     const count = schedule.meetings.filter(m => m.start <= last && m.end >= first).length;
-    $('status').textContent = `${count}開催${full ? '｜KEIRIN.JP の月別予定を確認済みにゃ' : '｜グレードレースの発表分を載せているにゃ。F1 は月別予定の確認後に追加するにゃ。'}`;
-    $('official-link').href = `https://keirin.jp/pc/raceschedule?scyy=${year}&scym=${String(mm).padStart(2, '0')}`;
+    const note = full ? 'KEIRIN.JP の月別予定を確認済みにゃ' : count ? 'グレードレースの発表分にゃ。F1 は月別予定の確認後に追加するにゃ。' : '開催予定の発表・確認待ちにゃ。';
+    const status = node('p', 'month-status', `${count}開催｜${note}`);
+    const grid = node('div', 'calendar'); grid.setAttribute('aria-labelledby', title.id);
+    const header = node('div', 'weekdays');
+    weekdays.forEach((day, i) => header.append(node('div', 'weekday' + (i === 0 ? ' sunday' : i === 6 ? ' saturday' : ''), day)));
+    grid.append(header);
+    for (let start = shift(first, -utc(first).getUTCDay()); start <= last; start = shift(start, 7)) grid.append(renderWeek(start, first, last));
+    panel.append(heading, status, grid); return panel;
+  }
+  function render(month) {
+    selected = month;
+    const shown = [0, 1, 2].map(offset => monthShift(month, offset));
+    $('month-title').textContent = monthLabel(month);
+    document.title = `${monthLabel(month)}から3か月の開催カレンダー｜競輪ラインナップ`;
+    $('month-select').value = month;
+    $('prev').disabled = months.indexOf(month) === 0; $('next').disabled = months.indexOf(month) === months.length - 1;
+    $('this-month').disabled = month === today.slice(0, 7);
+    $('calendar').replaceChildren(...shown.map(renderMonth));
+    $('calendar').setAttribute('aria-busy', 'false');
+    const first = month + '-01', finalMonth = shown.at(-1), [year, mm] = finalMonth.split('-').map(Number);
+    const last = iso(new Date(Date.UTC(year, mm, 0)));
+    const count = schedule.meetings.filter(m => m.start <= last && m.end >= first).length;
+    $('status').textContent = `${monthLabel(month)}〜${monthLabel(finalMonth)}の3か月・${count}開催を表示しているにゃ。`;
+    $('official-link').href = `https://keirin.jp/pc/raceschedule?scyy=${month.slice(0,4)}&scym=${month.slice(5)}`;
   }
   function navigate(month) {
     if (!months.includes(month)) return;
-    location.href = './'+month.replace('-', '')+'.html';
+    location.href = monthHref(month);
   }
   async function load() {
     $('retry').hidden = true; $('calendar').setAttribute('aria-busy', 'true');
@@ -159,8 +193,10 @@
       const starts = [...data.monthly_coverage, ...data.meetings.map(m => m.start.slice(0, 7))].sort();
       const ends = [...data.monthly_coverage, ...data.meetings.map(m => m.end.slice(0, 7))].sort();
       // Keep the calendar focused on available archives and announced schedules.
-      const earliest = [links.days[0]?.date.slice(0, 7) || today.slice(0, 7), starts[0]].sort().at(-1);
-      months = rangeMonths(earliest, ends.at(-1));
+      const currentMonth = today.slice(0, 7);
+      const earliest = [links.days[0]?.date.slice(0, 7) || currentMonth, starts[0]].sort().at(-1);
+      fixedMonths = new Set(rangeMonths([starts[0], '2026-10'].sort().at(-1), ends.at(-1)));
+      months = rangeMonths([earliest, currentMonth].sort()[0], [ends.at(-1), currentMonth].sort().at(-1));
       $('month-select').replaceChildren(...months.map(month => { const option = node('option', '', `${month.slice(0, 4)}年${Number(month.slice(5))}月`); option.value = month; return option; }));
       $('month-select').disabled = false;
       const requested = document.body.dataset.calendarMonth || new URLSearchParams(location.search).get('month');
