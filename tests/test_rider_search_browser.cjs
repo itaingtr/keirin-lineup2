@@ -18,7 +18,8 @@ const root=path.resolve(process.argv[2]||'public');
           assert.equal(route.request().method(),'GET');
           if(fail)return route.fulfill({status:502,contentType:'application/json',body:'{}'});
           if(delayed)await new Promise(resolve=>setTimeout(resolve,500));
-          return route.fulfill({contentType:'application/json',body:JSON.stringify(profile)});
+          const fixture=width===390?{...profile,counts:{...rider.counts,values:{s:10,b:15,nige:9,makuri:10,sashi:0,mark:10,total_starts:45}}}:profile;
+          return route.fulfill({contentType:'application/json',body:JSON.stringify(fixture)});
         }
         if(url.origin!=='https://itaingtr.github.io')return route.abort();
         const relative=url.pathname.replace('/keirin-lineup2/',''),file=path.join(root,relative);
@@ -53,6 +54,11 @@ const root=path.resolve(process.argv[2]||'public');
         countsLeft:row.querySelector('.directory-counts').getBoundingClientRect().left,
         scoreLeft:row.querySelector('.directory-score').getBoundingClientRect().left,
         recentLeft:row.querySelector('.directory-recent').getBoundingClientRect().left,
+        height:row.getBoundingClientRect().height,
+        columns:[...row.querySelectorAll('td')].slice(1).map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})),
+        provinceTop:row.querySelector('.directory-prefecture').getBoundingClientRect().top,
+        termTop:row.querySelector('.person-term-age').getBoundingClientRect().top,
+        stats:[...row.querySelectorAll('.count-item')].map(node=>({key:node.dataset.stat,value:node.querySelector('.count-value').textContent,color:getComputedStyle(node.querySelector('.count-value')).color,size:parseFloat(getComputedStyle(node.querySelector('.count-value')).fontSize)})),
       })));
       for(const row of listed){
         const person=catalogue.players.find(p=>p.player_id===row.id);
@@ -62,7 +68,14 @@ const root=path.resolve(process.argv[2]||'public');
         assert.equal(row.recent.length,2);
         assert.deepEqual(row.recent.map(line=>line.text),M.previousSlots(person).map(meeting=>meeting?M.gradeName(meeting.grade_code)+M.shortVenue(meeting)+meeting.days.map(day=>day.order||day.accident||'—').join(''):'—'));
         if(row.metaLeft>=row.nameRight)assert.ok(row.metaLeft-row.nameRight<10,'County/period/age must immediately follow the name');
+        assert.ok(row.provinceTop<row.termTop,'County above the combined period/age line');
+        assert.ok(Math.min(...row.columns.map(c=>c.bottom))>Math.max(...row.columns.map(c=>c.top)),'Identity, counts, score and histories share one horizontal row');
+        assert.ok(row.height<=28,'Compact row height: '+row.height);
+        for(const stat of row.stats){const high=stat.value!=='—'&&stat.key!=='total_starts'&&Number(stat.value)>=(stat.key==='b'?15:10);assert.equal(stat.color==='rgb(211, 47, 47)',high,stat.key+'='+stat.value);}
+        assert.ok(row.stats[0].size<=row.stats[1].size-1,'S is one font step smaller');
       }
+      assert.equal(await page.locator('.directory-role').count(),0,'Remove per-rider role labels');
+      assert.doesNotMatch(await page.locator('main').textContent(),/自力型|追込型/);
       assert.equal(await page.locator('#pages-top').isVisible(),false);
       if(width===390)await page.screenshot({path:'/tmp/rider-directory-mobile.png'});
       await page.locator('#show-all').tap();
@@ -88,7 +101,7 @@ const root=path.resolve(process.argv[2]||'public');
       await period.tap();assert.equal(await period.getAttribute('data-direction'),'off');
       assert.equal(await page.locator('#sort-order').textContent(),'並び：年齢↓ → 得点↓');
       const self=page.locator('#sort-buttons button[data-role="self"]');await self.tap();
-      assert.ok((await page.locator('.directory-role').allTextContents()).every(label=>label.includes('自力型')));
+      assert.ok((await rowIds()).every(id=>M.roleOf(catalogue.players.find(p=>p.player_id===id)).kind==='self'));
       await self.tap();assert.equal(await self.getAttribute('aria-pressed'),'false');
       await page.locator('#show-top').tap();assert.equal(await page.locator('#rider-list > tr').count(),30);
       await page.locator('#rider-query').fill('脇本　雄太');await page.locator('#rider-search button').tap();
@@ -96,6 +109,16 @@ const root=path.resolve(process.argv[2]||'public');
       assert.equal(await page.locator('#rider-meetings > .meeting').count(),profile.meetings.length);
       assert.doesNotMatch(await page.locator('#techniques').textContent(),/%/);
       assert.deepEqual(await page.locator('#techniques .count-item').evaluateAll(nodes=>nodes.map(n=>n.dataset.stat)),M.COUNT_FIELDS.map(([key])=>key));
+      const detail=await page.evaluate(()=>{
+        const nodes=['rider-name','rider-meta','techniques'].map(id=>document.getElementById(id).getBoundingClientRect());
+        return {columns:nodes.map(n=>({left:n.left,right:n.right,top:n.top,bottom:n.bottom})),
+          stats:[...document.querySelectorAll('#techniques .count-item')].map(node=>({key:node.dataset.stat,value:node.querySelector('.count-value').textContent,color:getComputedStyle(node.querySelector('.count-value')).color,size:parseFloat(getComputedStyle(node.querySelector('.count-value')).fontSize)}))};
+      });
+      assert.ok(detail.columns[0].right<=detail.columns[1].left&&detail.columns[1].right<=detail.columns[2].left,'Detail shares the name → county/period/age → counts order');
+      assert.ok(Math.min(...detail.columns.map(c=>c.bottom))>Math.max(...detail.columns.map(c=>c.top)),'Detail counts stay beside the name');
+      assert.ok(detail.stats[0].size<=detail.stats[1].size-1);
+      for(const stat of detail.stats){const high=stat.value!=='—'&&stat.key!=='total_starts'&&Number(stat.value)>=(stat.key==='b'?15:10);assert.equal(stat.color==='rgb(211, 47, 47)',high,stat.key+'='+stat.value);}
+      if(width===390)assert.deepEqual(detail.stats.filter(stat=>stat.color==='rgb(211, 47, 47)').map(stat=>stat.key),['s','b','makuri','mark'],'Exact10/15 boundaries, with9 and total starts left ordinary');
       const headings=await page.locator('.meeting-label strong').allTextContents();assert.ok(headings.every(text=>/^(?:F[12]|G[123]|GP)/.test(text)),'Every detail heading puts grade before venue');
       assert.equal(await page.locator('#official-profile').getAttribute('href'),'https://keirin.jp/pc/racerprofile?snum=014396');
       const geometry=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,name:document.querySelector('#rider-name').getBoundingClientRect().bottom,history:document.querySelector('#rider-meetings').getBoundingClientRect().top,first:document.querySelector('.meeting').getBoundingClientRect().height}));
