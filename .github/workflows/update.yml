@@ -60,6 +60,7 @@ jobs:
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs public
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs public
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_overlay.cjs public
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_race_results.cjs
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_compact_navigation.cjs
           node tests/test_daily_results.cjs public 20261114
@@ -79,6 +80,13 @@ jobs:
           if [ -n "$TEN_DAILY" ]; then
             NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_ten_meetings.cjs public/index.html "public/$TEN_DAILY"
           fi
+      - name: Verify upward odds and unchanged card positions before publishing a code change
+        if: steps.update.outputs.publish == 'true' && github.event_name == 'push'
+        run: |
+          npm install --prefix /tmp/lineup2-qa --no-audit --no-fund playwright-core@1.62.1
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_history_refinements.cjs public
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5

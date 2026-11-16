@@ -33,7 +33,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
   else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,...(fs.existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{})});}}
   for(const width of [320,390,428]){
    const context=await browser.newContext({viewport:{width,height:926},isMobile:true,hasTouch:true});
-   const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0;
+   const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0,servedOdds=oddsFixture,oddsFailure=false;
    await context.route('**/*',async route=>{
     const request=route.request(),url=new URL(request.url());
     if(!['GET','HEAD','OPTIONS'].includes(request.method())){writes.push(request.method());await route.abort();return;}
@@ -41,7 +41,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     // fixture independent of the remote SDK and signed-in user state.
     if(url.pathname.endsWith('/comments-passphrase.js')){await route.fulfill({contentType:'text/javascript',body:'window.keirinBoard={ready:false};'});return;}
     if(url.hostname==='raw.githubusercontent.com'&&url.pathname.includes('/fallback/kdreams/exacta/')){
-     oddsLoads++;await route.fulfill({status:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(oddsFixture)});return;
+     oddsLoads++;await route.fulfill({status:oddsFailure?503:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(servedOdds)});return;
     }
     if(url.pathname==='/functions/v1/race-results'){
      const source=url.searchParams.get('source');counts.set(source,(counts.get(source)||0)+1);active++;maximum=Math.max(maximum,active);
@@ -103,6 +103,64 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     }
    }
    assert.equal(oddsLoads,1,'All compact odds share one initial feed even without the old eyebrow heading');
+   // The full exacta tables must grow upward without moving any race/rider,
+   // adding document height, forcing scroll, or exposing the removed labels.
+   const firstRow=page.locator('#rows > tr').first(),band=firstRow.locator('.rider-odds').first();
+   async function cardPosition(){return page.evaluate(()=>({
+    cards:[...document.querySelectorAll('#rows > tr')].map(row=>{const r=row.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}),
+    cars:[...document.querySelectorAll('#rows > tr .lineup .car')].map(car=>{const r=car.getBoundingClientRect();return [r.x,r.y];}),
+    scroll:[scrollX,scrollY,visualViewport.pageLeft,visualViewport.pageTop],
+    document:[document.scrollingElement.scrollWidth,document.scrollingElement.scrollHeight]
+   }));}
+   const beforeOdds=await cardPosition();
+   assert.equal(await firstRow.locator('.odds-toggle').isVisible(),false);
+   await band.tap();
+   await page.waitForSelector('.odds-cell:not([hidden]) .exacta-time');
+   const panel=firstRow.locator('.odds-cell'),refresh=panel.locator('.odds-refresh');
+   assert.deepEqual(await cardPosition(),beforeOdds,'Opening exacta must preserve every card, car and scroll position');
+   const overlay=await firstRow.evaluate(row=>{
+    const panel=row.querySelector('.odds-cell'),band=row.querySelector('.rider-odds'),time=panel.querySelector('.exacta-time'),button=panel.querySelector('.odds-refresh'),name=button.closest('.exacta-name-row').querySelector('.exacta-rider-name');
+    const p=panel.getBoundingClientRect(),b=band.getBoundingClientRect(),t=time.getBoundingClientRect(),u=button.getBoundingClientRect(),n=name.getBoundingClientRect();
+    return {top:p.top,bottom:p.bottom,anchor:b.top,height:p.height,nameRight:n.right,buttonLeft:u.left,buttonBottom:u.bottom,timeTop:t.top,time:time.textContent,
+     car:button.closest('.exacta-column-rider').querySelector('.exacta-number').textContent,observed:time.dateTime,
+     tableCount:panel.querySelectorAll('.exacta-matrix').length,headerHeight:name.getBoundingClientRect().height,toolsHeight:button.parentElement.getBoundingClientRect().height,
+     captions:[...panel.querySelectorAll('caption,.odds-heading')].map(n=>getComputedStyle(n).display),
+     status:panel.querySelector('.odds-status').getBoundingClientRect().height};
+   });
+   assert.equal(overlay.tableCount,2);assert.equal(overlay.car,'1');
+   assert.ok(overlay.top>=-1&&overlay.bottom<overlay.anchor&&overlay.height>100,JSON.stringify(overlay));
+   assert.ok(overlay.buttonLeft>=overlay.nameRight&&overlay.buttonLeft-overlay.nameRight<3,JSON.stringify(overlay));
+   assert.ok(overlay.timeTop>=overlay.buttonBottom&&overlay.toolsHeight<=overlay.headerHeight,JSON.stringify(overlay));
+   assert.ok(overlay.captions.every(value=>value==='none'));assert.ok(overlay.status<=2);
+   const expectedClock=value=>new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));
+   assert.equal(overlay.time,expectedClock(overlay.observed));assert.match(overlay.time,/^\d{2}:\d{2}$/);
+   const originalQuotes=await panel.locator('td[data-combination]').allTextContents();
+   const originalTime=await panel.locator('.exacta-time').getAttribute('datetime');
+   oddsFailure=true;await refresh.tap();
+   await page.waitForSelector('.exacta-time[data-stale="true"]');
+   assert.deepEqual(await panel.locator('td[data-combination]').allTextContents(),originalQuotes);
+   assert.equal(await panel.locator('.exacta-time').getAttribute('datetime'),originalTime);
+   assert.deepEqual(await cardPosition(),beforeOdds,'A failed refresh must retain geometry and checked values');
+   oddsFailure=false;servedOdds=JSON.parse(JSON.stringify(oddsFixture));
+   const updated=servedOdds.results.find(item=>item.snapshot.race_key===new URL(oddsAndDots[0].source).pathname).snapshot;
+   updated.observed_at=new Date(Date.parse(originalTime)+1000).toISOString();
+   for(const price of updated.odds)if(price.value!==null)price.value+=1;
+   await refresh.tap();
+   await page.waitForFunction(value=>document.querySelector('.odds-cell:not([hidden]) .exacta-time')?.dateTime===value,updated.observed_at);
+   assert.equal(await panel.locator('.odds-refresh').count(),1,'A refreshed matrix must retain one live refresh control');
+   assert.notDeepEqual(await panel.locator('td[data-combination]').allTextContents(),originalQuotes);
+   assert.deepEqual(await cardPosition(),beforeOdds,'Replacing both matrices must not move the lineup');
+   const confirmedQuotes=await panel.locator('td[data-combination]').allTextContents();
+   servedOdds=oddsFixture;await panel.locator('.odds-refresh').tap();
+   await page.waitForFunction(()=>!document.querySelector('.odds-cell:not([hidden])').hasAttribute('aria-busy'));
+   assert.deepEqual(await panel.locator('td[data-combination]').allTextContents(),confirmedQuotes,'Older quotes cannot replace the confirmed matrix');
+   assert.equal(await panel.locator('.exacta-time').getAttribute('datetime'),updated.observed_at);
+   if(width===390)await page.screenshot({path:'/tmp/odds-overlay-mobile.png'});
+   await band.tap();assert.equal(await panel.isVisible(),false);
+   await band.focus();await page.keyboard.press('Enter');await page.waitForSelector('.odds-cell:not([hidden]) .exacta-time');
+   await page.keyboard.press('Escape');assert.equal(await panel.isVisible(),false);
+   assert.deepEqual(await cardPosition(),beforeOdds,'Closing or keyboard access must not scroll the card');
+   await band.tap();await firstRow.locator('.venue').tap();assert.equal(await panel.isVisible(),false);
    await page.waitForFunction(()=>document.querySelector('.meeting-reason[data-reason-state="ready"]'));
    await page.locator('.race-result-toggle').first().evaluate(n=>n.click());
    await page.waitForSelector('.race-result-panel:not([hidden]) .race-result-table');
@@ -173,7 +231,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await drag(35,width-35);
    await cdp.detach();await page.evaluate(()=>window.scrollTo(0,0));
    if(width===390)await page.screenshot({path:'/tmp/history-refinements-mobile.png'});
-   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
+   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),overlay,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
    await context.close();
   }
  }finally{if(browser)await browser.close();}

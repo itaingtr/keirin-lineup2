@@ -4,7 +4,8 @@ from pathlib import Path
 
 CUTOVER = '20261116'
 MARKER = 'data-history-refinements="20261116"'
-ASSETS = ('public-results-reader.js', 'history-refinements.css', 'history-refinements.js')
+ASSETS = ('public-results-reader.js', 'history-refinements.css', 'history-refinements.js',
+          'odds-overlay.css', 'odds-overlay.js')
 RESULT_READER = 'race-results-refined.js'
 
 
@@ -26,14 +27,16 @@ def apply(page, site, output, day):
                          '<script src="/keirin-lineup2/'+RESULT_READER+'?v='+version+'"></script>', page)
     if count != 1:
         raise ValueError('History result reader tag differs')
-    page = page.replace('<body', '<body '+MARKER+' data-lineup-spacing="readable-20261116"', 1)
+    page = page.replace('<body', '<body '+MARKER+' data-lineup-spacing="readable-20261116" data-odds-overlay="up-20261116"', 1)
     tags = {}
     for name in ASSETS:
         content = (site/name).read_bytes()
         (output/name).write_bytes(content)
         version = hashlib.sha256(content).hexdigest()[:12]
         tags[name] = '/keirin-lineup2/'+name+'?v='+version
-    page = page.replace('</head>', '<link rel="stylesheet" href="'+tags['history-refinements.css']+'"></head>', 1)
+    page = page.replace('</head>', ''.join('<link rel="stylesheet" href="'+tags[name]+'">'
+                        for name in ('history-refinements.css', 'odds-overlay.css'))+'</head>', 1)
     before = '<script src="/keirin-lineup2/'+RESULT_READER
     page = page.replace(before, '<script src="'+tags['public-results-reader.js']+'"></script>'+before, 1)
-    return page.replace('</body>', '<script src="'+tags['history-refinements.js']+'"></script></body>', 1)
+    return page.replace('</body>', ''.join('<script src="'+tags[name]+'"></script>'
+                        for name in ('history-refinements.js', 'odds-overlay.js'))+'</body>', 1)

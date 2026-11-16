@@ -26,6 +26,8 @@ on:
       - 'scripts/history_refinements.py'
       - 'site/history-refinements.js'
       - 'site/history-refinements.css'
+      - 'site/odds-overlay.js'
+      - 'site/odds-overlay.css'
       - 'site/public-results-reader.js'
       - 'tests/test_history_refinements.cjs'
       - 'scripts/official_publication.py'
@@ -92,6 +94,7 @@ jobs:
             /tmp/previous-mobile.png
             /tmp/formal-ten-mobile.png
             /tmp/history-refinements-mobile.png
+            /tmp/odds-overlay-mobile.png
             /tmp/mobile-replay.png
             /tmp/race-results-mobile*.png
           if-no-files-found: ignore
