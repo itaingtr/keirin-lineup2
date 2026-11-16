@@ -1,7 +1,7 @@
 name: Verify name-based rider history search
 on:
   push:
-    branches: [main, feat/rider-name-search, feat/rider-directory, feat/rider-counts-history]
+    branches: [main, feat/rider-name-search, feat/rider-directory, feat/rider-counts-history, feat/rider-inline-counts]
     paths:
       - 'site/daily-results/search*'
       - 'scripts/rider_search.py'

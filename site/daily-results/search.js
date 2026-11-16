@@ -22,13 +22,16 @@
   const gradeName=code=>({1:'F2',2:'F1',3:'G3',4:'G2',5:'G1',6:'GP'})[code]||'';
   function personMeta(player){
     const meta=el('span','person-meta'),birthday=M.birthdayState(player);
-    meta.append(el('span','directory-prefecture',M.prefectureOf(player)||'県不明'),el('span','directory-period',(player.period||'—')+'期'));
+    meta.append(el('span','directory-prefecture',M.prefectureOf(player)||'県不明'));
+    const second=el('span','person-term-age');second.append(el('span','directory-period',(player.period||'—')+'期'));
     const age=el('span','directory-age',birthday.age!==null?birthday.age+'歳':'年齢不明');
-    if(birthday.done){const done=el('small','birthday-done','済');done.title='4月1日以降の誕生日済み';age.append(done);}meta.append(age);return meta;
+    if(birthday.done){const done=el('small','birthday-done','済');done.title='4月1日以降の誕生日済み';age.append(done);}second.append(age);meta.append(second);return meta;
   }
   function countDisplay(counts,detail=false){
     const group=el('div','count-grid');
     for(const [key,label]of M.COUNT_FIELDS){const value=counts.values[key],item=el('span','count-item');item.dataset.stat=key;
+      const threshold=key==='b'?15:key==='total_starts'?null:10;
+      if(value!==null&&threshold!==null&&value>=threshold)item.classList.add('count-high');
       item.append(el('span','count-label',key==='total_starts'?'総':label),el('strong','count-value',value===null?'—':value));
       item.setAttribute('aria-label',(key==='total_starts'?'総出走数':label)+' '+(value===null?'未確認':value+'回'));group.append(item);
     }
@@ -66,7 +69,7 @@
   }
   function drawDirectory(){
     const listing=M.directory(players,{...browse,query:$('rider-query').value});browse.page=listing.page;
-    $('directory-title').textContent=listing.home?'得点トップ30':(browse.region||'全地区')+(browse.role?'・'+(browse.role==='self'?'自力型':'追込型'):'');
+    $('directory-title').textContent=listing.home?'得点トップ30':(browse.region||'全地区')+(browse.role?'・'+(browse.role==='self'?'自力':'追込'):'');
     $('directory-status').textContent=listing.total?(listing.home?'得点確認済み'+listing.scopeTotal+'人中 / ':'全'+listing.total+'人 / ')+listing.start+'〜'+listing.end+'人'+(listing.pageCount>1?'（'+(listing.page+1)+' / 2ページ）':''):'一致する選手はいません';
     $('search-status').textContent='保存選手 '+players.length+'人。名前を押すと10場所と最新プロフィールを表示します。';
     const root=$('rider-list');root.replaceChildren();
@@ -74,12 +77,11 @@
       const row=el('tr');row.dataset.playerId=player.player_id;
       const rank=el('td','directory-number',listing.start+index),name=el('td','directory-name'),button=el('button','directory-name-button',player.name);
       button.type='button';button.addEventListener('click',()=>choose(player));name.append(button);
-      name.append(personMeta(player));
-      const role=M.roleOf(player),kind=el('span','directory-role',role.label+(role.inferred?'＊':''));kind.title=role.basis;name.append(kind);
+      const details=el('td','directory-meta');details.append(personMeta(player));
       const counts=el('td','directory-counts');counts.append(countDisplay(M.countsOf(player)));
       const score=M.scoreOf(player),points=el('td','directory-score',score===null?'—':score.toLocaleString('ja-JP',{minimumFractionDigits:2,maximumFractionDigits:3}));
       points.title=player.last_card?.date?'最終掲載 '+player.last_card.date:'競走得点は未取得';
-      row.append(rank,name,counts,points,recentDisplay(player));root.append(row);
+      row.append(rank,name,details,counts,points,recentDisplay(player));root.append(row);
     }
     for(const id of ['pages-top','pages-bottom']){
       const pagination=$(id);pagination.replaceChildren();pagination.hidden=listing.pageCount===1;
@@ -107,7 +109,7 @@
       const button=el('button','',label);button.type='button';button.dataset.sort=key;
       button.addEventListener('click',()=>{browse.sorts=M.cycleSort(browse.sorts,key);browse.page=0;showDirectory(true);});$('sort-buttons').append(button);
     }
-    for(const [key,label]of [['self','自力型'],['chaser','追込型']]){
+    for(const [key,label]of [['self','自力'],['chaser','追込']]){
       const button=el('button','',label);button.type='button';button.dataset.role=key;
       button.addEventListener('click',()=>{browse.role=browse.role===key?'':key;browse.page=0;showDirectory(true);});$('sort-buttons').append(button);
     }
@@ -132,7 +134,7 @@
     const stats=$('techniques');stats.replaceChildren();
     const counts=M.countsOf(player,profile);stats.append(countDisplay(counts,true));
     const countDate=counts.card_date||counts.observed_at?.slice(0,10);
-    stats.append(el('span','stats-source',counts.scope+'・回数'+(countDate?' / '+countDate+'確認資料':'')+' / 総＝総出走数'));
+    $('count-source').textContent=counts.scope+'・回数'+(countDate?' / '+countDate+'確認資料':'')+' / 総＝総出走数';
     const meetings=M.mergeMeetings(stock,profile);selected.meetings=meetings;
     const root=$('rider-meetings');root.replaceChildren();
     $('history-note').textContent=meetings.length+'場所・新しい順';
