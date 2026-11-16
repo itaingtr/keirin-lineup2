@@ -59,6 +59,7 @@ const root=path.resolve(process.argv[2]||'public');
         assert.ok(row.countsLeft<row.scoreLeft&&row.scoreLeft<row.recentLeft,'Counts, score and previous results stay in the requested order');
         assert.deepEqual(row.recent.map(line=>line.position),['previous_previous','previous']);
         assert.equal(row.recent.length,2);
+        assert.deepEqual(row.recent.map(line=>line.text),M.previousSlots(person).map(meeting=>meeting?M.gradeName(meeting.grade_code)+M.shortVenue(meeting)+meeting.days.map(day=>day.order||day.accident||'—').join(''):'—'));
         if(row.metaLeft>=row.nameRight)assert.ok(row.metaLeft-row.nameRight<10,'County/period/age must immediately follow the name');
       }
       assert.equal(await page.locator('#pages-top').isVisible(),false);
@@ -112,6 +113,13 @@ const root=path.resolve(process.argv[2]||'public');
       const before=await page.locator('#rider-meetings').textContent();fail=true;
       await page.locator('#profile-refresh').tap();await page.waitForFunction(()=>document.querySelector('#profile-status').textContent.includes('失敗'));
       assert.equal(await page.locator('#rider-meetings').textContent(),before,'Source failure must retain the stock');
+      if(width===390){
+        await page.clock.install({time:new Date('2027-03-31T14:59:00Z')});
+        await page.locator('#show-top').tap();
+        assert.equal(await page.locator('#rider-list .birthday-done').count(),30,'All checked birthdays have passed by fiscal year end');
+        await page.clock.fastForward(60000);
+        assert.equal(await page.locator('#rider-list .birthday-done').count(),0,'The open page resets every mark at April1 JST');
+      }
       assert.deepEqual(errors,[]);await context.close();
     }
     console.log('RIDER SEARCH BROWSER PASS: top30, eight regions, last-click multi-sort and loop, complete two-page lists, role filters, Wakimoto search, half-height histories, 320px without horizontal scrolling, safe refresh failure');

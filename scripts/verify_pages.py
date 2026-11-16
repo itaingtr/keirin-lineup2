@@ -15,6 +15,7 @@ def verification_files(site):
     """Public artifacts which must match the checked export before receipt."""
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
+    if (site/'handoff/index.html').is_file():files.append('handoff/index.html')
     if 'data-card-header="compact-20261115"' in current:
         from compact_navigation import ASSETS,CUTOVER
         files.extend(ASSETS)

@@ -267,6 +267,11 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
     daily_results=export_results(site,output,dates)
     from rider_search import export_search
     rider_search=export_search(site,output) if (site/'daily-results/search.html').is_file() else None
+    handoff=site/'handoff/index.html'
+    if handoff.is_file():
+        destination=output/'handoff/index.html'
+        destination.parent.mkdir(parents=True,exist_ok=True)
+        destination.write_bytes(handoff.read_bytes())
     return {'target_date':current_day[:4]+'-'+current_day[4:6]+'-'+current_day[6:],
             'dates':dates,'races':len(races),'riders':sum(len(r['players']) for r in races),
             'base_url':'https://itaingtr.github.io'+BASE,'database_writes':0,

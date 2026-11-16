@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>愛ボdex｜keirin-lineup2 引き継ぎ仕様書</title>
+<meta name="description" content="keirin-lineup2の現行画面仕様、取得元、保存先、自動更新、公開確認、次のチャットへの引き継ぎ。">
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans CJK JP",sans-serif;color:#203047;background:#f2f5f9;line-height:1.8}
+*{box-sizing:border-box}body{margin:0}header{background:#173858;color:#fff;padding:24px max(16px,calc((100vw - 1060px)/2))}header h1{margin:0 0 8px;font-size:clamp(22px,4vw,30px)}header p{margin:4px 0}main{max-width:1100px;margin:auto;padding:18px 16px 40px}section{padding:20px;background:#fff;border:1px solid #d8e0ea;border-radius:10px;margin:0 0 16px;scroll-margin-top:12px}h2{font-size:20px;margin:0 0 12px;color:#173858}h3{font-size:16px;margin:20px 0 8px}p{margin:8px 0}a{color:#145bbb;text-underline-offset:3px}header a{color:#e1edff}nav ul{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding-left:20px}ul,ol{padding-left:1.5em}li{margin:5px 0}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}th,td{border:1px solid #d8e0ea;text-align:left;vertical-align:top;padding:8px}th{background:#edf3fa}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f0f3f7;border-radius:3px;padding:1px 4px;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eef3f8;border:1px solid #d8e0ea;border-radius:6px;padding:12px;font:13px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace}.note{border-left:4px solid #c58a24;padding:8px 12px;background:#fff8e9}.checked{border-left:4px solid #248350;padding:8px 12px;background:#eff9f2}.small{font-size:13px;color:#56667b}button{font:inherit;padding:6px 12px;background:#1759a5;color:white;border:0;border-radius:6px;cursor:pointer}.links{display:flex;flex-wrap:wrap;gap:10px 18px}footer{font-size:13px;color:#56667b;padding:8px 4px}@media(max-width:600px){section{padding:15px}h2{font-size:18px}table{font-size:12px}th,td{padding:6px}}@media print{body{background:#fff}header{background:#fff;color:#000;padding:8px}header a{color:#000}main{padding:0}section{border:0;break-inside:avoid}button,nav{display:none}}
+</style>
+</head>
+<body>
+<header>
+<h1>愛ボdex 引き継ぎ仕様書</h1>
+<p><strong>itaingtr/keirin-lineup2</strong> の続きを、次のチャットが進めるための資料にゃ。</p>
+<p>版1.0。実装確認基準：<a href="https://github.com/itaingtr/keirin-lineup2/commit/fbc8d7a916c2a4583c2e02640b92f7f5e91a9a9f">main fbc8d7a9</a>。直近の公開確認：2026-11-15 22:50 UTC（11月16日07:50 JST）。</p>
+<p>これは確認時点の仕様にゃ。作業前には、最新mainとAGENTS.mdを読み直してにゃ。</p>
+<div class="links"><a href="../">出走表トップ</a><a href="https://github.com/itaingtr/keirin-lineup2">GitHub</a><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/site/handoff/index.html">このHTMLの原稿</a></div>
+</header>
+<main>
+<section id="start">
+<h2>1. 次のチャットへ渡す文</h2>
+<p>下の文章と、このページのURLを次のチャットへ渡せばよいにゃ。公開URLが読めない場合は、GitHubの原稿HTMLを読んでにゃ。</p>
+<pre id="handoff-prompt">itaingtr/keirin-lineup2 の作業を引き継いでにゃ。
+最初に次の公開仕様書を読み、最新mainとAGENTS.md、関係するコードを確認してにゃ。
+https://itaingtr.github.io/keirin-lineup2/handoff/
+
+ユーザーは「猫ちゃん」、担当の呼び名は「愛ボdex」。日本語の猫語で説明してにゃ。
+既存のGitHub・Supabase接続を使い、保存済みデータ・過去ページ・別チャットの変更を保護してにゃ。
+出走表を先に公開し、未取得の補足成績は選手単位で保留にしてにゃ。
+公開完了は、Actionsのデプロイと匿名HTTP照合、publication receiptまで確認してにゃ。
+今回やってほしい具体的な変更は、この後に伝えるにゃ。</pre>
+<button type="button" id="copy-prompt">引き継ぎ文をコピー</button><span id="copy-status" role="status"></span>
+</section>
+<section id="contents">
+<h2>目次</h2>
+<nav aria-label="仕様書の目次"><ul>
+<li><a href="#project">対象・優先順位</a></li><li><a href="#pages">公開URLと日付</a></li><li><a href="#header">最新の見出し・メニュー</a></li><li><a href="#card">出走表・並び</a></li><li><a href="#history">今場所・前回・成績</a></li><li><a href="#results">結果と配当</a></li><li><a href="#video">映像</a></li><li><a href="#directory">全選手成績・検索</a></li><li><a href="#providers">取得元・照合キー</a></li><li><a href="#storage">保存先</a></li><li><a href="#conditions">投稿・共有調子</a></li><li><a href="#automation">自動更新</a></li><li><a href="#release">変更・検証・公開</a></li><li><a href="#pending">確認事項</a></li><li><a href="#references">読むファイル</a></li>
+</ul></nav>
+</section>
+<section id="project">
+<h2>2. 対象と作業の約束</h2>
+<ul>
+<li>対象は <a href="https://github.com/itaingtr/keirin-lineup2">itaingtr/keirin-lineup2</a>。公開先は <a href="https://itaingtr.github.io/keirin-lineup2/">GitHub Pages</a>。読むだけならChatGPTログインは不要。</li>
+<li>元の <code>itaingtr/keirin-lineup</code> と、その保存データは別プロジェクト。変更しない。</li>
+<li>作業許可は、既存接続による読取・必要な新規追加・通常のコード修正と公開。保存済みレコードの上書き・削除、過去ページの無断変更、Auth/RLS変更を包括許可として扱わない。オッズの最新表示更新は許可済み。</li>
+<li>過去の不変データは別版を追記し、照合後に当日・将来日の索引を進める。通常の公開処理はSupabaseへ書き込まない。</li>
+<li>指示の優先順位は、最新のユーザー指定、最新AGENTS.md、現行コードと公開検証結果、旧資料の順。古い動画仕様・表示色・取得元を戻さない。</li>
+<li>ローカルの保守用フォルダは <code>/workspace/keirin-lineup2/github-pages</code>。確認用フォルダ <code>/workspace/.lineup2-tools/</code> もあるが、古い日付や未保存差分を含むことがある。最新mainを正として比較する。</li>
+<li>別チャットがカレンダーや選手一覧を更新している。古いローカルツリー全体でmainを置き換えず、自分の変更ファイルだけを反映する。</li>
+</ul>
+</section>
+<section id="pages">
+<h2>3. 公開URLと「その日」の扱い</h2>
+<div class="table-wrap"><table><thead><tr><th>用途</th><th>公開先</th></tr></thead><tbody>
+<tr><td>最新の出走表</td><td><a href="../">/keirin-lineup2/</a></td></tr>
+<tr><td>日別出走表</td><td><code>/keirin-lineup2/lineYYYYMMDD.html</code>。末尾のスラッシュや <code>/index.html</code> は付けない。</td></tr>
+<tr><td>その日の全出走表＋全結果</td><td><code>/keirin-lineup2/resultsYYYYMMDD.html</code>。例：<a href="../results20261115.html">11月15日の全結果</a></td></tr>
+<tr><td>全結果の汎用入口</td><td><a href="../results.html">results.html</a>。出走表の「全結果」ボタンは、この入口ではなく日付付きURLへ直接つなぐ。</td></tr>
+<tr><td>日程</td><td><a href="../calendar/index.html">calendar/index.html</a>。日付一覧は <a href="../calendar/dates.json">calendar/dates.json</a>。</td></tr>
+<tr><td>全選手成績・名簿・名前検索</td><td><a href="../daily-results/index.html">daily-results/index.html</a>。当日の出走に限定しない。</td></tr>
+<tr><td>旧・日別全出走選手成績</td><td><code>daily-results/entries.html?date=YYYYMMDD</code></td></tr>
+<tr><td>独立した試作</td><td><code>index2.html</code>。通常版の変更で書き換えない。</td></tr>
+</tbody></table></div>
+<p>開催日と定時処理は <strong>Asia/Tokyo</strong>。前夜21時以降、トップが翌日分へ進むため、トップの日付は日本時間の当日と一致するとは限らない。トップを今日へ戻すために古いカードを上書きしない。</p>
+<p>出走表の「全結果」「昨日」「翌日」は<strong>表示中のカードの日付</strong>が基準。11月15日のページから全結果を押せば15日分へ進む。昨日・翌日は暦の1日前・1日後で、対象ファイルが未公開なら無効にする。</p>
+<p>カレンダーは生成済みの日付一覧の <code>days[].href</code>、会場は <code>venues[].href</code> を使う。未掲載を「開催なし」と断定しない。最新トップと、その日の日別HTMLはバイト単位で同一にする。</p>
+</section>
+<section id="header">
+<h2>4. 最新の見出し・メニュー</h2>
+<p>通常の日別ページは2026年11月15日から適用。別途生成する全結果ページは対応する各日付に適用する。以前の通常ページと独立index2の表示は維持する。</p>
+<pre>11月15日 全31レース・238人
+
+11月15日　昨日　翌日　更新
+トップ　日程　全選手成績
+立川　富山　川崎　別府　全結果</pre>
+<ul>
+<li>見出しは日付・全レース数・全人数だけ。例の31レース／238人を固定値にせず、保存済みの出走表から集計する。</li>
+<li>KEIRINの眉見出し、以前の「S級戦｜並び・選手一覧」、紹介文、調子の操作説明をコンパクト表示から外した。調子の保存失敗などの状態メッセージは残す。</li>
+<li>見出し15px、日付選択は約96px幅・28px高。小さい日付ボックスでもiPhoneの操作を保つ。</li>
+<li>会場名は実際の出走表から作る。会場ボタンは、その会場で最初に掲載されたS級レースへ飛ぶ。先頭が6Rなら6Rへ飛ぶ。</li>
+<li>最下部に「トップ／日程／全選手成績」と「会場／全結果」の2列を置く。検索・再描画後も上部と同じ会場とリンクを保つ。</li>
+<li>全選手成績の行き先は既存の <code>daily-results/index.html</code>。名簿・検索の仕様を日別一覧へ戻さない。</li>
+</ul>
+<p>実装：<code>scripts/compact_navigation.py</code>、<code>site/compact-navigation.js</code>、<code>site/compact-navigation.css</code>。公開用HTMLへ適用し、保存済みの出走データは変更しない。</p>
+</section>
+<section id="card">
+<h2>5. 出走表・並び・オッズ</h2>
+<ul>
+<li>対象は現行コレクターのS級戦。開催はグレード降順、同じグレードでは最初に掲載するS級の発走時刻順。開催内はR順。</li>
+<li>出走表・車番・並び・得点・集計S/B/逃/捲/差/マ・予想印・県名と年齢は照合済みデータを表示する。表示得点は小数切捨て、内部の元得点は保持する。</li>
+<li>S数は競走得点と車番の間。0は空白、正数は緑、最大の正数は同率を含め太字。集計B数は太字。以前の着順横のSHB・調子は小さい通常の太さ。</li>
+<li>誰か1人の期別を押すと、そのレース全員の県名先頭2文字と年齢を開く。もう一度押すと全員閉じる。他レースは独立。</li>
+<li>選手列は22px。ライン内の隙間は0、別ラインは従来の間隔を維持。単騎も独立したライン。調子の桁数で選手幅を広げない。</li>
+<li>スマホは <code>initial-scale=1</code> とCSS <code>zoom:1.2544</code>。ページ全体で横移動できるようにし、競合する内側スクロールや強制スクロール復帰を作らない。</li>
+</ul>
+<h3>競りは通常の連続ラインに変換しない</h3>
+<pre>1(73) / 26 / 54
+小さい二車単：17・71、次に13・31
+競り同士の73・37を、この位置へ出さない。</pre>
+<p>取得元の括弧アイコンを正しく対応付け、欠落・入れ子・重複車番を検証する。全二車単表の行列は別に全有効組み合わせを保持し、1着と2着の方向を取り違えない。</p>
+<p>欠場車の空白オッズは、取得元が欠場を明示した組み合わせだけ <code>null</code> とする。全車番の行列と残りの有効オッズを維持する。普通の出走車の説明できない空白を成功扱いにしない。</p>
+</section>
+<section id="history">
+<h2>6. 今場所・前回・最大10場所</h2>
+<div class="table-wrap"><table><thead><tr><th>欄</th><th>表示と保護</th></tr></thead><tbody>
+<tr><td>今場所</td><td>その場所で前日までに走った着順・個人上がり・確認済みSHB。古い日から並べる。初日に前日成績がないことは正常。</td></tr>
+<tr><td>前回</td><td>前々場所、前場所の順。会場名は最大3文字。着順と個人上がりを縦に並べ、各場所は少なくとも4走分の枠をそろえる。短い開催の空欄も保持し、追加の走りを捨てない。</td></tr>
+<tr><td>成績</td><td>最大10場所を古い開催から新しい開催へ。各会場は2文字、いわき平は「平」。F1とG3は月を付ける（10防府）、G2以上は月なし。5走以上は余分な先頭走を会場名横、残る4走を下段に置く。</td></tr>
+</tbody></table></div>
+<p>初期ボタン順は<strong>成績→前回</strong>。通常は両方閉じ、押すとそのレース全員をまとめて開閉する。全結果ページでも前回・成績は閉じたまま。</p>
+<p>初日特選・決勝は赤 <code>#d32f2f</code>、準決勝は黄色 <code>#d4a000</code>。古いピンク・オレンジ仕様へ戻さない。G3の会場背景は薄赤、G2以上は薄紫。コンパクトな10場所は1場所15px、見出し5.5px、着順・事故文字8px。</p>
+<p>選手の車番・Rが変わっても、同じ開催の確認済み雛形を使う。競輪場・実際の開催初日・JKA番号・氏名・期別で照合する。未取得の選手だけ補い、開催中に全員分を毎回集め直さない。</p>
+<p>前回と10場所の読込は独立。片方の更新失敗で両方や開催全体を消さない。特定済みレースと推定プロフィール日付の重複を区別し、解決できない矛盾はその選手だけ保留にして確認済み表示を使う。</p>
+</section>
+<section id="results">
+<h2>7. その場で開く結果・配当</h2>
+<p>各レースの並び・前回成績の下、左端に「結果」1個。結果ボタンは22×12px。その右に少し離して、ヘッダーより小さい赤の「映像」を置く。</p>
+<pre>着順　車番　選手名　あがり　勝敗因　決　SHB　着差
+（着順順の各選手）
+2車単　組み合わせ　配当
+3連単　組み合わせ　配当</pre>
+<ul>
+<li>結果を開く時に、楽天の該当レースを既存の読取用Edge Function経由で取得する。HTML・動画・結果のDB複製を保存しない。</li>
+<li>未発表なら結果欄には「未定にゃ！」だけ。配当だけ発表されていれば配当だけ。通信・照合失敗は取得エラーとして扱い、未確定と混同しない。</li>
+<li>着順順に並べ、同着と事故・欠場も保持する。配当は複数の的中組み合わせを捨てず、発表済みの2車単・3連単を表示する。</li>
+<li>車番は縦の出走表と同じc1〜c9の配色。ただし結果欄の車番は表示用で、調子を投稿するボタンにしない。</li>
+<li>結果表は出走表と同じ幅。本文11px、着差とSHBは10px、見出し9px。決まり手の見出しは「決」。あがりと着差の列幅は同じ。</li>
+<li>着差を最後へ置き、車身→B、車輪→W、タイヤ差・タイヤ→ﾀｲﾔ、微差→微差。全角数字は表示用に整え、元の着差は保持する。</li>
+<li>楽天の結果欄がS/Bだけの場合、Hを推測して補わない。取得元にない数字・コメント・配当を作らない。</li>
+<li>全結果ページは、全出走表と結果欄を最初から開く。前回・成績は自動展開しない。結果読込はブラウザ側で最大3並列。</li>
+</ul>
+<p>実装：<code>site/race-results.js</code>、<code>race-results.css</code>、<code>scripts/race_results_page.py</code>、<code>site/all-results-nav.js</code>、<code>supabase/functions/race-results/</code>。</p>
+<p>読取用 <code>race-results</code> は既存プロジェクトでJWT検証を有効のまま使用する。既存の公開設定を参照し、公開キーやトークンの値をこの仕様書へ転記しない。取得URL・リダイレクト・時間・サイズ・同時数を制限する。現行はサーバー12秒／3MB、短いメモリキャッシュ5秒。永続保存や新しい定時実行はない。</p>
+</section>
+<section id="video">
+<h2>8. ライブ・映像・結果リンク</h2>
+<p>レース上部の順序は、赤「映像」、緑「結果」、青「ライブ」。ライブは正しい会場コードの楽天ライブ、緑の結果は当面楽天の該当レース。</p>
+<p>通常版の2026年11月13日以降と、対応する前回・成績の映像は、楽天プレーヤーが使う公式MP4を<strong>通常の同じタブのリンク</strong>で開く。小さい映像も、そのレースのヘッダーと同じ行き先。</p>
+<pre>https://wm.st.keirin.jp/wm-keirin{会場コード}/
+{実施日YYYYMMDD}-{会場コード}-{確認済みグレード2桁}-{R2桁}-01-00.mp4</pre>
+<p>この形式だけを頼りに未確認の開催初日・R・グレードを推測しない。確認済みの楽天digest座標と実施日を使う。</p>
+<p>ページ内動画、iframe、小窓、JavaScriptポップアップ、プレーヤー切替、自動全画面APIを再導入しない。動画を先読み・保存・再配信しない。再生・シーク・全画面はブラウザ標準へ任せる。OSの自動再生制限を直リンクで強制解除することはできない。</p>
+<p>古い保存済みURLと旧ページ用読込ファイルを維持し、正式版用は <code>previous-meetings-mp4.js</code> と <code>ten-meetings-mp4.js</code> を別名で派生出力する。</p>
+</section>
+<section id="directory">
+<h2>9. 全選手成績・名簿・名前検索</h2>
+<p>この部分は別チャットの更新も入っている。<a href="https://github.com/itaingtr/keirin-lineup2/blob/main/RIDER_SEARCH_HANDOFF.md">RIDER_SEARCH_HANDOFF.md</a> と最新AGENTS.mdを優先して読む。</p>
+<ul>
+<li>入口 <code>daily-results/index.html</code> は保存済み台帳全体の名簿・選手名／JKA番号検索。当日の出走に限定しない。</li>
+<li>上に北日本・関東・南関東・中部・近畿・中国・四国・九州の8地区。福井は近畿、静岡は南関東。都道府県名の原本は省略しない。</li>
+<li>得点・期別・年齢・北からの県順で、解除→昇順→降順。最後に変更した並べ替えを主条件とし、先の条件は同値時の順序として保持する。初期は得点降順トップ30。</li>
+<li>最新訂正（2026年11月16日）：200人までは1ページ。超えた場合は1ページ目200人、2ページ目に残り全員。553人なら200＋353人で、均等には分けない。未知の得点・県・年齢を0で埋めず、不明は最後に置く。</li>
+<li>自力型・追込型は公式脚質を優先。保存B・逃・捲・差・マから導いたものは目安と明記し、全0や不明を勝手に分類しない。</li>
+<li>選択した選手名の直下へ最新の決まり手と最大10場所をコンパクトな縦並びで表示する。名簿表示だけで全員の外部プロフィールを再収集しない。</li>
+<li>名前のすぐ隣に県・期・年齢。次にS・B・逃・捲・差・マ・総出走数、その右に競走得点、さらに右に前2場所を置く。上は前々場所、下は前場所。例：G3四 6 3 2 1。10場所の見出しも常にグレードが競輪場名の前。</li>
+<li>KEIRIN.JPの公開プロフィールを優先し、エンジョイへの参照リンクも使う。決まり手は割合を表示せず、確認済み楽天出走表の直近4か月の実数を使う。総出走数は同じ表の1着＋2着＋3着＋着外。％からの換算は禁止し、未確認は—で残す。</li>
+<li>公式生年月日から現在年齢と小さな「済」を計算する。「済」は日本時間の4月1日以降に誕生日を迎えた印。4月1日は全員リセットし、開いたままの画面にも反映する。</li>
+<li>この訂正のため台帳553人の生年月日と回数を一度照合した。<code>site/rider-facts/SHA256.json</code>へ表示フィールドだけを追記し、過去の版は保持する。一覧表示時の全員分の外部再取得や、新しい定時収集は追加しない。</li>
+<li>読取用 <code>rider-profile</code> はGETのみ・既存JWT検証。取得失敗時は確認済み保存表示を残す。プロフィールだけでは実施日・R・SHBを確定できないため、未照合の動画リンクを作らない。</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>編集元</th><th>公開先・役割</th></tr></thead><tbody>
+<tr><td><code>site/daily-results/search.html</code>、<code>search.js</code>、<code>search-model.js</code>、<code>search.css</code></td><td><code>daily-results/index.html</code> の名簿・検索。<code>scripts/rider_search.py</code> が出力する。</td></tr>
+<tr><td><code>site/daily-results/index.html</code>、<code>app.js</code>、<code>model.js</code>、<code>style.css</code></td><td>旧・日別一覧。公開時は <code>daily-results/entries.html</code>。編集元と公開側のindexの役割を取り違えない。</td></tr>
+</tbody></table></div>
+<p>旧日別一覧は <code>?date=YYYYMMDD</code> の全出走選手について、今場所・前回2場所・過去10場所を保存済み資料から結合する。薄い索引 <code>data/YYYYMMDD/all-rider-results.json</code> と不変ファイル参照を使う。JSON・2種類のCSVはブラウザ内で全員分を展開し、検索で絞られた分だけにしない。CSVはUTF-8 BOM、IDとタイムは文字列、SHBは1／0／不明空欄、調子0はデータ上保持する。</p>
+</section>
+<section id="providers">
+<h2>10. 取得元と照合キー</h2>
+<div class="table-wrap"><table><thead><tr><th>情報</th><th>稼働する取得元</th></tr></thead><tbody>
+<tr><td>コア出走表、並び、得点、集計S/B/逃/捲/差/マ、予想印、プロフィール、二車単</td><td>楽天Kドリームス。オッズは縦横を確認したparser_version 2。</td></tr>
+<tr><td>JKA番号、出走・欠場確認、今場所の個人着順・上がり・H/B</td><td>KEIRIN.JPの該当出走情報・結果と楽天を照合。</td></tr>
+<tr><td>個別レースのS</td><td>楽天のS/B欄を日付・会場・R・車番・選手・着順・タイム・Bなどで照合。</td></tr>
+<tr><td>前回2場所</td><td>楽天の確認済み直近成績。公式・楽天の個別SHB証拠を付加。</td></tr>
+<tr><td>最大10場所と最新プロフィール</td><td>主にKEIRIN.JP。確認済み楽天履歴を保持する。</td></tr>
+<tr><td>その場で開く結果表・配当</td><td>楽天の公開結果。DB複製はしない。</td></tr>
+<tr><td>共有調子・投稿</td><td>既存Supabase連携。</td></tr>
+</tbody></table></div>
+<p>WINTICKETを新規収集に戻さない。OddsParkはActionsから403だったため、接続済みの取得元として扱わず、アクセス拒否を回避しない。昔の保存データの取得元を名称だけ変えない。旧provider用コードが残っていても、稼働入口を <code>scripts/official_publication.py</code> で確認する。</p>
+<div class="table-wrap"><table><thead><tr><th>キー</th><th>意味</th></tr></thead><tbody>
+<tr><td>選手</td><td>6桁のJKA番号を文字列で保持。先頭0を落とさない。</td></tr>
+<tr><td>レースID</td><td><code>RRVVYYYYMMDD</code>：R2桁＋会場2桁＋実施日8桁。</td></tr>
+<tr><td>開催文脈</td><td>会場コード＋実際の開催初日。補充選手の初出走日を開催初日と決め付けない。</td></tr>
+<tr><td>出走と履歴の対応</td><td>日付・取得元レースURL・車番・氏名・期別・JKA番号を完全照合。車番や略称だけで結ばない。</td></tr>
+</tbody></table></div>
+<p>KEIRIN.JP結果のBHはH/B。Sではない。未知の値、明示的なfalse、0、事故、欠場、未取得を区別する。正確な上がりの表記と元の観測時刻を保持し、生成時刻で置き換えない。</p>
+</section>
+<section id="storage">
+<h2>11. 保存先と生成先</h2>
+<p><code>site/</code> は原稿・照合済み表示資料、<code>public/</code> は生成結果。publicだけを編集しても次のActionsで失われる。</p>
+<div class="table-wrap"><table><thead><tr><th>場所</th><th>内容</th></tr></thead><tbody>
+<tr><td><code>site/index.html</code></td><td>最新トップの原稿。正規化済み出走情報はHTML内の <code>const races</code>。公開用races.jsonがあると仮定しない。</td></tr>
+<tr><td><code>site/lineYYYYMMDD.html/index.html</code></td><td>日別原稿。公開時はフラットな <code>public/lineYYYYMMDD.html</code>。</td></tr>
+<tr><td><code>site/lineYYYYMMDD.html/*.json</code></td><td>rider-identities、rider-details、rakuten-marks、media、oddsなどの表示資料。公開先は <code>data/YYYYMMDD/</code>。</td></tr>
+<tr><td><code>site/previous-daily/YYYYMMDD/latest.json</code> と <code>runs/</code></td><td>前回2場所のチェックサム付き索引と不変の日別版。</td></tr>
+<tr><td><code>site/rider-history/current.json</code> と <code>JKA番号/SHA256.json</code></td><td>共通選手台帳と最大10場所の不変ファイル。公開側は <code>rider-history/</code>。</td></tr>
+<tr><td><code>site/ten-daily/YYYYMMDD/latest.json</code> と <code>runs/</code></td><td>その日の出走と共通選手版を結ぶ参照。公開側は <code>data/YYYYMMDD/ten-meetings.json</code>。</td></tr>
+<tr><td><code>site/result-flags/current.json</code> と <code>RACE_ID/SHA256.json</code></td><td>完全照合した個別レースのSHB証拠。</td></tr>
+<tr><td><code>site/rider-profiles/current.json</code> と <code>JKA番号/SHA256.json</code></td><td>明示的に確認した公開プロフィールの版。全員の定時一括取得ではない。</td></tr>
+<tr><td><code>site/rider-facts/current.json</code> と <code>SHA256.json</code></td><td>氏名・期別・登録番号を照合した生年月日、前2場所、実数のS/B/決まり手と同期間の総出走数。一覧用の不変メタデータ版。</td></tr>
+<tr><td><code>public/daily-results/riders.json</code></td><td>名簿用の小さい一覧。履歴・プロフィールは確認済み不変ファイルへの参照。</td></tr>
+<tr><td><code>public/data/YYYYMMDD/all-rider-results.json</code></td><td>旧日別全選手一覧の薄い索引。保存済み資料だけから生成。</td></tr>
+<tr><td><code>site/calendar/</code></td><td>カレンダー原稿。<code>calendar/dates.json</code> は予約された生成物。</td></tr>
+<tr><td><code>site/handoff/index.html</code></td><td>この引き継ぎ書。通常公開で <code>public/handoff/index.html</code> へコピーする。</td></tr>
+</tbody></table></div>
+<h3>odds-diagnosticsブランチ</h3>
+<ul>
+<li><code>fallback/cards/current.json</code>、<code>fallback/cards/YYYYMMDD/runs/</code>：照合済みカードの索引・不変版。</li>
+<li><code>fallback/kdreams/exacta/YYYYMMDD/latest.json</code> と実行別記録：新しい楽天二車単。古い別providerの保存領域を上書きしない。</li>
+<li><code>fallback/publication/current.json</code>、日付別の実行記録：公開後に確認した証跡。<code>http_verified</code>、<code>source_commit</code>、<code>run_key</code>、<code>verified_at</code> を見る。</li>
+</ul>
+<p>日付ページはその日に照合した参照を固定する。後日の共通台帳更新で、昔の日付の成績を勝手に差し替えない。原本HTML、Cookie、秘密情報、動画、日別コメント複製をGitやDBへ追加しない。</p>
+</section>
+<section id="conditions">
+<h2>12. 投稿・共有調子とSupabase</h2>
+<p>既存のActions・接続済みツールと公開設定を使う。新プロジェクト、認証無効化、RLS緩和、セットアップ機能の再開は不要。</p>
+<ul>
+<li>普通のコメントは既存のレースキーを維持する。取得元スラッグが変わっても、既存キーをURLの見た目だけで変更しない。</li>
+<li>縦の車番を押すと、調子は <code>1→2→3→4→5→-2→-1→0→1</code>。プラス・マイナスとも赤。0と未評価は当日も翌日以降も空欄。</li>
+<li><code>race_comments</code> へ追記し、調子キーは <code>condition:v1:YYYY-MM-DD:RRVVYYYYMMDD:PLAYER_ID</code>。本文は許可された数値文字列だけ。</li>
+<li>最新値は <code>created_at DESC / id DESC</code> で選び、最新0も有効な解除として採用する。以前の非0へ戻さない。連打はまとめ、失敗時は確認済み値を保つ。</li>
+<li>既存の合言葉ログインと同じブラウザセッションを使う。合言葉、パスワード、秘密キー、サービスキー、JWTの値を公開文書・ログに載せない。</li>
+<li>一度のログインを保持する設定は維持するが、保存領域の削除・失効まで無視する永久セッションとは扱わない。</li>
+<li>レース公開・成績一覧・結果API・プロフィールAPIのためにコメントや調子を複製保存しない。通常公開はDB書込0。</li>
+</ul>
+<p>主なコードは <code>comments-passphrase.js</code>、<code>rider-condition.js</code>。新ヘッダーは案内文だけを外し、既存の状態メッセージ要素を残す。閉鎖済みの一時セットアップEdge Functionを再有効化しない。</p>
+</section>
+<section id="automation">
+<h2>13. 自動更新と公開順</h2>
+<p><strong>検証済み出走表を先に公開→匿名HTTPで確認→不足する補足成績を後追い</strong>。過去成績・10場所・SHBの取得待ちで、新しい開催の出走表を止めない。コアの本人・並び・欠場確認に失敗した場合は、未検証データへ置き換えない。</p>
+<div class="table-wrap"><table><thead><tr><th>処理</th><th>現行の動作</th></tr></thead><tbody>
+<tr><td>出走表</td><td>heartbeatの毎時00分チェック。21時以降は翌日、その他は当日の日付を指定する。変更のある当日・将来日のカードを再照合する。</td></tr>
+<tr><td>オッズ</td><td>レース当日08:00〜20:30 JST、15分刻み、両端を含め51枠。00分はカード確認と組み合わせる。失敗時は前の成功値と本来の観測時刻を保つ。</td></tr>
+<tr><td>heartbeat</td><td>常駐ワーカーが時刻を追い、300分で後継を要求、350分まで重複稼働。毎時cronは監視用。別の重複スケジューラを増やさない。</td></tr>
+<tr><td>補足</td><td>公開確認後、既存のhistoryモード、rider-history.yml、recent-flags.ymlで未解決分を補う。同じ開催の確認済み雛形を再利用する。</td></tr>
+<tr><td>最新プロフィール</td><td>既存の読取・チェック済み保存を使う。名簿の表示を理由に全員一括の新しい定時収集を作らない。</td></tr>
+</tbody></table></div>
+<p>Actionsの開始や待ち行列で時刻はずれる。表示の取得時刻を予定時刻へ書き換えない。既存のGITHUB_TOKENでデータ保存とPages公開を行い、定時更新ごとの人間の承認を前提にしない。</p>
+<p class="note"><strong>要確認：前夜23:30の追加出走表チェック。</strong> ユーザー合意はあるが、確認した <code>scripts/update_heartbeat.py</code> の <code>slot_request</code> は「毎時00分」または「08:00〜20:30の15分枠」で、23:30専用分岐はない。本資料の作成ではタイマーを変更していない。実装済みと断言せず、次に自動化を修正する際の補完事項として扱う。</p>
+</section>
+<section id="release">
+<h2>14. 次の変更を始める手順</h2>
+<ol>
+<li>最新mainのSHAと対象ページの日付を確認。AGENTS.mdと対象機能の資料を読む。ローカルHEAD・未保存差分・別チャットの変更を比較する。</li>
+<li>表示の原稿・生成処理・読込スクリプトのどこを変えるか決める。<code>public/</code> だけを手修正しない。</li>
+<li>保存済み出走・履歴・取得元を維持し、必要な照合キーと未取得時の動作を確認。UIの変更範囲は日付の適用境界と独立index2を守る。</li>
+<li>関係するPython／DOMテストと実際の生成結果を確認する。モバイルは実タッチ・幅・色・リンクを確認し、Chromeの検証を実機iPhoneの検証と混同しない。</li>
+<li>最新mainへ必要ファイルだけ反映。GitHub APIの場合はtree→commit→<code>expected_sha</code> 付き・<code>force:false</code> のref更新。ブランチが進んだら新しいHEADを読み、変更ファイルの重なりを調べてから取り込む。</li>
+<li>既存 <code>update.yml</code> の生成・検証・Pagesデプロイ・匿名HTTP照合を確認し、最後にpublication receiptのSHAと公開日を照合する。</li>
+<li>ユーザーへ変更点と公開URLを伝える。コードのcommit成功だけを「公開済み」と報告しない。仕様が変わったらAGENTS.mdとこのHTMLも更新する。</li>
+</ol>
+<h3>確認コマンドと検査</h3>
+<pre>python3 -m unittest discover -s tests -v
+python3 scripts/export_pages.py
+
+# NodeのDOM検査は、既存Actionsが準備する固定版jsdomで実行
+node tests/test_pages.cjs &lt;公開用report.json&gt;
+node tests/test_race_results.cjs
+node tests/test_compact_navigation.cjs
+
+# 公開後の実ファイル照合
+python3 scripts/verify_pages.py --site public --base https://itaingtr.github.io/keirin-lineup2/</pre>
+<p>実際にはupdate.ymlとprevious-browser.ymlの環境・引数を使う。前回・10場所・競りオッズ・オッズ更新・MP4直リンクの既存検査を維持する。ブラウザ検査は既存のPlaywrightとChromeを使い、未ログインの読取確認で書込が起きないことも確認する。</p>
+<p>ローカルの通信やブラウザ起動が実行環境の制約で止まる場合は、接続済みGitHubと既存Actionsを利用する。秘密情報の探索・抽出やTLS検証の無効化で回避しない。</p>
+<p>GitHub ref更新の内部エラーでも、まず現在のHEADを読み直す。実際に更新済みの場合や、並行作業でmainが進んだ場合がある。force pushや古い全ツリーの再送で解決しない。</p>
+<div class="checked"><strong>直近の確認済みリリース：</strong> <a href="https://github.com/itaingtr/keirin-lineup2/actions/runs/43771315505">公開43771315505</a>、<a href="https://github.com/itaingtr/keirin-lineup2/actions/runs/43771315514">スマホ43771315514</a>。15日の見出し31レース・238人、15日↔16日の移動、上3列・下2列、上下の会場リンク一致を確認済み。以後の作業では最新の証跡へ読み替える。</div>
+</section>
+<section id="pending">
+<h2>15. 引き継ぎ時に確認する点</h2>
+<ul>
+<li>23:30の追加出走表チェックは、合意と現行コードに差がある。</li>
+<li>betimoの公開結果URLは未確定で、上部の結果リンクは当面楽天。勝手に推測したURLへ変更しない。</li>
+<li>楽天の結果のH、プロフィールだけからの実施日・Rなど、取得元が確定できない情報は空欄・保留。見栄えのために補完しない。</li>
+<li>カレンダー文書の「別チャットで作る」、旧日別一覧文書の入口URLなど、過去の説明が残る。実ファイル・最新AGENTS.mdと照合する。</li>
+<li>この引き継ぎ書は仕様のスナップショット。毎日の開催数や最新公開SHAは自動で書き換えない。新しい仕様変更時に原稿を更新する。</li>
+</ul>
+</section>
+<section id="references">
+<h2>16. 最初に読む資料・コード</h2>
+<div class="table-wrap"><table><thead><tr><th>目的</th><th>資料・コード</th></tr></thead><tbody>
+<tr><td>最優先の作業指示</td><td><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/AGENTS.md">AGENTS.md</a>、<a href="https://github.com/itaingtr/keirin-lineup2/blob/main/README.md">README.md</a></td></tr>
+<tr><td>共通履歴・日程・日別一覧・検索</td><td><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/SHARED_RIDER_HISTORY.md">SHARED_RIDER_HISTORY.md</a>／<a href="https://github.com/itaingtr/keirin-lineup2/blob/main/CALENDAR_HANDOFF.md">CALENDAR_HANDOFF.md</a>／<a href="https://github.com/itaingtr/keirin-lineup2/blob/main/DAILY_RESULTS_HANDOFF.md">DAILY_RESULTS_HANDOFF.md</a>／<a href="https://github.com/itaingtr/keirin-lineup2/blob/main/RIDER_SEARCH_HANDOFF.md">RIDER_SEARCH_HANDOFF.md</a></td></tr>
+<tr><td>出走表・公式照合</td><td><code>scripts/kdreams_provider.py</code>、<code>keirin_jp_provider.py</code>、<code>kdreams_history.py</code>、<code>render_races.py</code></td></tr>
+<tr><td>前回・10場所・SHB</td><td><code>scripts/previous_daily.py</code>、<code>rider_history.py</code>、<code>recent_flags.py</code> と各worker</td></tr>
+<tr><td>画面出力・日付一覧</td><td><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/scripts/export_pages.py">scripts/export_pages.py</a>、<code>compact_navigation.py</code>、<code>compact_presentation.py</code>、<code>calendar_export.py</code></td></tr>
+<tr><td>結果・映像</td><td><code>scripts/race_results_page.py</code>、<code>direct_replay.py</code>、<code>site/race-results.js</code>、<code>race-results.css</code>、<code>all-results-nav.js</code>、<code>supabase/functions/race-results/</code></td></tr>
+<tr><td>日別全選手・名簿</td><td><code>scripts/daily_results.py</code>、<code>rider_search.py</code>、<code>site/daily-results/</code>、<code>supabase/functions/rider-profile/</code></td></tr>
+<tr><td>定時処理・公開確認</td><td><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/.github/workflows/update.yml">update.yml</a>、<a href="https://github.com/itaingtr/keirin-lineup2/blob/main/.github/workflows/heartbeat.yml">heartbeat.yml</a>、<code>scripts/official_publication.py</code>、<code>update_heartbeat.py</code>、<code>verify_pages.py</code>、<code>publication_state.py</code></td></tr>
+<tr><td>元サイトの参考資料</td><td><a href="https://github.com/itaingtr/keirin-lineup/blob/main/CARD_AUTOMATION.md">CARD_AUTOMATION.md</a>、<a href="https://github.com/itaingtr/keirin-lineup/blob/main/ODDS.md">ODDS.md</a>、<a href="https://github.com/itaingtr/keirin-lineup/blob/main/RENDERING.md">RENDERING.md</a>。旧provider・旧スケジュールの説明を現行版へそのまま適用しない。</td></tr>
+</tbody></table></div>
+</section>
+<footer>原稿：site/handoff/index.html。通常のPages公開で保持する静的HTMLにゃ。合言葉・秘密キー・個人のセッション情報は載せていないにゃ。</footer>
+</main>
+<script>
+document.getElementById('copy-prompt').addEventListener('click',async()=>{
+ const text=document.getElementById('handoff-prompt').textContent,status=document.getElementById('copy-status');
+ try{await navigator.clipboard.writeText(text);status.textContent=' コピーしたにゃ。';}
+ catch{const range=document.createRange();range.selectNodeContents(document.getElementById('handoff-prompt'));const selection=getSelection();selection.removeAllRanges();selection.addRange(range);status.textContent=' 文章を選択したのでコピーしてにゃ。';}
+});
+</script>
+</body>
+</html>
