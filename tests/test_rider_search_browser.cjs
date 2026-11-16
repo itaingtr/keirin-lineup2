@@ -26,6 +26,7 @@ const root=path.resolve(process.argv[2]||'public');
         return route.fulfill({contentType:file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.json')?'application/json':'text/html',body:fs.readFileSync(file)});
       });
       const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+      if(width===390)await page.clock.install({time:new Date()});
       await page.goto('https://itaingtr.github.io/keirin-lineup2/daily-results/index.html');
       await page.waitForFunction(()=>document.querySelectorAll('#rider-list > tr').length===30);
       assert.equal(await page.locator('#region-buttons button').count(),8);
@@ -115,10 +116,11 @@ const root=path.resolve(process.argv[2]||'public');
       assert.equal(await page.locator('#rider-meetings').textContent(),before,'Source failure must retain the stock');
       if(width===390){
         await page.locator('#directory-back').tap();await page.locator('#show-top').tap();
-        await page.clock.install({time:new Date('2027-03-31T14:59:00Z')});
+        await page.clock.setSystemTime(new Date('2027-03-31T14:59:00Z'));
         await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
         assert.equal(await page.locator('#rider-list .birthday-done').count(),30,'All checked birthdays have passed by fiscal year end');
         await page.clock.fastForward(60000);
+        assert.equal(await page.evaluate(()=>window.RiderSearch.jstDay()),'2027-04-01');
         assert.equal(await page.locator('#rider-list .birthday-done').count(),0,'The open page resets every mark at April1 JST');
       }
       assert.deepEqual(errors,[]);await context.close();
