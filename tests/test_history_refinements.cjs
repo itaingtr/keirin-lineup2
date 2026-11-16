@@ -131,24 +131,49 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    assert.ok(openedOdds.document[1]-beforeOdds.document[1]>100,'The table must reserve its full height in the document');
    assert.ok(openedOdds.scroll[1]>beforeOdds.scroll[1],'Compensate the inserted height by scrolling the document');
    const expansion=await firstRow.evaluate(row=>{
-    const panel=row.querySelector('.odds-cell'),band=row.querySelector('.rider-odds'),time=panel.querySelector('.exacta-time'),button=panel.querySelector('.odds-refresh'),name=button.closest('.exacta-name-row').querySelector('.exacta-rider-name');
-    const p=panel.getBoundingClientRect(),b=band.getBoundingClientRect(),t=time.getBoundingClientRect(),u=button.getBoundingClientRect(),n=name.getBoundingClientRect(),style=getComputedStyle(panel),heading=row.querySelector('.venue').getBoundingClientRect(),card=row.getBoundingClientRect();
-    return {top:p.top,bottom:p.bottom,anchor:b.top,height:p.height,nameRight:n.right,buttonLeft:u.left,buttonBottom:u.bottom,timeTop:t.top,time:time.textContent,
-     car:button.closest('.exacta-column-rider').querySelector('.exacta-number').textContent,observed:time.dateTime,
-     tableCount:panel.querySelectorAll('.exacta-matrix').length,headerHeight:name.getBoundingClientRect().height,toolsHeight:button.parentElement.getBoundingClientRect().height,
+    const panel=row.querySelector('.odds-cell'),band=row.querySelector('.rider-odds'),time=panel.querySelector('.exacta-time'),button=panel.querySelector('.odds-refresh'),table=panel.querySelector('.exacta-matrix'),corner=table.tHead.rows[0].cells[0],tools=button.parentElement;
+    const nameBoxes=()=>[...table.querySelectorAll('.exacta-column-rider .exacta-rider-name')].map(name=>{
+     const n=name.getBoundingClientRect(),car=name.parentElement.querySelector('.exacta-number').getBoundingClientRect();
+     return {x:n.x,y:n.y,width:n.width,height:n.height,centre:n.left+n.width/2,carCentre:car.left+car.width/2,direct:name.parentElement.classList.contains('exacta-column-rider')};
+    });
+    const names=nameBoxes(),height=table.getBoundingClientRect().height;
+    tools.remove();const naturalNames=nameBoxes(),naturalHeight=table.getBoundingClientRect().height;corner.append(tools);
+    const p=panel.getBoundingClientRect(),b=band.getBoundingClientRect(),t=time.getBoundingClientRect(),u=button.getBoundingClientRect(),style=getComputedStyle(panel),heading=row.querySelector('.venue').getBoundingClientRect(),card=row.getBoundingClientRect();
+    return {top:p.top,bottom:p.bottom,anchor:b.top,height:p.height,firstNameLeft:names[0].x,buttonRight:u.right,buttonBottom:u.bottom,timeTop:t.top,timeRight:t.right,time:time.textContent,
+     corner:button.closest('th')===corner,observed:time.dateTime,names,naturalNames,tableHeight:height,naturalHeight,
+     tableCount:panel.querySelectorAll('.exacta-matrix').length,toolsBottom:tools.getBoundingClientRect().bottom,rowAxisTop:table.tBodies[0].rows[0].getBoundingClientRect().top,
      position:style.position,shadow:style.boxShadow,overflow:style.overflowY,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight,headingTop:heading.top,cardTop:card.top,
      captions:[...panel.querySelectorAll('caption,.odds-heading')].map(n=>getComputedStyle(n).display),
      status:panel.querySelector('.odds-status').getBoundingClientRect().height};
    });
-   assert.equal(expansion.tableCount,2);assert.equal(expansion.car,'1');
+   assert.equal(expansion.tableCount,1);assert.equal(expansion.corner,true);
    assert.ok(expansion.top>expansion.cardTop&&expansion.bottom<expansion.headingTop&&expansion.headingTop<expansion.anchor,JSON.stringify(expansion));
    assert.equal(expansion.position,'static');assert.equal(expansion.shadow,'none');assert.equal(expansion.overflow,'visible');
    assert.ok(expansion.scrollHeight<=expansion.clientHeight+1,'All table rows must be in normal flow, without an inner scrolling panel');
-   assert.ok(expansion.buttonLeft>=expansion.nameRight&&expansion.buttonLeft-expansion.nameRight<3,JSON.stringify(expansion));
-   assert.ok(expansion.timeTop>=expansion.buttonBottom&&expansion.toolsHeight<=expansion.headerHeight,JSON.stringify(expansion));
+   assert.ok(expansion.buttonRight<expansion.firstNameLeft&&expansion.timeRight<expansion.firstNameLeft,'Refresh and time belong to the left corner above the second-place axis');
+   assert.ok(expansion.timeTop>=expansion.buttonBottom&&expansion.toolsBottom<=expansion.rowAxisTop,JSON.stringify(expansion));
+   assert.deepEqual(expansion.names,expansion.naturalNames,'Refresh/time must not change any rider name position');
+   assert.equal(expansion.tableHeight,expansion.naturalHeight,'The corner tools must not increase header height');
+   assert.ok(expansion.names.every(name=>name.direct&&Math.abs(name.centre-name.carCentre)<.3),'Every name remains centered beneath its car');
+   delete expansion.naturalNames;delete expansion.names;
    assert.ok(expansion.captions.every(value=>value==='none'));assert.ok(expansion.status<=2);
    const expectedClock=value=>new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));
    assert.equal(expansion.time,expectedClock(expansion.observed));assert.match(expansion.time,/^\d{2}:\d{2}$/);
+   const axes=await firstRow.evaluate(row=>{
+    const table=row.querySelector('.exacta-matrix'),first=[...table.tHead.rows[0].cells].slice(1,-1).map(cell=>Number(cell.querySelector('.exacta-number').textContent)),rows=[...table.tBodies[0].rows];
+    return {first,second:rows.map(row=>Number(row.cells[0].querySelector('.exacta-number').textContent)),expected:[...row.querySelectorAll('.lineup .car')].map(car=>Number(car.textContent)),
+     cells:rows.flatMap(row=>[...row.cells].slice(1,-1).map((cell,index)=>({first:first[index],second:Number(row.cells[0].querySelector('.exacta-number').textContent),key:cell.dataset.combination||null,text:cell.textContent})))};
+   });
+   assert.deepEqual(axes.first,axes.expected,'First place follows the displayed lineup');
+   assert.deepEqual(axes.second,[...axes.expected].sort((a,b)=>a-b),'Second place follows car-number order');
+   const snapshot=oddsFixture.results.find(item=>item.snapshot?.race_key===new URL(oddsAndDots[0].source).pathname).snapshot;
+   for(const cell of axes.cells){
+    if(cell.first===cell.second){assert.equal(cell.key,null);assert.equal(cell.text,'·');continue;}
+    assert.equal(cell.key,cell.first+'-'+cell.second);
+    const price=snapshot.odds.find(quote=>quote.first===cell.first&&quote.second===cell.second)?.value;
+    assert.equal(cell.text,price==null?'—':price>=100?String(Math.floor(price)):price.toFixed(1),'The directed quote must stay at its correct axis intersection');
+   }
+   expansion.first=axes.first;expansion.second=axes.second;
    // Read the complete expanded table using ordinary document scrolling.
    await page.evaluate(()=>window.scrollTo({left:scrollX,top:0,behavior:'instant'}));
    await page.waitForTimeout(50);
@@ -170,7 +195,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    assert.equal(await panel.locator('.odds-refresh').count(),1,'A refreshed matrix must retain one live refresh control');
    assert.notDeepEqual(await panel.locator('td[data-combination]').allTextContents(),originalQuotes);
-   assert.deepEqual(await cardPosition(),beforeRefresh,'Replacing both matrices must not move the lineup or undo document scrolling');
+   assert.deepEqual(await cardPosition(),beforeRefresh,'Replacing the matrix must not move the lineup or undo document scrolling');
    const confirmedQuotes=await panel.locator('td[data-combination]').allTextContents();
    servedOdds=oddsFixture;await panel.locator('.odds-refresh').tap();
    await page.waitForFunction(()=>!document.querySelector('.odds-cell:not([hidden])').hasAttribute('aria-busy'));

@@ -89,28 +89,24 @@
   }
 
   function decorate(state) {
-    const table = state.panel.querySelector('.exacta-matrix[data-odds-order="number"]');
+    const table = mixedAxes(state);
     state.panel.classList.toggle('odds-has-matrix', Boolean(table));
     if (!table) {
       // A failed initial read must still leave the original retry available.
       if (!state.panel.contains(state.refresh)) state.panel.prepend(state.refresh);
       return;
     }
-    const first = [...table.querySelectorAll('.exacta-column-rider')]
-      .find(node => node.querySelector('.exacta-number')?.textContent === '1');
-    const name = first?.querySelector('.exacta-rider-name');
-    if (!name) return;
-    let tools = first.querySelector('.exacta-name-tools');
+    // Use the empty corner above the second-place labels. Every name keeps
+    // its original, centered position directly beneath its car number.
+    const corner = table.tHead.rows[0].cells[0];
+    let tools = corner.querySelector('.exacta-corner-tools');
     if (!tools) {
-      const row = document.createElement('span');
-      row.className = 'exacta-name-row';
       tools = document.createElement('span');
-      tools.className = 'exacta-name-tools';
+      tools.className = 'exacta-corner-tools';
       const time = document.createElement('time');
       time.className = 'exacta-time';
-      name.replaceWith(row);
       tools.append(state.refresh, time);
-      row.append(name, tools);
+      corner.append(tools);
     }
     const time = tools.querySelector('.exacta-time');
     const observed = table.dataset.observedAt;
@@ -124,6 +120,31 @@
     attribute(time, 'data-stale', String(stale));
     attribute(time, 'title', state.status.textContent);
     attribute(state.refresh, 'title', stale ? state.status.textContent : '二車単オッズを更新するにゃ');
+  }
+
+  function mixedAxes(state) {
+    const existing = state.panel.querySelector('.exacta-matrix[data-odds-order="hybrid"]');
+    if (existing) return existing;
+    const table = state.panel.querySelector('.exacta-matrix[data-odds-order="lineup"]');
+    if (!table) return null;
+    const body = table.tBodies[0], rows = [...body.rows];
+    const first = [...table.tHead.rows[0].cells].slice(1, -1)
+      .map(cell => Number(cell.querySelector('.exacta-number')?.textContent));
+    const second = row => Number(row.cells[0].querySelector('.exacta-number')?.textContent);
+    const numbers = rows.map(second);
+    if (new Set(numbers).size !== first.length || numbers.length !== first.length || !first.every(number => numbers.includes(number))) return null;
+    // Only move complete source rows. Each cell retains its first-second
+    // identity and price; contested alternatives still use the source columns.
+    rows.sort((a, b) => second(a) - second(b));
+    for (const row of rows) row.classList.remove('exacta-line-row-start');
+    body.append(...rows);
+    table.dataset.oddsOrder = 'hybrid';
+    table.dataset.secondAxisOrder = rows.map(second).join('-');
+    table.setAttribute('aria-label', '1着はライン順・2着は車番順の二車単オッズにゃ');
+    // Keep the native live status even when its old numeric figure is removed.
+    if (state.status.parentElement !== state.panel) state.panel.append(state.status);
+    state.panel.querySelector('.exacta-matrix[data-odds-order="number"]')?.closest('.odds-comparison-view')?.remove();
+    return table;
   }
 
   function update() {
