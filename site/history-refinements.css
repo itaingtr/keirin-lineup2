@@ -1,6 +1,6 @@
 body[data-history-refinements="20261116"] .lineup{--rider-width:32px;--history-inset:2px;font-size:10px;font-variant-numeric:tabular-nums;gap:calc(12px - 1ch)}
 body[data-history-refinements="20261116"] .lineup .line-group,
-body[data-history-refinements="20261116"] .lineup .contest-pair{gap:.5ch}
+body[data-history-refinements="20261116"] .lineup .contest-pair{gap:0}
 body[data-history-refinements="20261116"] .lineup .rider{flex:0 0 32px;width:32px;min-width:32px}
 body[data-history-refinements="20261116"] .lineup .previous-controls,
 body[data-history-refinements="20261116"] .lineup .ten-controls{width:var(--rider-width);align-items:flex-start}

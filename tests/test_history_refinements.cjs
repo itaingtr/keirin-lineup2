@@ -69,7 +69,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
      rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
    });
    assert.ok(fit.right<=width+.2&&fit.right>=width-2.5,JSON.stringify(fit));
-   assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.ok(Math.abs(fit.within-fit.digit/2)<.1,JSON.stringify(fit));
+   assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.equal(fit.within,0,JSON.stringify(fit));
    assert.ok(Math.abs(fit.between-(19-fit.digit))<.1,JSON.stringify(fit));
    await page.waitForFunction(()=>document.querySelector('.meeting-reason[data-reason-state="ready"]'));
    await page.locator('.race-result-toggle').first().evaluate(n=>n.click());
