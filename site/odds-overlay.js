@@ -21,7 +21,7 @@
     refresh.setAttribute('aria-label', '二車単オッズを更新するにゃ');
     panel.setAttribute('role', 'region');
     panel.setAttribute('aria-label', '二車単オッズにゃ');
-    const state = {row, button, panel, refresh, status, anchor:null};
+    const state = {row, button, panel, refresh, status, anchor:null, focus:null};
     states.set(row, state);
     return state;
   }
@@ -30,6 +30,10 @@
     const node = state.row.querySelector('.lineup');
     if (!node) return;
     state.anchor = {node, top:node.getBoundingClientRect().top};
+    const focused = document.activeElement;
+    if (focused?.matches('.rider-odds') && state.row.contains(focused)) {
+      state.focus = {node:focused, car:focused.closest('.rider').querySelector('.car')?.textContent};
+    } else state.focus = focused === state.refresh ? {node:focused, refresh:true} : null;
     pending.add(state);
     // Prevent the browser and this explicit, user-requested compensation
     // from both adjusting the same expansion. Restore normal anchoring later.
@@ -43,6 +47,16 @@
     if (Math.abs(delta) > .5) window.scrollBy({left:0, top:delta, behavior:'auto'});
   }
 
+  function preserveFocus(state) {
+    if (!state.focus || document.activeElement !== document.body) return;
+    const node = state.focus.refresh ? state.refresh : [...state.row.querySelectorAll('.lineup .rider')]
+      .find(rider => rider.querySelector('.car')?.textContent === state.focus.car)?.querySelector('.rider-odds');
+    if (node?.isConnected) {
+      node.focus({preventScroll:true});
+      state.focus.node = node;
+    }
+  }
+
   function finish() {
     if (finishing || !pending.size) return;
     finishing = true;
@@ -54,6 +68,7 @@
           preserve(state);
           if (!state.row.isConnected || state.panel.hidden || !state.panel.hasAttribute('aria-busy')) {
             state.anchor = null;
+            state.focus = null;
             pending.delete(state);
           }
         }
@@ -118,6 +133,7 @@
       if (!state) continue;
       decorate(state);
       synchronize(state);
+      preserveFocus(state);
     }
     finish();
   }
