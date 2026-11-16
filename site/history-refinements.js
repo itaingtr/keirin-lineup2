@@ -86,6 +86,7 @@
   }
   function refine() {
     scheduled=false;
+    fitMobile();
     for (const lineup of root.querySelectorAll('.lineup')) {
       const groups=[...lineup.children].filter(node=>node.classList.contains('line-group'));
       groups.forEach((group,index)=>{
@@ -144,7 +145,6 @@
       }
     }
     document.body.dataset.historyRefinementsStatus='ready';
-    fitMobile();
   }
   function schedule() { if (!scheduled) {scheduled=true;queueMicrotask(refine);} }
   new MutationObserver(schedule).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','aria-expanded']});
