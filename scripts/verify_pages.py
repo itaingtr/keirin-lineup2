@@ -16,6 +16,9 @@ def verification_files(site):
     current=(site/'index.html').read_text();day=page_date(current)
     files=['index.html','line'+day+'.html',*SHARED,'data/'+day+'/media.json','data/'+day+'/odds-config.json']
     if (site/'handoff/index.html').is_file():files.append('handoff/index.html')
+    if 'data-history-refinements="20261116"' in current:
+        from history_refinements import ASSETS, RESULT_READER
+        files.extend([*ASSETS, RESULT_READER])
     if 'data-card-header="compact-20261115"' in current:
         from compact_navigation import ASSETS,CUTOVER
         files.extend(ASSETS)

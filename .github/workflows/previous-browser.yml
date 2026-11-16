@@ -23,6 +23,11 @@ on:
       - 'tests/test_race_results_browser.cjs'
       - 'site/ten-meetings.js'
       - 'site/ten-meetings.css'
+      - 'scripts/history_refinements.py'
+      - 'site/history-refinements.js'
+      - 'site/history-refinements.css'
+      - 'site/public-results-reader.js'
+      - 'tests/test_history_refinements.cjs'
       - 'scripts/official_publication.py'
       - 'scripts/rider_history.py'
       - 'scripts/recent_flags.py'
@@ -70,6 +75,8 @@ jobs:
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_previous_browser.cjs public /tmp/previous-mobile.png
       - name: Verify shared ten-meeting histories on the formal top page
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_ten_browser.cjs public /tmp/formal-ten-mobile.png index.html
+      - name: Verify aligned histories, supplementary slots and checked compact reasons
+        run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_history_refinements.cjs public
       - name: Verify plain MP4 navigation, native autoplay, seeking and return without background players
         run: NODE_PATH=/tmp/lineup2-browser/node_modules node tests/test_mobile_replay.cjs public /tmp/mobile-replay.png
       - name: Verify compact navigation, live results and displayed-date links
@@ -84,6 +91,7 @@ jobs:
           path: |
             /tmp/previous-mobile.png
             /tmp/formal-ten-mobile.png
+            /tmp/history-refinements-mobile.png
             /tmp/mobile-replay.png
             /tmp/race-results-mobile*.png
           if-no-files-found: ignore

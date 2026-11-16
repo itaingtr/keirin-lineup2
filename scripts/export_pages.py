@@ -229,6 +229,8 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
             allow_missing=allow_missing_current_history and day==current_day)
         from race_results_page import apply as apply_race_results
         rendered=apply_race_results(rendered,site,output,day)
+        from history_refinements import apply as refine_history
+        rendered=refine_history(rendered,site,output,day)
         if previous is not None:daily_reports[day]=previous
         (output/('line'+day+'.html')).write_text(rendered)
         assets=output/'data'/day;assets.mkdir(parents=True,exist_ok=True)
@@ -248,6 +250,7 @@ def export(site,output,repository=REPOSITORY,*,allow_missing_current_history=Fal
     page=public_html(current,current_day,marks,identities,details)
     page,previous,ten_daily=_history_layers(site,output,page,current_day,allow_missing=allow_missing_current_history)
     page=apply_race_results(page,site,output,current_day)
+    page=refine_history(page,site,output,current_day)
     (output/'index.html').write_text(page)
     if (output/('line'+current_day+'.html')).read_text()!=page:
         raise ValueError('Root and current date page must be identical')

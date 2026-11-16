@@ -109,7 +109,7 @@ async function main(){
     }));
     const semifinalColor=compact?'rgb(212, 160, 0)':'rgb(232, 90, 154)';
     assert.ok(styles.highlights.every(item=>item.color===(item.semi?semifinalColor:'rgb(211, 47, 47)')),'Only semifinals use the requested colour; special and final ranks must be red');
-    if(compact){assert.ok(styles.venueFonts.every(size=>size==='5.5px'));assert.ok(styles.rankFonts.every(size=>size==='8px'));}
+    if(compact){assert.ok(styles.venueFonts.every(size=>size===(html.includes('data-history-refinements="20261116"')?'6.5px':'5.5px')));assert.ok(styles.rankFonts.every(size=>size==='8px'));}
     assert.ok(styles.g3.every(color=>color==='rgb(255, 235, 238)'));
     assert.ok(styles.high.every(color=>color==='rgb(243, 229, 245)'));
     assert.ok(styles.back.length>0&&styles.back.every(weight=>weight==='700'),'Aggregate B counts must be bold');
