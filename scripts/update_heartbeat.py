@@ -20,7 +20,7 @@ def card_request(now):
 
 def slot_request(now):
     local=now.astimezone(JST)
-    if local.minute==0:return card_request(now)
+    if local.minute==0 or (local.hour,local.minute)==(23,30):return card_request(now)
     minute=local.hour*60+local.minute
     if local.minute%15==0 and 8*60<=minute<=20*60+30:
         return {'mode':'odds','date':''}
@@ -77,7 +77,7 @@ def run(send=dispatch,clock=lambda:datetime.now(timezone.utc),monotonic=time.mon
     next_renewal=started+renew_after
     renewed=False
     last=quarter(clock())
-    print('HEARTBEAT RUNNING: hourly cards, quarter-hour odds, duration_seconds=',duration,
+    print('HEARTBEAT RUNNING: hourly cards plus 23:30 JST, quarter-hour odds, duration_seconds=',duration,
           'renew_after_seconds=',renew_after,flush=True)
     while monotonic()<end:
         elapsed=monotonic()

@@ -1,3 +1,9 @@
+# 23:30 JSTの追加出走表チェック（2026-11-16）にゃ
+
+- `scripts/update_heartbeat.py` の既存常駐ワーカーで、毎時00分に加えて23:30 JSTにも `cards` を要求するにゃ。23:30は翌日の日付を明示し、Actionsの待ち行列で日付をまたいでも取得対象をずらさないにゃ。
+- 1日の定時枠は出走表25枠、オッズは従来どおり08:00〜20:30 JSTの51枠にゃ。新しいcron・スケジューラ・DB書込は追加せず、既存の後継ワーカー起動と直列化を維持するにゃ。
+- 全日分の枠と年越しの23:30→00:00を `tests/test_heartbeat.py` で検証するにゃ。カレンダー・選手検索・保存済みカードと履歴は、この変更で書き換えないにゃ。
+
 # Compact card heading and navigation from November15
 
 - The public handoff is https://itaingtr.github.io/keirin-lineup2/handoff/ (source site/handoff/index.html). It is a dated specification snapshot: read latest main and this file before changes, preserve parallel work, and update the handoff when behavior changes. Never put passphrases, secret keys, JWT values or sessions in the public document. export_pages copies its source and verify_pages checks the deployed HTML; no new DB writes or scheduler.

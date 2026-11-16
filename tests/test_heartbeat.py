@@ -13,7 +13,7 @@ from official_odds import should_collect
 
 
 class HeartbeatTests(unittest.TestCase):
-    def test_day_has_24_card_checks_and_51_odds_periods_with_anchored_dates(self):
+    def test_day_has_25_card_checks_and_51_odds_periods_with_anchored_dates(self):
         first=datetime.fromisoformat('2026-11-08T15:00:00+00:00')
         cards=[];odds=[]
         for minute in range(24*60):
@@ -24,8 +24,19 @@ class HeartbeatTests(unittest.TestCase):
                 cards.append(minute)
                 self.assertEqual(request['date'],'2026-11-09' if minute<21*60 else '2026-11-10')
             if should_collect('2026-11-09',now):odds.append(minute)
-        self.assertEqual(cards,list(range(0,24*60,60)))
+        self.assertEqual(cards,list(range(0,24*60,60))+[23*60+30])
         self.assertEqual(odds,list(range(8*60,20*60+31,15)))
+
+    def test_evening_check_and_midnight_keep_the_same_target_across_year_end(self):
+        start=datetime.fromisoformat('2026-12-31T14:29:00+00:00')
+        elapsed=[0];sent=[];output=io.StringIO()
+        def sleep(seconds):elapsed[0]+=seconds
+        with redirect_stdout(output):
+            run(send=lambda request:sent.append(request),renewal=lambda:None,
+                clock=lambda:start+timedelta(seconds=elapsed[0]),monotonic=lambda:elapsed[0],
+                sleep=sleep,duration=32*60,renew_after=30)
+        self.assertEqual(sent,[{'mode':'cards','date':'2027-01-01'},
+                               {'mode':'cards','date':'2027-01-01'}])
 
     def test_dispatch_uses_main_and_explicit_card_date(self):
         observed=[]

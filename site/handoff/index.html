@@ -14,7 +14,7 @@
 <header>
 <h1>愛ボdex 引き継ぎ仕様書</h1>
 <p><strong>itaingtr/keirin-lineup2</strong> の続きを、次のチャットが進めるための資料にゃ。</p>
-<p>版1.0。実装確認基準：<a href="https://github.com/itaingtr/keirin-lineup2/commit/fbc8d7a916c2a4583c2e02640b92f7f5e91a9a9f">main fbc8d7a9</a>。直近の公開確認：2026-11-15 22:50 UTC（11月16日07:50 JST）。</p>
+<p>版1.1。画面仕様の確認基準：<a href="https://github.com/itaingtr/keirin-lineup2/commit/fbc8d7a916c2a4583c2e02640b92f7f5e91a9a9f">main fbc8d7a9</a>。画面の公開確認：2026-11-15 22:50 UTC（11月16日07:50 JST）。2026年11月16日、23:30 JSTの追加出走表チェックの実装を反映したにゃ。</p>
 <p>これは確認時点の仕様にゃ。作業前には、最新mainとAGENTS.mdを読み直してにゃ。</p>
 <div class="links"><a href="../">出走表トップ</a><a href="https://github.com/itaingtr/keirin-lineup2">GitHub</a><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/site/handoff/index.html">このHTMLの原稿</a></div>
 </header>
@@ -230,14 +230,14 @@ https://itaingtr.github.io/keirin-lineup2/handoff/
 <h2>13. 自動更新と公開順</h2>
 <p><strong>検証済み出走表を先に公開→匿名HTTPで確認→不足する補足成績を後追い</strong>。過去成績・10場所・SHBの取得待ちで、新しい開催の出走表を止めない。コアの本人・並び・欠場確認に失敗した場合は、未検証データへ置き換えない。</p>
 <div class="table-wrap"><table><thead><tr><th>処理</th><th>現行の動作</th></tr></thead><tbody>
-<tr><td>出走表</td><td>heartbeatの毎時00分チェック。21時以降は翌日、その他は当日の日付を指定する。変更のある当日・将来日のカードを再照合する。</td></tr>
+<tr><td>出走表</td><td>既存heartbeatの毎時00分＋23:30 JST、1日25枠にゃ。21時以降は翌日、その他は当日の日付を指定し、変更のある当日・将来日のカードを再照合するにゃ。</td></tr>
 <tr><td>オッズ</td><td>レース当日08:00〜20:30 JST、15分刻み、両端を含め51枠。00分はカード確認と組み合わせる。失敗時は前の成功値と本来の観測時刻を保つ。</td></tr>
 <tr><td>heartbeat</td><td>常駐ワーカーが時刻を追い、300分で後継を要求、350分まで重複稼働。毎時cronは監視用。別の重複スケジューラを増やさない。</td></tr>
 <tr><td>補足</td><td>公開確認後、既存のhistoryモード、rider-history.yml、recent-flags.ymlで未解決分を補う。同じ開催の確認済み雛形を再利用する。</td></tr>
 <tr><td>最新プロフィール</td><td>既存の読取・チェック済み保存を使う。名簿の表示を理由に全員一括の新しい定時収集を作らない。</td></tr>
 </tbody></table></div>
 <p>Actionsの開始や待ち行列で時刻はずれる。表示の取得時刻を予定時刻へ書き換えない。既存のGITHUB_TOKENでデータ保存とPages公開を行い、定時更新ごとの人間の承認を前提にしない。</p>
-<p class="note"><strong>要確認：前夜23:30の追加出走表チェック。</strong> ユーザー合意はあるが、確認した <code>scripts/update_heartbeat.py</code> の <code>slot_request</code> は「毎時00分」または「08:00〜20:30の15分枠」で、23:30専用分岐はない。本資料の作成ではタイマーを変更していない。実装済みと断言せず、次に自動化を修正する際の補完事項として扱う。</p>
+<p class="checked"><strong>前夜23:30の追加出走表チェックは実装済みにゃ。</strong> <code>scripts/update_heartbeat.py</code> の <code>slot_request</code> が翌日の日付を明示して既存の <code>update.yml</code> を要求するにゃ。待ち行列で日付をまたいでも対象日をずらさず、既存の毎時確認・オッズ51枠・後継ワーカーを維持するにゃ。新しいcronや別スケジューラは追加していないにゃ。</p>
 </section>
 <section id="release">
 <h2>14. 次の変更を始める手順</h2>
@@ -269,7 +269,7 @@ python3 scripts/verify_pages.py --site public --base https://itaingtr.github.io/
 <section id="pending">
 <h2>15. 引き継ぎ時に確認する点</h2>
 <ul>
-<li>23:30の追加出走表チェックは、合意と現行コードに差がある。</li>
+<li>23:30 JSTの追加出走表チェックは実装済みにゃ。定時枠を変更する時は、毎時確認とオッズ51枠の維持、日付をまたぐ待ち行列でも対象日が変わらないことを確認してにゃ。</li>
 <li>betimoの公開結果URLは未確定で、上部の結果リンクは当面楽天。勝手に推測したURLへ変更しない。</li>
 <li>楽天の結果のH、プロフィールだけからの実施日・Rなど、取得元が確定できない情報は空欄・保留。見栄えのために補完しない。</li>
 <li>カレンダー文書の「別チャットで作る」、旧日別一覧文書の入口URLなど、過去の説明が残る。実ファイル・最新AGENTS.mdと照合する。</li>
