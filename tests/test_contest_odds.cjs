@@ -1,8 +1,9 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'..');
-const reader=fs.readFileSync(path.join(root,'site/odds-current.js'),'utf8');
-const comparison=fs.readFileSync(path.join(root,'site/odds-comparison.js'),'utf8');
+const compact=Boolean(process.argv[2]),publicDir=compact?path.resolve(process.argv[2]):null;
+const reader=fs.readFileSync(compact?path.join(publicDir,'odds-current-compact.js'):path.join(root,'site/odds-current.js'),'utf8');
+const comparison=fs.readFileSync(compact?path.join(publicDir,'odds-comparison-compact.js'):path.join(root,'site/odds-comparison.js'),'utf8');
 const source='https://keirin.kdreams.jp/aomori/racedetail/1220200101010012/';
 const key=new URL(source).pathname;
 const wait=()=>new Promise(resolve=>setTimeout(resolve,45));
@@ -18,7 +19,7 @@ async function open({enabled=true,contested=true}={}){
  const race={source,players:Array.from({length:7},(_,i)=>({no:i+1,name:'選手'+(i+1)}))};
  const row='<tr><td class="race"><a class="race-link" href="'+source+'">12R</a></td><td class="lineup-cell">'+lineup(contested)+'</td></tr>';
  const errors=[];let loads=0;
- const dom=new JSDOM('<!doctype html><body'+(enabled?' data-contest-odds="true"':'')+'><div class="eyebrow">KEIRIN · 2020.01.01</div><table><tbody id="rows" data-initial-odds data-odds-primary="number">'+row+'</tbody></table><script>const races='+JSON.stringify([race])+';</script></body>',{
+ const dom=new JSDOM('<!doctype html><body'+(enabled?' data-contest-odds="true"':'')+(compact?' data-all-results-date="20200101"':'')+'>'+(compact?'<h1>1月1日 全1レース・7人</h1>':'<div class="eyebrow">KEIRIN · 2020.01.01</div>')+'<table><tbody id="rows" data-initial-odds data-odds-primary="number">'+row+'</tbody></table><script>const races='+JSON.stringify([race])+';</script></body>',{
   url:'https://itaingtr.github.io/keirin-lineup2/',runScripts:'dangerously',beforeParse(w){
    w.fetch=async input=>{
     const url=String(input);if(url.includes('odds-config.json'))return {ok:true,json:async()=>({endpoint:'https://example.test/exacta.json'})};

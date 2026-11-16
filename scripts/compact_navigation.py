@@ -12,6 +12,34 @@ BASE = '/keirin-lineup2/'
 CUTOVER = '20261115'
 MARKER = 'compact-20261115'
 ASSETS = ('compact-navigation.css', 'compact-navigation.js')
+ODDS_ASSETS = ('odds-current-compact.js', 'odds-comparison-compact.js')
+
+
+def _compact_odds(page, site, output):
+    """Keep archived readers intact; compact cards use their checked date."""
+    if 'data-initial-odds' not in page:
+        return page
+    old = r"const pageDate = document.querySelector('.eyebrow')?.textContent.match(/(\d{4})\.(\d{2})\.(\d{2})/);"
+    new = r"""const compactDate = document.body.dataset.allResultsDate;
+      const pageDate = /^\d{8}$/.test(compactDate || '')
+        ? [compactDate,compactDate.slice(0,4),compactDate.slice(4,6),compactDate.slice(6,8)]
+        : document.querySelector('.eyebrow')?.textContent.match(/(\d{4})\.(\d{2})\.(\d{2})/);"""
+    for source, previous, name in [('odds-current.js','odds-current-rakuten.js',ODDS_ASSETS[0]),
+                                   ('odds-comparison.js','odds-comparison.js',ODDS_ASSETS[1])]:
+        script = (Path(site)/source).read_text()
+        if script.count(old) != 1:
+            raise ValueError('Compact odds date reader differs: '+source)
+        script = script.replace(old,new,1)
+        if source == 'odds-current.js':
+            script = script.replace('new URL(link.href).pathname','new URL(link.dataset.raceSource || link.href).pathname')
+        content = script.encode()
+        (Path(output)/name).write_bytes(content)
+        url = BASE+name+'?v='+hashlib.sha256(content).hexdigest()[:12]
+        page, count = re.subn(r'(src=")'+re.escape(BASE+previous)+r'(?:\?[^"\s]*)?(?=")',
+                             lambda match: match[1]+url,page,count=1)
+        if count != 1:
+            raise ValueError('Compact odds reader tag differs: '+previous)
+    return page
 
 
 def _quick_links():
@@ -80,7 +108,7 @@ def apply(page, site, output, day, available, *, all_results=False):
             page = page.replace('</head>','<link rel="stylesheet" href="'+url+'"></head>',1)
         else:
             page = page.replace('</body>','<script src="'+url+'"></script></body>',1)
-    return page
+    return _compact_odds(page,site,output)
 
 
 def export_navigation(site, output, dates, current_day):

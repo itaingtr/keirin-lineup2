@@ -58,6 +58,8 @@ jobs:
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_pages.cjs /tmp/lineup2-publication/report.json
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_contest_odds.cjs public
+          NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_odds_polling.cjs public
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_race_results.cjs
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_compact_navigation.cjs
           node tests/test_daily_results.cjs public 20261114

@@ -20,8 +20,8 @@ def verification_files(site):
         from history_refinements import ASSETS, RESULT_READER
         files.extend([*ASSETS, RESULT_READER])
     if 'data-card-header="compact-20261115"' in current:
-        from compact_navigation import ASSETS,CUTOVER
-        files.extend(ASSETS)
+        from compact_navigation import ASSETS,ODDS_ASSETS,CUTOVER
+        files.extend([*ASSETS,*ODDS_ASSETS])
         for name in ('line'+CUTOVER+'.html','results'+CUTOVER+'.html'):
             if (site/name).is_file():files.append(name)
     if 'data-replay-links="mp4"' in current:

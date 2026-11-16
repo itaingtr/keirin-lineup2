@@ -86,6 +86,17 @@
   }
   function refine() {
     scheduled=false;
+    for (const lineup of root.querySelectorAll('.lineup')) {
+      const groups=[...lineup.children].filter(node=>node.classList.contains('line-group'));
+      groups.forEach((group,index)=>{
+        const current=group.querySelector(':scope > .line-separator');
+        if (index===groups.length-1) {current?.remove();return;}
+        if (!current) {
+          const separator=document.createElement('span');separator.className='line-separator';separator.textContent='•';
+          separator.setAttribute('aria-hidden','true');group.append(separator);
+        }
+      });
+    }
     for (const block of root.querySelectorAll('.ten-meeting')) alignTen(block);
     for (const order of root.querySelectorAll('.meeting-order,.previous-order')) spaceFlags(order);
     for (const row of root.children) {

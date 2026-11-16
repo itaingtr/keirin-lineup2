@@ -1,4 +1,10 @@
-body[data-history-refinements="20261116"] .lineup{--rider-width:32px;--history-inset:2px;font-size:10px;font-variant-numeric:tabular-nums;gap:calc(12px - 1ch)}
+body[data-history-refinements="20261116"] .lineup{--rider-width:32px;--history-inset:2px;--line-gap:calc(12px - 1ch);font-size:10px;font-variant-numeric:tabular-nums;gap:var(--line-gap)}
+body[data-history-refinements="20261116"] .lineup .line-group{position:relative}
+body[data-history-refinements="20261116"] .lineup .line-separator{position:absolute;left:calc(100% + var(--line-gap)/2);top:39px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;height:19px;font-size:10px;line-height:1;font-weight:400;color:#18212f;pointer-events:none;white-space:nowrap}
+body[data-history-refinements="20261116"] .lineup-odds-visible .line-separator{top:74px}
+body[data-history-refinements="20261116"] .lineup .rider-odds,
+body[data-history-refinements="20261116"] .lineup .rider-win-odds,
+body[data-history-refinements="20261116"] .lineup .rider-odds .exacta-line-pair{width:var(--rider-width)}
 body[data-history-refinements="20261116"] .lineup .line-group,
 body[data-history-refinements="20261116"] .lineup .contest-pair{gap:0}
 body[data-history-refinements="20261116"] .lineup .rider{flex:0 0 32px;width:32px;min-width:32px}
@@ -44,8 +50,10 @@ body[data-history-refinements="20261116"] .lineup .meeting-time{height:8px;line-
 body[data-history-refinements="20261116"] .lineup .meeting-reason{display:block;box-sizing:border-box;flex:0 0 6px;width:var(--rider-width);height:6px;padding-left:var(--history-inset);font-size:6px;line-height:6px;font-weight:400;color:#627086;white-space:nowrap;text-align:left}
 @media(max-width:640px){
 body[data-history-refinements="20261116"]{width:calc(100vw / var(--lineup-zoom,1.2544));zoom:var(--lineup-zoom,1.2544)}
-body[data-history-refinements="20261116"] .lineup{gap:calc(19px - 1ch)}
-body[data-history-refinements="20261116"] .lineup.lineup-nine{gap:calc(12px - 1ch)}
+body[data-history-refinements="20261116"] .lineup{--line-gap:calc(19px - 1ch)}
+body[data-history-refinements="20261116"] .lineup.lineup-nine{--line-gap:calc(12px - 1ch)}
+body[data-history-refinements="20261116"] .lineup .line-separator{top:38px;height:18px}
+body[data-history-refinements="20261116"] .lineup-odds-visible .line-separator{top:73px}
 body[data-history-refinements="20261116"] .table-wrap tbody tr{grid-template-columns:var(--card-venue-width,38px) var(--race-header-width,250px) minmax(0,1fr)}
 body[data-history-refinements="20261116"] .race-link,
 body[data-history-refinements="20261116"] .race-time,

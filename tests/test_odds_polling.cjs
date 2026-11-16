@@ -1,8 +1,9 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'..');
-const reader=fs.readFileSync(path.join(root,'site/odds-current.js'),'utf8');
-const comparison=fs.readFileSync(path.join(root,'site/odds-comparison.js'),'utf8');
+const compact=Boolean(process.argv[2]),publicDir=compact?path.resolve(process.argv[2]):null;
+const reader=fs.readFileSync(compact?path.join(publicDir,'odds-current-compact.js'):path.join(root,'site/odds-current.js'),'utf8');
+const comparison=fs.readFileSync(compact?path.join(publicDir,'odds-comparison-compact.js'):path.join(root,'site/odds-comparison.js'),'utf8');
 const pause=()=>new Promise(resolve=>setTimeout(resolve,35));
 const realNow=Date.now();
 const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(realNow));
@@ -16,7 +17,7 @@ async function open(auto=true,date=today){
  let current=feed(),clock=realNow,loads=0,fail=false,visible=true;
  const intervals=[],errors=[];
  const rows=races.map(r=>'<tr><td class="race"><a class="race-link" href="'+r.source+'">1R</a></td><td class="lineup-cell"><div class="lineup"><div class="line-group">'+[1,2,3].map(rider).join('')+'</div></div></td></tr>').join('');
- const dom=new JSDOM('<!doctype html><body'+(auto?' data-auto-odds="true"':'')+'><div class="eyebrow">KEIRIN · '+date.replaceAll('-','.')+'</div><table><tbody id="rows" data-initial-odds data-odds-primary="number">'+rows+'</tbody></table><script>const races='+JSON.stringify(races)+';</script></body>',{
+ const dom=new JSDOM('<!doctype html><body'+(auto?' data-auto-odds="true"':'')+(compact?' data-all-results-date="'+date.replaceAll('-','')+'"':'')+'>'+(compact?'<h1>出走表</h1>':'<div class="eyebrow">KEIRIN · '+date.replaceAll('-','.')+'</div>')+'<table><tbody id="rows" data-initial-odds data-odds-primary="number">'+rows+'</tbody></table><script>const races='+JSON.stringify(races)+';</script></body>',{
   url:'https://itaingtr.github.io/keirin-lineup2/',runScripts:'dangerously',beforeParse(w){
    w.Date.now=()=>clock;
    Object.defineProperty(w.document,'visibilityState',{get:()=>visible?'visible':'hidden'});

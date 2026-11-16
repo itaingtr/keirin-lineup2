@@ -20,6 +20,10 @@ for(const race of races)for(const player of race.players)for(const item of playe
 }
 assert.ok(previous.size>0&&mismatch,'A checked card with real prior races is required');
 previous.get(mismatch.source).rows.get(mismatch.no).name='照合しない別選手';
+const oddsFixture=process.argv[3]?JSON.parse(fs.readFileSync(process.argv[3],'utf8')):{results:races.map(race=>({ok:true,snapshot:{
+ provider:'kdreams',parser_version:2,race_key:new URL(race.source).pathname,bet_type:'exacta',status:'snapshot',observed_at:new Date().toISOString(),
+ odds:race.players.flatMap(a=>race.players.filter(b=>b.no!==a.no).map(b=>({first:a.no,second:b.no,value:a.no*10+b.no+.125})))
+}}))};
 const prefix='https://itaingtr.github.io/keirin-lineup2/';
 (async()=>{
  let browser;
@@ -29,13 +33,16 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
   else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,...(fs.existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{})});}}
   for(const width of [320,390,428]){
    const context=await browser.newContext({viewport:{width,height:926},isMobile:true,hasTouch:true});
-   const errors=[],writes=[],counts=new Map();let active=0,maximum=0;
+   const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0;
    await context.route('**/*',async route=>{
     const request=route.request(),url=new URL(request.url());
     if(!['GET','HEAD','OPTIONS'].includes(request.method())){writes.push(request.method());await route.abort();return;}
     // Authentication has its own live browser check. Keep this geometry/data
     // fixture independent of the remote SDK and signed-in user state.
     if(url.pathname.endsWith('/comments-passphrase.js')){await route.fulfill({contentType:'text/javascript',body:'window.keirinBoard={ready:false};'});return;}
+    if(url.hostname==='raw.githubusercontent.com'&&url.pathname.includes('/fallback/kdreams/exacta/')){
+     oddsLoads++;await route.fulfill({status:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(oddsFixture)});return;
+    }
     if(url.pathname==='/functions/v1/race-results'){
      const source=url.searchParams.get('source');counts.set(source,(counts.get(source)||0)+1);active++;maximum=Math.max(maximum,active);
      const group=previous.get(source),current=races.find(r=>r.source===source);
@@ -71,6 +78,31 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    assert.ok(fit.right<=width+.2&&fit.right>=width-2.5,JSON.stringify(fit));
    assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.equal(fit.within,0,JSON.stringify(fit));
    assert.ok(Math.abs(fit.between-(19-fit.digit))<.1,JSON.stringify(fit));
+   await page.waitForSelector('.rider-odds .exacta-line-pair');
+   const oddsAndDots=await page.evaluate(()=>[...document.querySelectorAll('#rows > tr')].map(row=>{
+    const groups=[...row.querySelectorAll('.lineup > .line-group')],link=row.querySelector('.race-link');
+    return {source:link.dataset.raceSource||link.href,bands:row.querySelectorAll('.rider-odds').length,cars:row.querySelectorAll('.lineup .car').length,
+     dots:groups.map((group,index)=>{
+      const dot=group.querySelector(':scope > .line-separator');if(!dot)return null;
+      const d=dot.getBoundingClientRect(),g=group.getBoundingClientRect(),next=groups[index+1]?.getBoundingClientRect(),car=group.querySelector('.car').getBoundingClientRect();
+      return {text:dot.textContent,x:d.left+d.width/2,y:d.top+d.height/2,expectedX:next?(g.right+next.left)/2:null,expectedY:car.top+car.height/2};
+     }),
+     pairs:[...row.querySelectorAll('.rider-odds .exacta-line-pair')].map(node=>{
+      const p=node.getBoundingClientRect(),owner=node.closest('.rider').getBoundingClientRect();
+      return {centre:p.left+p.width/2,edge:owner.right,values:[...node.children].map(value=>({key:value.dataset.pairCombination,text:value.textContent}))};
+     })};
+   }));
+   for(const row of oddsAndDots){
+    const snapshot=oddsFixture.results.find(value=>value.ok&&value.snapshot?.race_key===new URL(row.source).pathname)?.snapshot;
+    assert.ok(snapshot&&snapshot.odds?.some(value=>value.value!==null),'The fixture must contain checked quotes for every displayed race');
+    assert.equal(row.bands,row.cars);assert.equal(row.dots.filter(Boolean).length,row.dots.length-1);assert.equal(row.dots.at(-1),null);
+    for(const dot of row.dots.filter(Boolean)){assert.equal(dot.text,'•');assert.ok(Math.abs(dot.x-dot.expectedX)<.4,JSON.stringify(dot));assert.ok(Math.abs(dot.y-dot.expectedY)<.4,JSON.stringify(dot));}
+    for(const pair of row.pairs){
+     assert.ok(Math.abs(pair.centre-pair.edge)<.4,'Compact paired odds must stay on their widened rider boundary');
+     for(const value of pair.values){const price=snapshot.odds.find(price=>price.first+'-'+price.second===value.key)?.value;assert.equal(value.text,price==null?'':price>=100?String(Math.floor(price)):price.toFixed(1));}
+    }
+   }
+   assert.equal(oddsLoads,1,'All compact odds share one initial feed even without the old eyebrow heading');
    await page.waitForFunction(()=>document.querySelector('.meeting-reason[data-reason-state="ready"]'));
    await page.locator('.race-result-toggle').first().evaluate(n=>n.click());
    await page.waitForSelector('.race-result-panel:not([hidden]) .race-result-table');
@@ -141,7 +173,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await drag(35,width-35);
    await cdp.detach();await page.evaluate(()=>window.scrollTo(0,0));
    if(width===390)await page.screenshot({path:'/tmp/history-refinements-mobile.png'});
-   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
+   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
    await context.close();
   }
  }finally{if(browser)await browser.close();}

@@ -88,8 +88,16 @@ const activeWindows=[];
     assert.equal(destination.href,'/keirin-lineup2/calendar/index.html');
    }
   }
-  for(const file of usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
+  const compactOdds=Boolean(doc.querySelector('script[src*="odds-current-compact.js"]'));
+  for(const file of compactOdds?['odds-current-compact.js','odds-comparison-compact.js']:usesRakuten?['odds-current-rakuten.js','odds-comparison.js']:['predictions.js','odds-current.js','odds-comparison.js'])window.eval(fs.readFileSync(path.join(publicDir,file),'utf8'));
   await pause();
+  if(compactOdds){
+   const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replaceAll('-','');
+   if(day<=today){
+    const initialRiders=sourceRaces.filter(race=>{const value=expected.get(new URL(race.source).pathname);return value&&['open','snapshot'].includes(value.status)&&value.odds.some(price=>price.value!==null);}).reduce((sum,race)=>sum+race.players.length,0);
+    assert.equal(doc.querySelectorAll('.rider-odds').length,initialRiders,'Checked compact odds must appear before opening a table');
+   }
+  }
   assert.equal(doc.querySelectorAll('.race-link').length,report.races);
   assert.equal(doc.querySelectorAll('.lineup .rider').length,report.riders);
   assert.equal(doc.querySelector('iframe,dialog,video,script[src*="viewer.js"]'),null);
