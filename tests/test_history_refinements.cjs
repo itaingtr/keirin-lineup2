@@ -160,7 +160,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await band.focus();await page.keyboard.press('Enter');await page.waitForSelector('.odds-cell:not([hidden]) .exacta-time');
    await page.keyboard.press('Escape');assert.equal(await panel.isVisible(),false);
    assert.deepEqual(await cardPosition(),beforeOdds,'Closing or keyboard access must not scroll the card');
-   await band.tap();await firstRow.locator('.venue').tap();assert.equal(await panel.isVisible(),false);
+   await band.tap();await firstRow.locator('.lineup .score').first().tap();assert.equal(await panel.isVisible(),false);
    await page.waitForFunction(()=>document.querySelector('.meeting-reason[data-reason-state="ready"]'));
    await page.locator('.race-result-toggle').first().evaluate(n=>n.click());
    await page.waitForSelector('.race-result-panel:not([hidden]) .race-result-table');
