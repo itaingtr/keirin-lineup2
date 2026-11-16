@@ -1,11 +1,12 @@
-// Reuse the existing feed validation, refresh control and comparison matrices.
+// Inline upward expansion using the existing verified readers and controls.
 (() => {
   'use strict';
   const root = document.getElementById('rows');
   if (!root || document.body.dataset.oddsOverlay !== 'up-20261116') return;
   const states = new WeakMap();
+  const pending = new Set();
   const clock = new Intl.DateTimeFormat('ja-JP', {timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-  let active = null, queued = false, positioned = false;
+  let queued = false, finishing = false;
 
   function attribute(node, name, value) {
     if (node.getAttribute(name) !== value) node.setAttribute(name, value);
@@ -20,35 +21,51 @@
     refresh.setAttribute('aria-label', '二車単オッズを更新するにゃ');
     panel.setAttribute('role', 'region');
     panel.setAttribute('aria-label', '二車単オッズにゃ');
-    const state = {row, button, panel, refresh, status, trigger:null};
+    const state = {row, button, panel, refresh, status, anchor:null};
     states.set(row, state);
     return state;
   }
 
-  function position(state) {
-    if (state.panel.hidden || !state.row.isConnected) return;
-    const lineup = state.row.querySelector('.lineup');
-    const band = lineup?.querySelector('.rider-odds');
-    if (!lineup) return;
-    const zoom = Number.parseFloat(getComputedStyle(document.body).zoom) || 1;
-    const rowBox = state.row.getBoundingClientRect(), lineBox = lineup.getBoundingClientRect();
-    const anchor = (band || lineup).getBoundingClientRect();
-    const gap = 2, viewportTop = window.visualViewport?.offsetTop || 0;
-    state.panel.style.setProperty('--odds-anchor-x', ((lineBox.left - rowBox.left) / zoom - state.row.clientLeft) + 'px');
-    state.panel.style.setProperty('--odds-anchor-y', ((anchor.top - rowBox.top) / zoom - state.row.clientTop - gap) + 'px');
-    state.panel.style.setProperty('--odds-available-height', Math.max(20, (anchor.top - viewportTop - 4) / zoom - gap) + 'px');
+  function begin(state) {
+    const node = state.row.querySelector('.lineup');
+    if (!node) return;
+    state.anchor = {node, top:node.getBoundingClientRect().top};
+    pending.add(state);
+    // Prevent the browser and this explicit, user-requested compensation
+    // from both adjusting the same expansion. Restore normal anchoring later.
+    document.documentElement.dataset.oddsLayoutChange = 'true';
   }
 
-  function close(state) {
-    if (!state || state.panel.hidden) return;
-    state.button.click();
+  function preserve(state) {
+    const anchor = state.anchor;
+    if (!anchor?.node.isConnected) return;
+    const delta = anchor.node.getBoundingClientRect().top - anchor.top;
+    if (Math.abs(delta) > .5) window.scrollBy({left:0, top:delta, behavior:'auto'});
+    // At the beginning/end of the page, the browser may clamp the position.
+    anchor.top = anchor.node.getBoundingClientRect().top;
+  }
+
+  function finish() {
+    if (finishing || !pending.size) return;
+    finishing = true;
+    requestAnimationFrame(() => {
+      for (const state of pending) preserve(state);
+      requestAnimationFrame(() => {
+        finishing = false;
+        for (const state of pending) {
+          preserve(state);
+          if (!state.row.isConnected || state.panel.hidden || !state.panel.hasAttribute('aria-busy')) {
+            state.anchor = null;
+            pending.delete(state);
+          }
+        }
+        if (!pending.size) delete document.documentElement.dataset.oddsLayoutChange;
+      });
+    });
   }
 
   function synchronize(state) {
     const open = !state.panel.hidden;
-    // The original control adds a grid row. This panel has no layout slot.
-    state.row.classList.remove('odds-open');
-    state.row.classList.toggle('odds-up-open', open);
     for (const band of state.row.querySelectorAll('.lineup .rider-odds')) {
       attribute(band, 'role', 'button');
       attribute(band, 'tabindex', '0');
@@ -56,11 +73,6 @@
       attribute(band, 'aria-expanded', String(open));
       attribute(band, 'aria-controls', state.panel.id);
     }
-    if (open) {
-      if (active && active !== state) close(active);
-      active = state;
-      position(state);
-    } else if (active === state) active = null;
   }
 
   function decorate(state) {
@@ -103,13 +115,14 @@
 
   function update() {
     queued = false;
-    if (active && !active.row.isConnected) active = null;
     for (const row of root.children) {
       const state = prepare(row);
       if (!state) continue;
       decorate(state);
       synchronize(state);
     }
+    for (const state of pending) preserve(state);
+    finish();
   }
 
   function schedule() {
@@ -118,23 +131,25 @@
     queueMicrotask(update);
   }
 
-  function reposition() {
-    if (positioned || !active) return;
-    positioned = true;
-    requestAnimationFrame(() => { positioned = false; if (active) position(active); });
-  }
-
+  root.addEventListener('click', event => {
+    if (!event.target.closest('.odds-toggle,.odds-refresh')) return;
+    const state = prepare(event.target.closest('#rows > tr'));
+    if (state) begin(state);
+  }, true);
   root.addEventListener('click', event => {
     const band = event.target.closest('.lineup .rider-odds');
     if (band) {
       const state = prepare(band.closest('#rows > tr'));
       if (!state) return;
       event.preventDefault();
-      state.trigger = band;
       state.button.click();
     } else if (event.target.closest('.odds-toggle')) {
       const state = prepare(event.target.closest('#rows > tr'));
-      if (state) synchronize(state);
+      if (state) {
+        synchronize(state);
+        preserve(state);
+        finish();
+      }
     }
   });
   root.addEventListener('keydown', event => {
@@ -142,19 +157,16 @@
     event.preventDefault();
     event.target.click();
   });
-  document.addEventListener('click', event => {
-    if (active && !active.panel.contains(event.target) && !event.target.closest('.rider-odds,.odds-toggle')) close(active);
-  });
-  document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || !active) return;
-    const trigger = active.trigger;
-    close(active);
-    if (trigger?.isConnected) trigger.focus({preventScroll:true});
-  });
-  window.addEventListener('resize', reposition, {passive:true});
-  window.addEventListener('scroll', reposition, {passive:true});
-  window.visualViewport?.addEventListener('resize', reposition, {passive:true});
-  window.visualViewport?.addEventListener('scroll', reposition, {passive:true});
+  // A deliberate scroll while a read is pending becomes the new reference.
+  // Never restore an old page position after the user has moved elsewhere.
+  function rememberScroll() {
+    for (const state of pending) if (state.anchor?.node.isConnected) {
+      state.anchor.top = state.anchor.node.getBoundingClientRect().top;
+    }
+  }
+  window.addEventListener('scroll', rememberScroll, {passive:true});
+  window.addEventListener('resize', rememberScroll, {passive:true});
+  window.visualViewport?.addEventListener('scroll', rememberScroll, {passive:true});
   new MutationObserver(schedule).observe(root, {childList:true,subtree:true,attributes:true,attributeFilter:['hidden','aria-busy','disabled']});
   update();
 })();

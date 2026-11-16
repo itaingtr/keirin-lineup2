@@ -33,7 +33,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
   else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,...(fs.existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{})});}}
   for(const width of [320,390,428]){
    const context=await browser.newContext({viewport:{width,height:926},isMobile:true,hasTouch:true});
-   const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0,servedOdds=oddsFixture,oddsFailure=false;
+   const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0,servedOdds=oddsFixture,oddsFailure=false,oddsDelay=0;
    await context.route('**/*',async route=>{
     const request=route.request(),url=new URL(request.url());
     if(!['GET','HEAD','OPTIONS'].includes(request.method())){writes.push(request.method());await route.abort();return;}
@@ -41,7 +41,8 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     // fixture independent of the remote SDK and signed-in user state.
     if(url.pathname.endsWith('/comments-passphrase.js')){await route.fulfill({contentType:'text/javascript',body:'window.keirinBoard={ready:false};'});return;}
     if(url.hostname==='raw.githubusercontent.com'&&url.pathname.includes('/fallback/kdreams/exacta/')){
-     oddsLoads++;await route.fulfill({status:oddsFailure?503:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(servedOdds)});return;
+     oddsLoads++;if(oddsDelay)await new Promise(resolve=>setTimeout(resolve,oddsDelay));
+     await route.fulfill({status:oddsFailure?503:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(servedOdds)});return;
     }
     if(url.pathname==='/functions/v1/race-results'){
      const source=url.searchParams.get('source');counts.set(source,(counts.get(source)||0)+1);active++;maximum=Math.max(maximum,active);
@@ -103,11 +104,12 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     }
    }
    assert.equal(oddsLoads,1,'All compact odds share one initial feed even without the old eyebrow heading');
-   // The full exacta tables must grow upward without moving any race/rider,
-   // adding document height, forcing scroll, or exposing the removed labels.
+   // A normal in-flow section grows above the race. Its added height is
+   // compensated only on an odds action, keeping the visible rider positions.
    const firstRow=page.locator('#rows > tr').first(),band=firstRow.locator('.rider-odds').first();
    async function cardPosition(){return page.evaluate(()=>({
     cards:[...document.querySelectorAll('#rows > tr')].map(row=>{const r=row.getBoundingClientRect();return [r.x,r.y,r.width,r.height];}),
+    headers:[...document.querySelectorAll('#rows > tr > .venue')].map(node=>{const r=node.getBoundingClientRect();return [r.x,r.y];}),
     cars:[...document.querySelectorAll('#rows > tr .lineup .car')].map(car=>{const r=car.getBoundingClientRect();return [r.x,r.y];}),
     scroll:[scrollX,scrollY,visualViewport.pageLeft,visualViewport.pageTop],
     document:[document.scrollingElement.scrollWidth,document.scrollingElement.scrollHeight]
@@ -116,51 +118,93 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    assert.equal(await firstRow.locator('.odds-toggle').isVisible(),false);
    await band.tap();
    await page.waitForSelector('.odds-cell:not([hidden]) .exacta-time');
+   await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    const panel=firstRow.locator('.odds-cell'),refresh=panel.locator('.odds-refresh');
-   assert.deepEqual(await cardPosition(),beforeOdds,'Opening exacta must preserve every card, car and scroll position');
-   const overlay=await firstRow.evaluate(row=>{
+   const openedOdds=await cardPosition();
+   function sameCoordinates(actual,expected,label){
+    assert.equal(actual.length,expected.length);
+    actual.forEach((point,index)=>point.forEach((value,axis)=>assert.ok(Math.abs(value-expected[index][axis])<1.1,label+': '+JSON.stringify({actual:point,expected:expected[index]}))));
+   }
+   sameCoordinates(openedOdds.cars,beforeOdds.cars,'Opening upward preserves visible car positions');
+   sameCoordinates(openedOdds.headers,beforeOdds.headers,'Race headings remain at their visible positions');
+   assert.equal(openedOdds.document[0],beforeOdds.document[0]);
+   assert.ok(openedOdds.document[1]-beforeOdds.document[1]>100,'The table must reserve its full height in the document');
+   assert.ok(openedOdds.scroll[1]>beforeOdds.scroll[1],'Compensate the inserted height by scrolling the document');
+   const expansion=await firstRow.evaluate(row=>{
     const panel=row.querySelector('.odds-cell'),band=row.querySelector('.rider-odds'),time=panel.querySelector('.exacta-time'),button=panel.querySelector('.odds-refresh'),name=button.closest('.exacta-name-row').querySelector('.exacta-rider-name');
-    const p=panel.getBoundingClientRect(),b=band.getBoundingClientRect(),t=time.getBoundingClientRect(),u=button.getBoundingClientRect(),n=name.getBoundingClientRect();
+    const p=panel.getBoundingClientRect(),b=band.getBoundingClientRect(),t=time.getBoundingClientRect(),u=button.getBoundingClientRect(),n=name.getBoundingClientRect(),style=getComputedStyle(panel),heading=row.querySelector('.venue').getBoundingClientRect(),card=row.getBoundingClientRect();
     return {top:p.top,bottom:p.bottom,anchor:b.top,height:p.height,nameRight:n.right,buttonLeft:u.left,buttonBottom:u.bottom,timeTop:t.top,time:time.textContent,
      car:button.closest('.exacta-column-rider').querySelector('.exacta-number').textContent,observed:time.dateTime,
      tableCount:panel.querySelectorAll('.exacta-matrix').length,headerHeight:name.getBoundingClientRect().height,toolsHeight:button.parentElement.getBoundingClientRect().height,
+     position:style.position,shadow:style.boxShadow,overflow:style.overflowY,scrollHeight:panel.scrollHeight,clientHeight:panel.clientHeight,headingTop:heading.top,cardTop:card.top,
      captions:[...panel.querySelectorAll('caption,.odds-heading')].map(n=>getComputedStyle(n).display),
      status:panel.querySelector('.odds-status').getBoundingClientRect().height};
    });
-   assert.equal(overlay.tableCount,2);assert.equal(overlay.car,'1');
-   assert.ok(overlay.top>=-1&&overlay.bottom<overlay.anchor&&overlay.height>100,JSON.stringify(overlay));
-   assert.ok(overlay.buttonLeft>=overlay.nameRight&&overlay.buttonLeft-overlay.nameRight<3,JSON.stringify(overlay));
-   assert.ok(overlay.timeTop>=overlay.buttonBottom&&overlay.toolsHeight<=overlay.headerHeight,JSON.stringify(overlay));
-   assert.ok(overlay.captions.every(value=>value==='none'));assert.ok(overlay.status<=2);
+   assert.equal(expansion.tableCount,2);assert.equal(expansion.car,'1');
+   assert.ok(expansion.top>expansion.cardTop&&expansion.bottom<expansion.headingTop&&expansion.headingTop<expansion.anchor,JSON.stringify(expansion));
+   assert.equal(expansion.position,'static');assert.equal(expansion.shadow,'none');assert.equal(expansion.overflow,'visible');
+   assert.ok(expansion.scrollHeight<=expansion.clientHeight+1,'All table rows must be in normal flow, without an inner scrolling panel');
+   assert.ok(expansion.buttonLeft>=expansion.nameRight&&expansion.buttonLeft-expansion.nameRight<3,JSON.stringify(expansion));
+   assert.ok(expansion.timeTop>=expansion.buttonBottom&&expansion.toolsHeight<=expansion.headerHeight,JSON.stringify(expansion));
+   assert.ok(expansion.captions.every(value=>value==='none'));assert.ok(expansion.status<=2);
    const expectedClock=value=>new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));
-   assert.equal(overlay.time,expectedClock(overlay.observed));assert.match(overlay.time,/^\d{2}:\d{2}$/);
+   assert.equal(expansion.time,expectedClock(expansion.observed));assert.match(expansion.time,/^\d{2}:\d{2}$/);
+   // Read the complete expanded table using ordinary document scrolling.
+   await page.evaluate(()=>window.scrollTo({left:scrollX,top:0,behavior:'instant'}));
+   await page.waitForTimeout(50);
+   const beforeRefresh=await cardPosition();
    const originalQuotes=await panel.locator('td[data-combination]').allTextContents();
    const originalTime=await panel.locator('.exacta-time').getAttribute('datetime');
    oddsFailure=true;await refresh.tap();
    await page.waitForSelector('.exacta-time[data-stale="true"]');
+   await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    assert.deepEqual(await panel.locator('td[data-combination]').allTextContents(),originalQuotes);
    assert.equal(await panel.locator('.exacta-time').getAttribute('datetime'),originalTime);
-   assert.deepEqual(await cardPosition(),beforeOdds,'A failed refresh must retain geometry and checked values');
+   assert.deepEqual(await cardPosition(),beforeRefresh,'A failed refresh must retain geometry and the manually chosen reading position');
    oddsFailure=false;servedOdds=JSON.parse(JSON.stringify(oddsFixture));
    const updated=servedOdds.results.find(item=>item.snapshot.race_key===new URL(oddsAndDots[0].source).pathname).snapshot;
    updated.observed_at=new Date(Date.parse(originalTime)+1000).toISOString();
    for(const price of updated.odds)if(price.value!==null)price.value+=1;
    await refresh.tap();
    await page.waitForFunction(value=>document.querySelector('.odds-cell:not([hidden]) .exacta-time')?.dateTime===value,updated.observed_at);
+   await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    assert.equal(await panel.locator('.odds-refresh').count(),1,'A refreshed matrix must retain one live refresh control');
    assert.notDeepEqual(await panel.locator('td[data-combination]').allTextContents(),originalQuotes);
-   assert.deepEqual(await cardPosition(),beforeOdds,'Replacing both matrices must not move the lineup');
+   assert.deepEqual(await cardPosition(),beforeRefresh,'Replacing both matrices must not move the lineup or undo document scrolling');
    const confirmedQuotes=await panel.locator('td[data-combination]').allTextContents();
    servedOdds=oddsFixture;await panel.locator('.odds-refresh').tap();
    await page.waitForFunction(()=>!document.querySelector('.odds-cell:not([hidden])').hasAttribute('aria-busy'));
+   await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    assert.deepEqual(await panel.locator('td[data-combination]').allTextContents(),confirmedQuotes,'Older quotes cannot replace the confirmed matrix');
    assert.equal(await panel.locator('.exacta-time').getAttribute('datetime'),updated.observed_at);
    if(width===390)await page.screenshot({path:'/tmp/odds-overlay-mobile.png'});
-   await band.tap();assert.equal(await panel.isVisible(),false);
+   await page.evaluate(y=>window.scrollTo({left:scrollX,top:y,behavior:'instant'}),openedOdds.scroll[1]);
+   await page.waitForTimeout(50);
+   await band.tap();await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);assert.equal(await panel.isVisible(),false);
+   assert.deepEqual(await cardPosition(),beforeOdds,'Closing reverses the expansion and keeps the visible lineup in place');
    await band.focus();await page.keyboard.press('Enter');await page.waitForSelector('.odds-cell:not([hidden]) .exacta-time');
-   await page.keyboard.press('Escape');assert.equal(await panel.isVisible(),false);
-   assert.deepEqual(await cardPosition(),beforeOdds,'Closing or keyboard access must not scroll the card');
-   await band.tap();await firstRow.locator('.lineup .score').first().tap();assert.equal(await panel.isVisible(),false);
+   await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   await page.keyboard.press(' ');await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);assert.equal(await panel.isVisible(),false);
+   assert.deepEqual(await cardPosition(),beforeOdds,'Keyboard toggles also preserve the visible lineup');
+   await band.tap();await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   await firstRow.locator('.lineup .score').first().tap();assert.equal(await panel.isVisible(),true,'An inline section stays open when using the rest of the card');
+   await band.tap();await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   // A first read can finish after the reader has deliberately scrolled.
+   // Keep that new position while the loading line becomes a full table.
+   oddsDelay=350;
+   await page.evaluate(()=>{window.oddsOriginalNow=Date.now;Date.now=()=>window.oddsOriginalNow()+61000;});
+   const secondRow=page.locator('#rows > tr').nth(1),secondBand=secondRow.locator('.rider-odds').first();
+   const delayedFeed=page.waitForResponse(r=>new URL(r.url()).hostname==='raw.githubusercontent.com'&&new URL(r.url()).pathname.includes('/fallback/kdreams/exacta/'));
+   await secondBand.tap();
+   await page.evaluate(()=>window.scrollBy({left:0,top:35,behavior:'instant'}));await page.waitForTimeout(50);
+   const manuallyChosen=await secondRow.locator('.lineup').evaluate(n=>({top:n.getBoundingClientRect().top,x:visualViewport.pageLeft}));
+   await delayedFeed;await secondRow.locator('.exacta-time').waitFor();
+   await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   const afterDelayed=await secondRow.locator('.lineup').evaluate(n=>({top:n.getBoundingClientRect().top,x:visualViewport.pageLeft}));
+   assert.ok(Math.abs(afterDelayed.top-manuallyChosen.top)<1&&Math.abs(afterDelayed.x-manuallyChosen.x)<1,'Late odds must honor the manual scroll made during the request: '+JSON.stringify({manuallyChosen,afterDelayed}));
+   await secondBand.tap();await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   await page.evaluate(()=>{Date.now=window.oddsOriginalNow;delete window.oddsOriginalNow;window.scrollTo({left:0,top:0,behavior:'instant'});});oddsDelay=0;
+   await page.waitForTimeout(50);
    await page.waitForFunction(()=>document.querySelector('.meeting-reason[data-reason-state="ready"]'));
    await page.locator('.race-result-toggle').first().evaluate(n=>n.click());
    await page.waitForSelector('.race-result-panel:not([hidden]) .race-result-table');
@@ -228,10 +272,15 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    const afterPan=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
    const panMetrics=await page.evaluate(()=>({inner:innerWidth,client:document.documentElement.clientWidth,scrollWidth:document.scrollingElement.scrollWidth,vv:{width:visualViewport.width,pageLeft:visualViewport.pageLeft,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale},table:document.querySelector('.table-wrap table').getBoundingClientRect().width,bodyOverflow:getComputedStyle(document.body).overflowX,rootOverflow:getComputedStyle(document.documentElement).overflowX}));
    assert.ok(panned>0&&Math.abs(afterPan-panned)<1,'A history redraw must preserve horizontal panning: '+JSON.stringify({panned,afterPan,panMetrics}));
+   await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   const duringPannedOdds=await page.evaluate(()=>visualViewport.pageLeft);
+   assert.ok(Math.abs(duringPannedOdds-afterPan)<1,'An upward expansion must preserve a manually panned horizontal position');
+   await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+   assert.ok(Math.abs(await page.evaluate(()=>visualViewport.pageLeft)-afterPan)<1,'Closing upward must preserve horizontal panning');
    await drag(35,width-35);
    await cdp.detach();await page.evaluate(()=>window.scrollTo(0,0));
    if(width===390)await page.screenshot({path:'/tmp/history-refinements-mobile.png'});
-   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),overlay,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
+   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),expansion,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
    await context.close();
   }
  }finally{if(browser)await browser.close();}

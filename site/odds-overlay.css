@@ -1,20 +1,21 @@
-/* The current card opens its existing, verified matrices above the lineup. */
+/* Expand in document flow, above the race, like the existing history panels. */
+html[data-odds-layout-change="true"]{overflow-anchor:none;scroll-behavior:auto}
 body[data-odds-overlay="up-20261116"] .table-wrap{overflow:visible}
-body[data-odds-overlay="up-20261116"] .table-wrap #rows > tr{position:relative}
-body[data-odds-overlay="up-20261116"] .table-wrap #rows > tr.odds-up-open{z-index:5}
+body[data-odds-overlay="up-20261116"] .table-wrap #rows > tr.odds-open{
+ grid-template-areas:"odds odds odds" "venue race comment" "lineup lineup comment" "composer composer comment";
+}
 body[data-odds-overlay="up-20261116"] .table-wrap .odds-toggle,
 body[data-odds-overlay="up-20261116"] .table-wrap .odds-heading,
 body[data-odds-overlay="up-20261116"] .table-wrap .exacta-matrix caption{display:none}
 body[data-odds-overlay="up-20261116"] .table-wrap .rider-odds[role="button"]{cursor:pointer;touch-action:manipulation}
 body[data-odds-overlay="up-20261116"] .table-wrap .rider-odds[role="button"]:focus-visible{outline:1px solid #155eef;outline-offset:1px}
 body[data-odds-overlay="up-20261116"] .table-wrap .odds-cell{
- position:absolute;grid-area:auto;left:var(--odds-anchor-x,12px);top:auto;
- bottom:calc(100% - var(--odds-anchor-y,0px));z-index:10;
- width:calc(var(--exacta-width) + var(--exacta-lineup-width,var(--exacta-width)) + 22px);
- max-width:none;max-height:var(--odds-available-height,none);margin:0;padding:4px;
- overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;
- background:#fff;border:1px solid #b8c8dc;border-radius:5px;box-shadow:0 3px 12px #172b452b;
+ position:static;grid-area:odds;display:block;
+ width:calc(var(--exacta-width) + var(--exacta-lineup-width,var(--exacta-width)) + 12px);
+ max-width:none;max-height:none;margin:0;padding:0;overflow:visible;
+ background:transparent;border:0;border-radius:0;box-shadow:none;
 }
+body[data-odds-overlay="up-20261116"] .table-wrap .odds-cell[hidden]{display:none}
 body[data-odds-overlay="up-20261116"] .table-wrap .odds-content{overflow:visible}
 body[data-odds-overlay="up-20261116"] .table-wrap .odds-has-matrix .odds-status{
  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;

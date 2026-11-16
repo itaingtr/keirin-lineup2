@@ -33,7 +33,7 @@ const pause=()=>new Promise(resolve=>setTimeout(resolve,30));
   assert.equal(band(rows[0]).getAttribute('role'),'button');
   band(rows[0]).click();await pause();
   assert.equal(loads,1,'Opening reuses the confirmed initial feed');
-  assert.equal(panel(rows[0]).hidden,false);assert.equal(rows[0].classList.contains('odds-open'),false);
+  assert.equal(panel(rows[0]).hidden,false);assert.equal(rows[0].classList.contains('odds-open'),true);
   assert.equal(panel(rows[0]).querySelectorAll('.exacta-matrix').length,2);
   const control=refresh(rows[0]);
   assert.equal(control.closest('.exacta-column-rider').querySelector('.exacta-number').textContent,'1');
@@ -49,17 +49,17 @@ const pause=()=>new Promise(resolve=>setTimeout(resolve,30));
   const confirmed=time(rows[0]).dateTime;
   current=feed();control.click();await pause();assert.equal(price(rows[0]),'22.3');assert.equal(time(rows[0]).dateTime,confirmed);
   band(rows[1]).click();await pause();
-  assert.equal(panel(rows[0]).hidden,true);assert.equal(panel(rows[1]).hidden,false,'Only the selected race stays open');
-  d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await pause();assert.equal(panel(rows[1]).hidden,true);
-  band(rows[0]).dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await pause();assert.equal(panel(rows[0]).hidden,false);
-  band(rows[0]).dispatchEvent(new w.KeyboardEvent('keydown',{key:' ',bubbles:true}));await pause();assert.equal(panel(rows[0]).hidden,true);
-  band(rows[0]).click();await pause();d.body.click();await pause();assert.equal(panel(rows[0]).hidden,true);
+  assert.equal(panel(rows[0]).hidden,false);assert.equal(panel(rows[1]).hidden,false,'Inline sections stay independently open like the histories');
+  d.body.click();await pause();assert.equal(panel(rows[0]).hidden,false);assert.equal(panel(rows[1]).hidden,false);
+  band(rows[1]).click();await pause();assert.equal(panel(rows[1]).hidden,true);assert.equal(panel(rows[0]).hidden,false);
+  band(rows[0]).dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await pause();assert.equal(panel(rows[0]).hidden,true);
+  band(rows[0]).dispatchEvent(new w.KeyboardEvent('keydown',{key:' ',bubbles:true}));await pause();assert.equal(panel(rows[0]).hidden,false);
   // A normal card search replaces the row elements. It must retain the
   // checked feed while installing fresh, closed triggers for those rows.
   root.innerHTML=markup;await pause();rows=[...root.children];
   assert.equal(panel(rows[0]).hidden,true);assert.equal(band(rows[0]).getAttribute('aria-expanded'),'false');
   band(rows[0]).click();await pause();assert.equal(price(rows[0]),'22.3');
   assert.deepEqual(errors,[]);
-  console.log('ODDS OVERLAY PASS: hidden standalone control, compact time beside car1, live refresh after replacement, failure/older retention, single panel, keyboard, outside close and search redraw.');
+  console.log('ODDS INLINE PASS: hidden standalone control, compact time beside car1, live refresh after replacement, failure/older retention, independent sections, keyboard, persistence and search redraw.');
  }finally{dom.window.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
