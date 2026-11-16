@@ -49,7 +49,7 @@ const root=path.resolve(process.argv[2]||'public');
         id:row.dataset.playerId,marked:!!row.querySelector('.birthday-done'),
         fields:[...row.querySelectorAll('.count-item')].map(node=>node.dataset.stat),
         recent:[...row.querySelectorAll('.recent-line')].map(line=>({position:line.dataset.position,text:line.textContent})),
-        nameRight:row.querySelector('.directory-name-button').getBoundingClientRect().right,
+        nameRight:(()=>{const range=document.createRange();range.selectNodeContents(row.querySelector('.directory-name-button'));return range.getBoundingClientRect().right;})(),
         metaLeft:row.querySelector('.person-meta').getBoundingClientRect().left,
         countsLeft:row.querySelector('.directory-counts').getBoundingClientRect().left,
         scoreLeft:row.querySelector('.directory-score').getBoundingClientRect().left,

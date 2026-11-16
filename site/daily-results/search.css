@@ -10,8 +10,8 @@ article{padding:5px 6px}.directory-back{font-size:10px;min-height:24px;padding:3
 .directory-table{width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;font-variant-numeric:tabular-nums}
 .directory-table th{font-size:9px;font-weight:500;text-align:left;background:#e5eee5;padding:3px 1px}
 .directory-table td{padding:1px;border-bottom:1px solid #e4ebe5;vertical-align:middle;line-height:1.05;min-width:0}
-.directory-table th:nth-child(1){width:20px}.directory-table th:nth-child(2){width:90px}.directory-table th:nth-child(3){width:59px}.directory-table th:nth-child(4){width:112px}.directory-table th:nth-child(5){width:54px;text-align:right}
-.directory-number{color:#738176;font-size:9px}.directory-name-button{display:block;border:0;border-radius:0;min-height:22px;padding:0;background:transparent;text-align:left;text-decoration:underline;text-underline-offset:2px;font-size:12px;font-weight:500;max-width:100%;overflow-wrap:anywhere;line-height:11px}
+.directory-table th:nth-child(1){width:20px}.directory-table th:nth-child(2){width:76px}.directory-table th:nth-child(3){width:59px}.directory-table th:nth-child(4){width:98px}.directory-table th:nth-child(5){width:54px;text-align:right}
+.directory-number{color:#738176;font-size:9px}.directory-name-button{display:block;width:100%;border:0;border-radius:0;min-height:22px;padding:0 2px 0 0;background:transparent;text-align:right;text-decoration:underline;text-underline-offset:2px;font-size:12px;font-weight:500;max-width:100%;overflow-wrap:anywhere;line-height:11px}
 .directory-name-button:hover{background:transparent;color:#128354}.directory-score{text-align:right;font-size:11px;white-space:nowrap}
 .person-meta{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;font-size:10px;line-height:11px;color:#536c5a;white-space:nowrap}
 .person-term-age{display:flex;align-items:baseline;gap:0}.birthday-done{font-size:7px;margin-left:1px;color:#69776c}
