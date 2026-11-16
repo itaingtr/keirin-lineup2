@@ -1,7 +1,7 @@
 name: Verify name-based rider history search
 on:
   push:
-    branches: [main, feat/rider-name-search, feat/rider-directory, feat/rider-counts-history, feat/rider-inline-counts]
+    branches: [main, feat/rider-name-search, feat/rider-directory, feat/rider-counts-history, feat/rider-inline-counts, feat/rider-readable-counts]
     paths:
       - 'site/daily-results/search*'
       - 'scripts/rider_search.py'
@@ -57,4 +57,6 @@ jobs:
             /tmp/rider-search-mobile.png
             /tmp/rider-directory-mobile.png
             /tmp/rider-history-compact-mobile.png
+            /tmp/rider-directory-iphone14plus.png
+            /tmp/rider-search-iphone14plus.png
           if-no-files-found: ignore
