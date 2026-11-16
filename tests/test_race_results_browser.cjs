@@ -102,7 +102,19 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   assert.equal(await page.locator('.all-results-button').first().textContent(),'全結果');
   assert.equal(await page.locator('.race-result-toggle').count(),count);
   assert.equal(await page.locator('.race-result-panel:not([hidden])').count(),0);
-  assert.equal(requests.length,0,'normal page reads no race result until a tap');
+  const currentSources=new Set(await page.evaluate(()=>races.map(r=>r.source)));
+  const historicalSources=new Set();
+  for(const name of fs.readdirSync(directory).filter(name=>/^line\d{8}\.html$/.test(name))){
+   const source=fs.readFileSync(path.join(directory,name),'utf8');
+   const match=/const races=(.*);\nconst body=/.exec(source);if(!match)continue;
+   for(const race of JSON.parse(match[1]))for(const player of race.players)for(const result of player.meetingResults||[]){
+    if(!result.start_source_url)continue;
+    const url=new URL(result.start_source_url);url.search='';url.hash='';historicalSources.add(url.href);
+   }
+  }
+  const requestedSources=requests.map(request=>new URL(request.url()).searchParams.get('source'));
+  assert.ok(requestedSources.every(source=>historicalSources.has(source)), 'Before a tap, only saved exact prior-race URLs may supply displayed win/loss reasons');
+  assert.equal(requestedSources.filter(source=>currentSources.has(source)).length,0,'normal page reads no displayed-card result until a tap');
   await tap(page.locator('.race-result-toggle').first());
   await page.waitForFunction(()=>['pending','payouts','results','error'].includes(document.querySelector('.race-results-cell')?.dataset.resultState),null,{timeout:30000});
   assert.notEqual(await page.locator('.race-results-cell').first().getAttribute('data-result-state'),'error','real on-demand result must be available: '+JSON.stringify(diagnostics));
