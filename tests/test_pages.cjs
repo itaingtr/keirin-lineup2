@@ -45,7 +45,9 @@ const activeWindows=[];
  for(const route of ['', 'line'+day+'.html']){
   const url='https://itaingtr.github.io/keirin-lineup2/'+route;
   const errors=[];
-  const styledHtml=usesConditions?html.replace(/<link\b[^>]*href="[^"]*\/rider-condition\.css[^"]*"[^>]*>/,()=>'<style>'+fs.readFileSync(path.join(publicDir,'rider-condition.css'),'utf8')+'</style>'):html;
+  let styledHtml=usesConditions?html.replace(/<link\b[^>]*href="[^"]*\/rider-condition\.css[^"]*"[^>]*>/,()=>'<style>'+fs.readFileSync(path.join(publicDir,'rider-condition.css'),'utf8')+'</style>'):html;
+  const wideRiders=html.includes('data-lineup-spacing="readable-20261116"');
+  if(wideRiders)styledHtml=styledHtml.replace(/<link\b[^>]*href="[^"]*\/history-refinements\.css[^"]*"[^>]*>/,()=>'<style>'+fs.readFileSync(path.join(publicDir,'history-refinements.css'),'utf8')+'</style>');
   const dom=new JSDOM(styledHtml,{url,runScripts:'dangerously',beforeParse(window){
    window.matchMedia=()=>({matches:false});
    window.fetch=async input=>{
@@ -134,9 +136,11 @@ const activeWindows=[];
    if(usesConditions){
     const lineup=row.querySelector('.lineup'),groups=[...lineup.children];
     assert.deepEqual(groups.map(g=>[...g.querySelectorAll('.rider .car')].map(c=>Number(c.textContent))),race.groups.map(line=>line.flatMap(unit=>unit.riders)));
-    assert.equal(window.getComputedStyle(lineup).gap,legacyLineup.lineGap);
-    for(const group of groups){assert.equal(window.getComputedStyle(group).gap,legacyLineup.withinGap);}
-    for(const rider of lineup.querySelectorAll('.rider'))assert.equal(window.getComputedStyle(rider).flexBasis,legacyLineup.riderBasis);
+    if(!wideRiders){
+     assert.equal(window.getComputedStyle(lineup).gap,legacyLineup.lineGap);
+     for(const group of groups){assert.equal(window.getComputedStyle(group).gap,legacyLineup.withinGap);}
+    }
+    for(const rider of lineup.querySelectorAll('.rider'))assert.equal(window.getComputedStyle(rider).flexBasis,wideRiders?'32px':legacyLineup.riderBasis);
     const actions=[...row.querySelectorAll('.video-actions > a')];
     assert.deepEqual(actions.map(a=>a.textContent),['映像','結果','ライブ']);
     assert.ok(actions[0].classList.contains('video-link'));assert.ok(actions[1].classList.contains('result-link'));assert.ok(actions[2].classList.contains('live-link'));
@@ -166,7 +170,7 @@ const activeWindows=[];
       const back=rider.querySelector('.stats').firstElementChild;assert.ok(back.classList.contains('stat-b')||back.classList.contains('stat-b-zero'));assert.equal(back.textContent,String(player.stats[1]));
       assert.equal(window.getComputedStyle(back).fontSize,'10px');assert.equal(window.getComputedStyle(back).fontWeight,'400');
       assert.equal(window.getComputedStyle(today).fontSize,'8px');assert.equal(window.getComputedStyle(today).fontWeight,'400');assert.equal(window.getComputedStyle(today).color,'rgb(211, 47, 47)');
-      for(const flag of rider.querySelectorAll('.meeting-back')){assert.equal(window.getComputedStyle(flag).fontSize,'8px');assert.equal(window.getComputedStyle(flag).fontWeight,'400');}
+      for(const flag of rider.querySelectorAll('.meeting-back')){assert.equal(window.getComputedStyle(flag).fontSize,wideRiders?'6px':'8px');assert.equal(window.getComputedStyle(flag).fontWeight,'400');}
       for(const timing of rider.querySelectorAll('.meeting-time'))assert.equal(window.getComputedStyle(timing).fontSize,'8px');
      }
     }

@@ -1,5 +1,5 @@
 // Actual exported cards, geometry and strict prior-rider matching; no external writes.
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright-core');
 const directory=path.resolve(process.argv[2]||'public');
 let target='index.html';
@@ -20,14 +20,8 @@ for(const race of races)for(const player of race.players)for(const item of playe
 }
 assert.ok(previous.size>0&&mismatch,'A checked card with real prior races is required');
 previous.get(mismatch.source).rows.get(mismatch.no).name='照合しない別選手';
-const server=http.createServer((request,response)=>{
- const route=decodeURIComponent(new URL(request.url,'http://localhost').pathname);
- const file=path.resolve(directory,route.replace(/^\/keirin-lineup2\//,'')||'index.html');
- if(!route.startsWith('/keirin-lineup2/')||!file.startsWith(directory+path.sep)){response.writeHead(404).end();return;}
- try{const content=fs.readFileSync(file);response.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.json')?'application/json':'text/html; charset=utf-8'}).end(content);}catch{response.writeHead(404).end();}
-});
+const prefix='https://itaingtr.github.io/keirin-lineup2/';
 (async()=>{
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
  try{
   const launch={headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};
@@ -56,12 +50,27 @@ const server=http.createServer((request,response)=>{
       observed_at:new Date().toISOString(),state:'results',rows:group?[...group.rows.values()]:current.players.map((p,i)=>({no:p.no,name:p.name,rank:String(i+1),time:'11.5',reason:'直線伸びて',margin:'',finish:'',shb:''})),payouts:{exacta:[],trifecta:[]}};
      await route.fulfill({status:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify(payload)});active--;return;
     }
-    if(url.hostname!=='127.0.0.1'){await route.abort();return;}
-    await route.continue();
+    if(request.url().startsWith(prefix)){
+     const file=path.resolve(directory,decodeURIComponent(url.pathname.slice('/keirin-lineup2/'.length))||'index.html');
+     if(!file.startsWith(directory+path.sep)){await route.fulfill({status:403,body:''});return;}
+     try{await route.fulfill({status:200,contentType:file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.json')?'application/json':'text/html; charset=utf-8',body:fs.readFileSync(file)});}catch{await route.fulfill({status:404,body:''});}
+     return;
+    }
+    await route.abort();
    });
    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
-   await page.goto('http://127.0.0.1:'+server.address().port+'/keirin-lineup2/'+target);
+   await page.goto(prefix+target);
    await page.waitForFunction(()=>document.body.dataset.previousMeetingsStatus==='ready'&&document.body.dataset.tenMeetingsStatus==='ready');
+   await page.waitForFunction(()=>document.body.dataset.mobileLineupFit==='ready');
+   const fit=await page.evaluate(()=>{
+    const lineup=document.querySelector('.lineup'),style=getComputedStyle(lineup),canvas=document.createElement('canvas'),context=canvas.getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
+    return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom:parseFloat(getComputedStyle(document.body).zoom),
+     digit:context.measureText('0').width,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
+     rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
+   });
+   assert.ok(fit.right<=width+.2&&fit.right>=width-2.5,JSON.stringify(fit));
+   assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.ok(Math.abs(fit.within-fit.digit/2)<.1,JSON.stringify(fit));
+   assert.ok(Math.abs(fit.between-(19-fit.digit))<.1,JSON.stringify(fit));
    await page.waitForFunction(()=>document.querySelector('.meeting-reason[data-reason-state="ready"]'));
    await page.locator('.race-result-toggle').first().evaluate(n=>n.click());
    await page.waitForSelector('.race-result-panel:not([hidden]) .race-result-table');
@@ -92,6 +101,11 @@ const server=http.createServer((request,response)=>{
    }
    const reasons=await page.locator('.meeting-reason[data-reason-state="ready"]').allTextContents();
    assert.ok(reasons.length>0&&reasons.every(value=>value==='打鐘で先行'));
+   const reasonGeometry=await page.locator('.meeting-reason[data-reason-state="ready"]').first().evaluate(node=>{
+    const range=document.createRange();range.selectNodeContents(node);const text=range.getBoundingClientRect(),box=node.getBoundingClientRect();
+    return {font:getComputedStyle(node).fontSize,wrap:getComputedStyle(node).whiteSpace,right:text.right-box.right,height:text.height,boxHeight:box.height};
+   });
+   assert.equal(reasonGeometry.font,'6px');assert.equal(reasonGeometry.wrap,'nowrap');assert.ok(reasonGeometry.right<.3,JSON.stringify(reasonGeometry));
    assert.ok(await page.locator('.meeting-reason[data-reason-state="unavailable"]').count()>0,'A mismatched historical rider stays blank');
    const supplement=await page.evaluate(()=>{
     const panel=document.querySelector('.ten-results:not([hidden])');
@@ -112,9 +126,23 @@ const server=http.createServer((request,response)=>{
     await page.evaluate(()=>{Date.now=window.savedNow;delete window.savedNow;});
    }
    assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
+   const cdp=await context.newCDPSession(page);
+   async function drag(from,to){
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y:250}]});
+    for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from+(to-from)*i/8,y:250}]});await page.waitForTimeout(25);}
+    await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(100);
+   }
+   await drag(width-35,35);
+   const panned=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
+   await page.locator('.ten-toggle').first().evaluate(node=>node.click());await page.waitForTimeout(30);
+   const afterPan=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
+   const panMetrics=await page.evaluate(()=>({inner:innerWidth,client:document.documentElement.clientWidth,scrollWidth:document.scrollingElement.scrollWidth,vv:{width:visualViewport.width,pageLeft:visualViewport.pageLeft,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale},table:document.querySelector('.table-wrap table').getBoundingClientRect().width,bodyOverflow:getComputedStyle(document.body).overflowX,rootOverflow:getComputedStyle(document.documentElement).overflowX}));
+   assert.ok(panned>0&&Math.abs(afterPan-panned)<1,'A history redraw must preserve horizontal panning: '+JSON.stringify({panned,afterPan,panMetrics}));
+   await drag(35,width-35);
+   await cdp.detach();await page.evaluate(()=>window.scrollTo(0,0));
    if(width===390)await page.screenshot({path:'/tmp/history-refinements-mobile.png'});
-   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,leftAligned:true,meetingHeight:15,writeRequests:0}));
+   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
    await context.close();
   }
- }finally{if(browser)await browser.close();server.closeAllConnections?.();await new Promise(resolve=>server.close(resolve));}
+ }finally{if(browser)await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -26,7 +26,7 @@ def apply(page, site, output, day):
                          '<script src="/keirin-lineup2/'+RESULT_READER+'?v='+version+'"></script>', page)
     if count != 1:
         raise ValueError('History result reader tag differs')
-    page = page.replace('<body', '<body '+MARKER, 1)
+    page = page.replace('<body', '<body '+MARKER+' data-lineup-spacing="readable-20261116"', 1)
     tags = {}
     for name in ASSETS:
         content = (site/name).read_bytes()

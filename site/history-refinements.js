@@ -6,8 +6,33 @@
   const current = new Map(races.map(race=>[race.source,race]));
   const normalize = value=>String(value || '').normalize('NFKC').replace(/\s+/g,'');
   const notes = new Map();
-  let scheduled = false;
+  let scheduled = false, fittedWidth = 0;
   const sourceFor = row=>{const link=row.querySelector('.race-link');return link?.dataset.raceSource || link?.href;};
+
+  function fitMobile() {
+    const width=document.documentElement.clientWidth;
+    if (!window.matchMedia('(max-width:640px)').matches) {fittedWidth=0;return;}
+    if (width===fittedWidth) return;
+    const rows=[...root.children], live=rows[0]?.querySelector('.live-link');
+    if (!live) return;
+    const zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+    let venueWidth=38, headerWidth=218;
+    for (const row of rows) {
+      const venue=row.querySelector('td.venue'), header=row.querySelector('td.race');
+      if (venue) venueWidth=Math.max(venueWidth,venue.scrollWidth);
+      if (!header) continue;
+      const parts=['.race-link','.race-time','.video-actions'].map(selector=>header.querySelector(selector)).filter(Boolean);
+      const gap=parseFloat(getComputedStyle(header).columnGap)||0;
+      headerWidth=Math.max(headerWidth,parts.reduce((sum,node)=>sum+node.getBoundingClientRect().width/zoom,0)+gap*(parts.length-1));
+    }
+    document.body.style.setProperty('--card-venue-width',Math.ceil(venueWidth)+'px');
+    document.body.style.setProperty('--race-header-width',Math.ceil(headerWidth+1)+'px');
+    const edge=(live.getBoundingClientRect().right+window.scrollX)/zoom;
+    if (!(edge>0&&width>0)) return;
+    const fitted=Math.floor((width-1)/edge*10000)/10000;
+    document.body.style.setProperty('--lineup-zoom',String(fitted));
+    document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
+  }
 
   function alignTen(block) {
     if (block.dataset.refined === 'true') return;
@@ -29,7 +54,8 @@
     heading.replaceChildren(venue,...slots.slice(0,spill));ranks.replaceChildren(...slots.slice(spill));
     if (spill) {
       const units = Array.from(venue.textContent).reduce((sum,char)=>sum+(/\d/.test(char)?.6:1),0);
-      const width = Math.max(1,(20-units*6.5+Array.from(venue.textContent).length*.25)/spill);
+      const available=heading.clientWidth-(parseFloat(getComputedStyle(heading).paddingLeft)||0);
+      const width = Math.max(1,(available-units*6.5+Array.from(venue.textContent).length*.25)/spill);
       heading.style.setProperty('--ten-spill-width',width+'px');
       heading.style.setProperty('--ten-spill-size',Math.min(8,width/.7)+'px');
     }
@@ -93,8 +119,10 @@
       }
     }
     document.body.dataset.historyRefinementsStatus='ready';
+    fitMobile();
   }
   function schedule() { if (!scheduled) {scheduled=true;queueMicrotask(refine);} }
   new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
+  window.addEventListener('resize',fitMobile);
   refine();
 })();

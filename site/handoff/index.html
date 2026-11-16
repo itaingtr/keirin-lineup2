@@ -14,7 +14,7 @@
 <header>
 <h1>愛ボdex 引き継ぎ仕様書</h1>
 <p><strong>itaingtr/keirin-lineup2</strong> の続きを、次のチャットが進めるための資料にゃ。</p>
-<p>版1.2。画面仕様の確認基準：<a href="https://github.com/itaingtr/keirin-lineup2/commit/fbc8d7a916c2a4583c2e02640b92f7f5e91a9a9f">main fbc8d7a9</a>。画面の公開確認：2026-11-15 22:50 UTC（11月16日07:50 JST）。2026年11月16日、23:30 JSTの追加チェックと成績表示の調整を反映したにゃ。</p>
+<p>版1.3。画面仕様の確認基準：<a href="https://github.com/itaingtr/keirin-lineup2/commit/fbc8d7a916c2a4583c2e02640b92f7f5e91a9a9f">main fbc8d7a9</a>。画面の公開確認：2026-11-15 22:50 UTC（11月16日07:50 JST）。2026年11月16日、23:30 JSTの追加チェック、成績と勝敗因の表示、ライン間隔とスマホ初期倍率の調整を反映したにゃ。</p>
 <p>これは確認時点の仕様にゃ。作業前には、最新mainとAGENTS.mdを読み直してにゃ。2026年11月16日の追加調整で、通常出走表の成績左寄せ・会場名6.5px・補充の先頭空欄・小さいSHB・今場所の3段表示を加えたにゃ。</p>
 <div class="links"><a href="../">出走表トップ</a><a href="https://github.com/itaingtr/keirin-lineup2">GitHub</a><a href="https://github.com/itaingtr/keirin-lineup2/blob/main/site/handoff/index.html">このHTMLの原稿</a></div>
 </header>
@@ -104,6 +104,7 @@ https://itaingtr.github.io/keirin-lineup2/handoff/
 </section>
 <section id="history">
 <h2>6. 今場所・前回・最大10場所</h2>
+<p class="checked">11月16日の最新指定により、勝敗因を4pxから6pxへ拡大したにゃ。ユーザーは1行表示と選手列の拡大を選んだので、通常ページの選手列は32pxに揃えるにゃ。ライン内・競り内に半角数字0.5個分の間隔を足し、別線・単騎間は数字1個分を詰めるにゃ。スマホの初期倍率はライブボタンが右端から約1pxに収まるよう測って決め、横移動や成績の開閉で位置を戻さないにゃ。成績1場所15px・今場所3段23px・前回との左端一致は維持するにゃ。</p>
 <p class="checked">2026年11月16日以降の通常ページは「成績」の会場・月・着順を「前回」の着順左端へ揃えるにゃ。会場と月は6.5pxに大きくし、1場所15px・10場所150pxは維持するにゃ。確認済み開催初日より初出走が遅い場合は、その日数だけ先頭を空けるにゃ。SHBは6px・通常の太さ・淡い色とし、着順との間を半角スペース1つ空けるにゃ。今場所は着順・あがりの間隔を詰め、3段目に楽天の確認済み勝敗因を最大5文字で載せるにゃ。全文はtitleと読み上げ用ラベルに残し、未取得・照合不一致は空欄にゃ。結果のDB保存や新しい定時取得は追加しないにゃ。</p>
 <div class="table-wrap"><table><thead><tr><th>欄</th><th>表示と保護</th></tr></thead><tbody>
 <tr><td>今場所</td><td>その場所で前日までに走った着順・個人上がり・確認済みSHB。古い日から並べる。初日に前日成績がないことは正常。</td></tr>

@@ -89,7 +89,8 @@ async function main(){
       }))),
     }));
     assert.ok(geometry.open&&geometry.previousClosed,'One 成績 touch must open only its whole race ten-meeting panels');
-    assert.ok(geometry.widths.every(width=>Math.abs(width-22)<0.1),'Original22px rider columns must remain');
+    const riderWidth=html.includes('data-lineup-spacing="readable-20261116"')?32:22;
+    assert.ok(geometry.widths.every(width=>Math.abs(width-riderWidth)<0.1),'Ten history panels must match the authorized rider width');
     const slotHeight=compact?15:18;
     assert.ok(geometry.panelHeights.every(height=>Math.abs(height-slotHeight*10)<0.2),'Ten meeting panels must keep the requested compact height');
     assert.ok(geometry.groups.every(groups=>groups.length===10&&groups.every(group=>Math.abs(group.height-slotHeight)<0.1)));
