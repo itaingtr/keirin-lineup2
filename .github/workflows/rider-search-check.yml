@@ -12,6 +12,7 @@ on:
       - 'tests/test_rider_search*'
       - 'tests/test_rider_profile.cjs'
       - 'tests/test_rider_directory.cjs'
+      - 'tests/test_rider_counts.cjs'
       - 'tests/fixtures/rider-history-height-before.css'
       - '.github/workflows/rider-search-check.yml'
   workflow_dispatch:
@@ -32,6 +33,7 @@ jobs:
         run: npm install --prefix /tmp/rider-search-qa --no-audit --no-fund linkedom@0.18.12 playwright-core@1.62.1
       - name: Check the real official profile without writing to the database
         run: |
+          NODE_PATH=/tmp/rider-search-qa/node_modules node tests/test_rider_counts.cjs
           NODE_PATH=/tmp/rider-search-qa/node_modules node scripts/collect_rider_profile.cjs 014396 脇本雄太 94
           python3 - <<'PY'
           import json,pathlib

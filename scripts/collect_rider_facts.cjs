@@ -17,16 +17,6 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
   const card=source=>{if(!pending.has(source))pending.set(source,(async()=>countRows(parseHTML(await readCardHtml(source)).document,source,new Date().toISOString()))());return pending.get(source);};
   // Public literal card checked independently against the October22 result list.
   const checkedSources={'014396':{name:'脇本雄太',period:94,url:'https://keirin.kdreams.jp/kumamoto/racedetail/8720261022010012/'}};
-  // Missing saved card: follow literal links from the latest profile calendar.
-  async function findCard(person,meeting){
-    const day=meeting.start_date.replaceAll('-','/'),calendar='https://keirin.kdreams.jp/racecard/'+day+'/';
-    const response=await fetch(calendar,{redirect:'error',signal:AbortSignal.timeout(18000)});if(!response.ok)throw new Error('Calendar unavailable');
-    const {document}=parseHTML(await response.text()),links=[...new Set([...document.querySelectorAll('a[href]')].map(a=>new URL(a.getAttribute('href'),calendar).href).filter(url=>/^https:\/\/keirin\.kdreams\.jp\/[a-z]+\/racedetail\/\d{16}\/$/.test(url)))];
-    // Only the matching venue; never synthesize a race number or date identity.
-    const matching=links.filter(url=>url.includes('/kumamoto/'));
-    for(const source of matching.slice(0,12))try{return {source,counts:matchCounts(await card(source),person)};}catch{}
-    throw new Error('No matching literal card');
-  }
   async function collect(person){
     const old=previous.players[person.player_id];
     const same=old&&old.name===person.name&&Number(old.period)===Number(person.period);
@@ -46,6 +36,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
         const checked=checkedSources[person.player_id];
         if(checked&&checked.name===person.name&&checked.period===Number(person.period))fact.counts=matchCounts(await card(checked.url),person);
       }
+      if(fact.counts&&!fact.counts.card_date)fact.counts=matchCounts(await card(fact.counts.source_url),person);
     }catch(error){failures++;console.log('FACT_PARTIAL',person.player_id,error.message);}
     facts[person.player_id]=fact;completed++;if(completed%50===0)console.log('FACT_PROGRESS',completed,players.length);
   }

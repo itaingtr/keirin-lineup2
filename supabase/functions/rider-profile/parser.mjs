@@ -24,6 +24,9 @@ function attributes(view) {
   const found = new Map();
   for (const rows of view.tables) for (let i=0;i<rows.length-1;i++) {
     if (rows[i].length !== rows[i+1].length) continue;
+    // The career class history also has a lone 級班 heading; use only
+    // the multi-field current identity headers for profile attributes.
+    if(rows[i].filter(key=>['氏名','登録番号','期別','府県','生年月日','年齢','級班','脚質','今期得点'].includes(key)).length<2)continue;
     rows[i].forEach((key,j) => {
       if (['氏名','登録番号','期別','府県','生年月日','年齢','級班','脚質','今期得点'].includes(key)) {
         if (!found.has(key)) found.set(key, new Set());

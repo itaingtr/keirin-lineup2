@@ -43,6 +43,24 @@ const root=path.resolve(process.argv[2]||'public');
       const rowIds=()=>page.locator('#rider-list > tr').evaluateAll(rows=>rows.map(row=>row.dataset.playerId));
       const top=M.sortPlayers(catalogue.players.filter(p=>M.scoreOf(p)!==null)).slice(0,30).map(p=>p.player_id);
       assert.deepEqual(await rowIds(),top);
+      const listed=await page.locator('#rider-list > tr').evaluateAll(rows=>rows.map(row=>({
+        id:row.dataset.playerId,marked:!!row.querySelector('.birthday-done'),
+        fields:[...row.querySelectorAll('.count-item')].map(node=>node.dataset.stat),
+        recent:[...row.querySelectorAll('.recent-line')].map(line=>({position:line.dataset.position,text:line.textContent})),
+        nameRight:row.querySelector('.directory-name-button').getBoundingClientRect().right,
+        metaLeft:row.querySelector('.person-meta').getBoundingClientRect().left,
+        countsLeft:row.querySelector('.directory-counts').getBoundingClientRect().left,
+        scoreLeft:row.querySelector('.directory-score').getBoundingClientRect().left,
+        recentLeft:row.querySelector('.directory-recent').getBoundingClientRect().left,
+      })));
+      for(const row of listed){
+        const person=catalogue.players.find(p=>p.player_id===row.id);
+        assert.equal(row.marked,M.birthdayState(person).done);assert.deepEqual(row.fields,M.COUNT_FIELDS.map(([key])=>key));
+        assert.ok(row.countsLeft<row.scoreLeft&&row.scoreLeft<row.recentLeft,'Counts, score and previous results stay in the requested order');
+        assert.deepEqual(row.recent.map(line=>line.position),['previous_previous','previous']);
+        assert.equal(row.recent.length,2);
+        if(row.metaLeft>=row.nameRight)assert.ok(row.metaLeft-row.nameRight<10,'County/period/age must immediately follow the name');
+      }
       assert.equal(await page.locator('#pages-top').isVisible(),false);
       if(width===390)await page.screenshot({path:'/tmp/rider-directory-mobile.png'});
       await page.locator('#show-all').tap();
@@ -50,6 +68,7 @@ const root=path.resolve(process.argv[2]||'public');
       assert.equal(await page.locator('#pages-top button').count(),2);
       await page.locator('#pages-top button').nth(1).tap();
       const secondPage=await rowIds();assert.equal(new Set([...firstPage,...secondPage]).size,catalogue.players.length);
+      assert.equal(secondPage.length,catalogue.players.length-200);
       const kanto=page.locator('#region-buttons button[data-region="関東"]');await kanto.tap();
       assert.equal(await kanto.getAttribute('aria-pressed'),'true');
       assert.ok((await rowIds()).every(id=>M.regionOf(catalogue.players.find(p=>p.player_id===id))==='関東'));
@@ -75,6 +94,7 @@ const root=path.resolve(process.argv[2]||'public');
       assert.equal(await page.locator('#rider-meetings > .meeting').count(),profile.meetings.length);
       assert.doesNotMatch(await page.locator('#techniques').textContent(),/%/);
       assert.deepEqual(await page.locator('#techniques .count-item').evaluateAll(nodes=>nodes.map(n=>n.dataset.stat)),M.COUNT_FIELDS.map(([key])=>key));
+      const headings=await page.locator('.meeting-label strong').allTextContents();assert.ok(headings.every(text=>/^(?:F[12]|G[123]|GP)/.test(text)),'Every detail heading puts grade before venue');
       assert.equal(await page.locator('#official-profile').getAttribute('href'),'https://keirin.jp/pc/racerprofile?snum=014396');
       const geometry=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth,name:document.querySelector('#rider-name').getBoundingClientRect().bottom,history:document.querySelector('#rider-meetings').getBoundingClientRect().top,first:document.querySelector('.meeting').getBoundingClientRect().height}));
       assert.ok(geometry.scroll<=geometry.width+1,JSON.stringify(geometry));

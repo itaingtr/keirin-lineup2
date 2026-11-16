@@ -39,4 +39,27 @@ const many=Array.from({length:100},(_,i)=>rider(i+1,{score:80+i/10,prefecture:i%
 const home=M.directory([...many,rider(999,{score:null})]);assert.equal(home.rows.length,30);assert.equal(home.rows[0].player_id,'000100');assert.equal(home.pageCount,1);
 const region=M.directory(many,{region:'北日本'});assert.equal(region.total,50);assert.equal(region.pageCount,1);assert.ok(region.rows.every(p=>p.prefecture==='北海道'));
 assert.equal(M.directory(many,{query:'選手100'}).total,1);
+// JST and fiscal-year boundaries are derived from immutable dates, not flags.
+const birthday=(birth,today)=>M.birthdayState({birth_date:birth,age:31},today);
+assert.deepEqual(birthday('1995-05-10','2026-05-09'),{age:30,done:false});
+assert.deepEqual(birthday('1995-05-10','2026-05-10'),{age:31,done:true});
+assert.deepEqual(birthday('1995-05-10','2027-03-31'),{age:31,done:true});
+assert.deepEqual(birthday('1995-05-10','2027-04-01'),{age:31,done:false});
+assert.deepEqual(birthday('1995-05-10','2027-04-02'),{age:31,done:false});
+assert.deepEqual(birthday('1995-01-10','2026-01-09'),{age:30,done:false});
+assert.deepEqual(birthday('1995-01-10','2026-01-10'),{age:31,done:true});
+assert.equal(birthday('1995-04-01','2026-04-01').done,false);
+assert.equal(birthday('1995-04-01','2026-04-02').done,true);
+assert.deepEqual(birthday('2000-02-29','2027-02-28'),{age:27,done:true});
+assert.deepEqual(birthday('2026-02-30','2026-03-01'),{age:31,done:false});
+assert.deepEqual(birthday('1900-01-01','2026-11-01'),{age:31,done:false});
+assert.deepEqual(birthday(null,'2026-11-01'),{age:31,done:false});
+assert.equal(M.jstDay(new Date('2027-03-31T14:59:59Z')),'2027-03-31');
+assert.equal(M.jstDay(new Date('2027-03-31T15:00:00Z')),'2027-04-01');
+const counts=M.countsOf({last_card:{stats:[0,2,0,6,2,0]}},{techniques:{unit:'percent',values:{nige:0,makuri:67,sashi:33,mark:0}}});
+assert.equal(counts.values.s,0);assert.equal(counts.values.makuri,6);assert.equal(counts.values.total_starts,null);
+assert.equal(M.countsOf({},{techniques:{unit:'percent',values:{makuri:67}}}).values.makuri,null,'Rounded percentages never become counts');
+assert.deepEqual(M.previousSlots({recent_meetings:[{start_date:'2026-11-05',venue:'四日市'},{start_date:'2026-10-09',venue:'弥彦'}]}).map(m=>m.venue),['弥彦','四日市']);
+assert.equal(M.gradeName(3)+M.shortVenue({venue:'四日市'}),'G3四');
+assert.equal(M.gradeName(2)+M.shortVenue({venue:'いわき平'}),'F1平');
 console.log('RIDER DIRECTORY PASS: eight regions, top30, last-click multi-sort, clear/ascending/descending loop, unknowns, role provenance, 200-plus-overflow threshold and no lost riders');

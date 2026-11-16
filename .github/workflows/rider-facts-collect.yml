@@ -2,7 +2,7 @@ name: Collect checked rider directory facts
 on:
   push:
     branches: [feat/rider-counts-history]
-    paths: ['scripts/collect_rider_facts.cjs', 'supabase/functions/rider-profile/counts.mjs', '.github/workflows/rider-facts-collect.yml']
+    paths: ['scripts/collect_rider_facts.cjs', 'supabase/functions/rider-profile/parser.mjs', 'supabase/functions/rider-profile/counts.mjs', '.github/workflows/rider-facts-collect.yml']
   workflow_dispatch:
 permissions:
   contents: write

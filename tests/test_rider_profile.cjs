@@ -3,7 +3,8 @@ const M=require('../site/daily-results/search-model.js');
 (async()=>{
   const {parseProfile}=await import('../supabase/functions/rider-profile/parser.mjs');
   const {allowedProfileUrl}=await import('../supabase/functions/rider-profile/source.mjs');
-  const view={tables:[[['氏名','登録番号','期別','府県','年齢'],['脇本　雄太','014396','94期','福井県','37歳']],
+  const view={tables:[[['氏名','登録番号','期別','府県','年齢','生年月日'],['脇本　雄太','014396','94期','福井県','37歳','1989/03/21']],
+    [['1着','2着','3着','着外','棄権','失格','総出走回数','バック回数'],['3回','0回','1回','13回','0回','0回','17回','0回']],
     [['0%','67%','33%','0%'],['逃げ','捲り','差し','マーク']]],updates:[],meetings:[
       {heading:['10/31','防G3'],days:[{label:null,back:null}]},
       {heading:['10/22','熊G3'],days:[{label:'1',back:null},{label:'落車棄権',back:true},{label:'未',back:null}]},
@@ -17,6 +18,9 @@ const M=require('../site/daily-results/search-model.js');
   assert.equal(profile.meetings[1].days[1].back,true);assert.equal(profile.meetings[1].days[0].start,null);
   assert.ok(profile.meetings.every(m=>m.days.every(d=>d.race_date===null&&d.race_id===null&&d.video_url===null)));
   assert.equal(profile.techniques.values.makuri,67);assert.equal(profile.techniques.unit,'percent');
+  assert.equal(profile.birth_date,'1989-03-21');assert.equal(profile.summary.total_starts,17);assert.equal(profile.summary.back,0);
+  const withCareer={...view,tables:[...view.tables,[['級班','年月日',''],['S級2班特昇','2025/06/09','']]]};
+  assert.equal(parseProfile(withCareer,'014396','2026-11-14T02:00:00Z').birth_date,'1989-03-21','A historical promotion must not conflict with current identity fields');
   assert.equal(M.resultRows(profile,profile.meetings)[0].source_url,profile.source_url);
   assert.throws(()=>parseProfile(view,'014397','2026-11-14T02:00:00Z'));
   assert.throws(()=>parseProfile(view,'014396','2026-11-14T02:00:00Z',{name:'別人'}));

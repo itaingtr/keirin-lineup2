@@ -112,6 +112,8 @@ def export_search(site, output):
                     and p.get('name') == player['name'] and str(p.get('period')) == str(player['period'])
                     and (not p.get('player_id') or p['player_id'] == identifier)]
                 verified = matches[0] if len(matches) == 1 else {}
+                if type(verified.get('total_starts')) is int and verified.get('stats') == person['last_card']['stats']:
+                    person['last_card']['total_starts'] = verified['total_starts']
                 for key in ('prefecture', 'age'):
                     value = verified.get(key, player.get(key))
                     if key == 'age' and (type(value) is not int or not 18 <= value <= 100):
@@ -173,7 +175,9 @@ def export_search(site, output):
                 # Identified stored results retain links/accident/source details.
                 for row in stored:
                     old = combined.get(row['start_date'])
-                    if not old or ([d.get('order') for d in row['days']] == [d.get('order') for d in old['days']] and row.get('grade_code') == old.get('grade_code')):
+                    same_venue = old and (row.get('venue') == old.get('venue') or row.get('venue', '').startswith(old.get('venue', '\0'))
+                                          or row.get('venue') == 'いわき平' and old.get('venue') == '平')
+                    if not old or (same_venue and [(d.get('order'), d.get('accident', '')) for d in row['days']] == [(d.get('order'), d.get('accident', '')) for d in old['days']] and row.get('grade_code') == old.get('grade_code')):
                         combined[row['start_date']] = row
                 person['recent_meetings'] = recent_meetings(combined.values())
     catalogue = {'schema_version': 1, 'kind': 'rider_search',

@@ -37,6 +37,18 @@ class RiderDetailTests(unittest.TestCase):
         wrong=deepcopy(dataset);wrong['sources']=[]
         with self.assertRaises(ValueError):details_from_dataset(wrong)
 
+    def test_full_card_counts_keep_total_and_stats_from_the_same_observation(self):
+        labels=['競走得点','S','B','逃','捲','差','マ']
+        original=''.join('<th>'+label+'</th>' for label in labels)
+        extended=original+''.join('<th>'+label+'</th>' for label in ['1着','2着','3着','着外'])
+        markup=self.markup.replace(original,extended).replace('<td>1</td></tr>','<td>1</td><td>4</td><td>2</td><td>3</td><td>10</td></tr>')
+        race=parse_card(Document(markup).root,URL,MEETING)
+        data=details_from_dataset({'provider':'kdreams','target_date':'2026-10-18','races':[race],
+             'sources':[{'provider':'kdreams','url':URL,'observed_at':STAMP}]})
+        player=data['races'][0]['players'][0]
+        self.assertEqual(player['total_starts'],19)
+        self.assertEqual(player['stats'],race['players'][0]['stats'])
+
     def test_wrong_car_name_period_and_registration_cannot_receive_details(self):
         for field,value in [('name','別人'),('period',999),('player_id','015999')]:
             race=deepcopy(self.race);race['players'][0][field]=value

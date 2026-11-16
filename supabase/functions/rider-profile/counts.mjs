@@ -2,7 +2,7 @@
 import {compact} from './parser.mjs';
 export function allowedCardUrl(raw){
   const url=new URL(raw);
-  if(url.origin!=='https://keirin.kdreams.jp'||!/^\/[a-z]+\/racedetail\/\d{16}\/$/.test(url.pathname)||url.search||url.hash)throw new Error('Invalid count source');
+  if(url.origin!=='https://keirin.kdreams.jp'||url.username||url.password||!/^\/[a-z]+\/racedetail\/\d{16}\/$/.test(url.pathname)||url.search||url.hash)throw new Error('Invalid count source');
   return url.href;
 }
 export async function readCardHtml(raw){

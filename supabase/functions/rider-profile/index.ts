@@ -20,7 +20,7 @@ Deno.serve(async request=>{
     if(active>=6)return reply({error:'busy'},429);
     const promise=(async()=>{active++;try{
       const html=await readProfileHtml(id),{document}=parseHTML(html);
-      const value=parseProfile(profileView(document),id,new Date().toISOString());
+      const value=Object.assign(parseProfile(profileView(document),id,new Date().toISOString()),{counts:null as unknown});
       if(source)try{
         const {document:card}=parseHTML(await readCardHtml(source));
         value.counts=matchCounts(countRows(card,source,new Date().toISOString()),value,car);

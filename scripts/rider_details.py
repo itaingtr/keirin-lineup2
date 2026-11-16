@@ -37,6 +37,10 @@ def _row(race, source_players, observed):
                 'Rider detail registration identity differs')
         players.append({'no':number,'name':saved['name'],'period':str(saved['period']),
                         'prefecture':p['prefecture'],'age':p['age']})
+        if 'total_starts' in p:
+            for key in ('stats', 'total_starts', 'style'):
+                if key in p:
+                    players[-1][key] = p[key]
     return {'source_url':race['source'],'observed_at':_stamp(observed),'players':players}
 
 
@@ -68,6 +72,10 @@ def validate_details(data,races,target):
                     and p.get('period')==str(saved['period']),'Rider detail car/name/period differs')
             require(p.get('prefecture') in PREFECTURES,'Invalid rider prefecture')
             require(type(p.get('age')) is int and 18<=p['age']<=100,'Invalid rider age')
+            if 'total_starts' in p:
+                require(type(p['total_starts']) is int and 0 <= p['total_starts'] <= 300,'Invalid total starts')
+            if 'stats' in p:
+                require(isinstance(p['stats'], list) and len(p['stats']) == 6 and all(type(value) is int and value >= 0 for value in p['stats']), 'Invalid saved count fields')
     return data
 
 
