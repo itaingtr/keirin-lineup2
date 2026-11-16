@@ -10,7 +10,8 @@
     const index = await response.json(), entry = index.days.find(d => d.date === day), venue = entry?.venues.find(v => v.code === code);
     if (!venue || !/^\/keirin-lineup2\/line\d{8}\.html(?:#race-\d{2}-\d{1,2})?$/.test(venue.href)) throw new Error('まだ掲載を確認できない開催にゃ。');
     const today = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
-    if (day > today) throw new Error('未来の出走表は当日から開けるにゃ。');
+    const next = new Date(today+'T00:00:00Z'); next.setUTCDate(next.getUTCDate()+1);
+    if (day > next.toISOString().slice(0, 10)) throw new Error('出走表は公開済みの明日分まで開けるにゃ。');
     $('back').href = './'+day.slice(0, 7).replace('-', '')+'.html';
     $('full-card').href = entry.href; $('full-card').hidden = false;
     const frame = $('race-frame');

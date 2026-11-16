@@ -8,8 +8,9 @@
   const utc = iso => new Date(iso + 'T00:00:00Z');
   const iso = date => date.toISOString().slice(0, 10);
   const shift = (day, n) => { const d = utc(day); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const tomorrow = shift(today, 1);
   const node = (tag, className, text) => { const el = document.createElement(tag); if (className) el.className = className; if (text !== undefined) el.textContent = text; return el; };
-  let schedule, links, months = [], fixedMonths = new Set(), selected, entries = new Map(), verified = new Map(), colors = new Map();
+  let schedule, links, months = [], fixedMonths = new Set(), selected, entries = new Map(), verified = new Map(), assignments = new Map(), colors = new Map();
 
   function check(condition, message) { if (!condition) throw new Error(message); }
   function publicHref(href) {
@@ -42,16 +43,21 @@
   }
   const monthLabel = month => `${month.slice(0, 4)}年${Number(month.slice(5))}月`;
   const monthHref = month => fixedMonths.has(month) ? './'+month.replace('-', '')+'.html' : './index.html?month='+month;
-  function entryMemberHref(meeting) {
-    // KEIRIN.JP's public entry-list link uses the meeting's first day, not
-    // the individual day clicked in the calendar (official Kokura link).
-    return 'https://keirin.jp/pc/dfw/dataplaza/guest/entrymember?' + new URLSearchParams({KCD: meeting.code, KST: meeting.start.replaceAll('-', '')});
+  function assignmentHref(record, meeting) {
+    const match = typeof record.href === 'string' && /^https:\/\/keirin\.kdreams\.jp\/[a-z]+\/assen\/(\d{2})(\d{8})\/$/.exec(record.href);
+    check(match && match[1] === meeting.code && match[2] === meeting.start.replaceAll('-', '')
+      && record.code === meeting.code && record.venue === meeting.venue && record.start === meeting.start
+      && record.end === meeting.end && record.http_status === 200, 'あっせん情報の開催を確認できませんでした。');
+    return record.href;
   }
   function venueLink(day, meeting) {
-    if (day > today) return {href: entryMemberHref(meeting), kind: 'entries'};
-    // Today and the archives still use only actually published date links.
     const d = entries.get(day);
     const venue = d?.venues.find(v => v.code === meeting.code);
+    if (day > tomorrow || (day > today && !venue)) {
+      const planned = assignments.get(meeting.id);
+      return planned ? {href: planned.href, kind: 'entries'} : null;
+    }
+    // Use an actual published card through tomorrow; never guess a date URL.
     if (!venue) return null;
     const checked = verified.get(day)?.venues.find(v => v.code === meeting.code && v.meeting_start === meeting.start);
     if (checked?.anchored) return {...checked, last_href: checked.href};
@@ -87,7 +93,7 @@
     for (let col = 0; col < 7; col++) {
       const day = shift(start, col), outside = day < first || day > last, isToday = day === today && !outside;
       const cell = node('div', 'day-heading' + (col === 0 ? ' sunday' : col === 6 ? ' saturday' : '') + (outside ? ' outside' : '') + (isToday ? ' today' : ''));
-      const d = outside || day > today ? null : entries.get(day);
+      const d = outside || day > tomorrow ? null : entries.get(day);
       const number = node(d ? 'a' : 'span', 'day-number', String(Number(day.slice(8))));
       if (d) { number.href = d.href; number.setAttribute('aria-label', `${day}の掲載出走表`); }
       if (isToday) { number.setAttribute('aria-current', 'date'); cell.append(number, node('span', 'today-label', '今日')); } else cell.append(number);
@@ -114,8 +120,8 @@
         cell.dataset.date = day;
         const description = `${day} ${m.venue} ${m.grade}｜${m.title}（${m.start}〜${m.end}）`;
         const lastLabel = target?.last_race ? `${target.last_race}R` : 'レース';
-        const destination = target?.kind === 'entries' ? 'KEIRIN.JPの出場予定選手一覧' : `最終掲載${lastLabel}の出走メンバー`;
-        cell.title = description + (href ? `｜${destination}へ` : '｜出走表は未掲載');
+        const destination = target?.kind === 'entries' ? '楽天Kドリームスのあっせん情報' : `最終掲載${lastLabel}の出走メンバー`;
+        cell.title = description + (href ? `｜${destination}へ` : day > today ? '｜あっせん情報は未掲載・未確認' : '｜出走表は未掲載');
         if (href) {
           cell.href = href; cell.dataset.linkKind = target?.kind || 'race';
           cell.setAttribute('aria-label', `${day} ${m.venue} ${destination}`);
@@ -187,6 +193,20 @@
           }
         }
       } catch (_) { verified = new Map(); }
+      try {
+        assignments = new Map();
+        const response = await fetch('./entry-links.json', {cache: 'no-store'});
+        if (response.ok) {
+          const saved = await response.json();
+          check(saved.schema_version === 1 && saved.provider === 'kdreams' && saved.verification === 'anonymous-http' && Array.isArray(saved.meetings), 'あっせん情報を確認できませんでした。');
+          const planned = [];
+          for (const record of saved.meetings) {
+            const meeting = data.meetings.find(m => m.id === record.id);
+            if (meeting) planned.push([meeting.id, {...record, href: assignmentHref(record, meeting)}]);
+          }
+          assignments = new Map(planned);
+        }
+      } catch (_) { assignments = new Map(); }
       schedule = data; links = dates; entries = new Map(links.days.map(d => [d.date, d]));
       const sorted = [...data.meetings].sort((a, b) => a.start.localeCompare(b.start) || a.code.localeCompare(b.code));
       let f1 = 0; colors = new Map(sorted.map(m => [m.id, m.grade === 'F1' ? F1_COLORS[f1++ % F1_COLORS.length] : m.grade === 'G3' ? 'grade-purple' : 'grade-red']));

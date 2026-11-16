@@ -1,0 +1,623 @@
+{
+  "schema_version": 1,
+  "provider": "kdreams",
+  "verification": "anonymous-http",
+  "checked_at": "2026-11-16T04:47:22.373588+00:00",
+  "as_of": "2026-11-16",
+  "sources": [
+    {
+      "url": "https://keirin.kdreams.jp/seibuen/",
+      "sha256": "b27549ade639955bb6d32304504679a9b61974a0dea03c58e880b07df02057f2",
+      "observed_at": "2026-11-16T04:46:57.958339+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/hakodate/",
+      "sha256": "889ce81afc7ade6fe4d9539e8dfa514a87aa55f5ab3c0b0f53bd720ad141e8a9",
+      "observed_at": "2026-11-16T04:46:58.696138+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/aomori/",
+      "sha256": "9940f62f57464e3f1b72fae3d4b2256678c5c79a4616710ddd15cc489950be2a",
+      "observed_at": "2026-11-16T04:46:59.438602+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/iwakitaira/",
+      "sha256": "3f158d1c70221f85418bf92f06c262baa0528a18f16405efff23439957fc8d83",
+      "observed_at": "2026-11-16T04:46:59.866441+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/yahiko/",
+      "sha256": "505b92a24a0ab6e7b8ad0d3337794a7420fd5b2399c8affc41853bc39d03f6dd",
+      "observed_at": "2026-11-16T04:47:00.185097+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/maebashi/",
+      "sha256": "70645bb197c9fa78deb7d2ffd754bf5b5af6ac8f2d7e37c64dccd639d6109d07",
+      "observed_at": "2026-11-16T04:47:00.794115+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/toride/",
+      "sha256": "1d20e7fe3b068627d85c8a55d0beebbd8282323a52fba3934a043204d82445dd",
+      "observed_at": "2026-11-16T04:47:01.452434+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/utsunomiya/",
+      "sha256": "d20b2a828f71db0dfae978aaa234c2c9de386809f8b5f8f0e57001bb314e6350",
+      "observed_at": "2026-11-16T04:47:02.245339+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/omiya/",
+      "sha256": "9173499acf17b78113fba49bb41671e0cee42461a2e13e7a8fedd2d7fc815ca7",
+      "observed_at": "2026-11-16T04:47:02.586239+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/keiokaku/",
+      "sha256": "4b9af12d031abf12120925a72bc186f4f38fc5dd9bae842a4c2ac8267036c1cc",
+      "observed_at": "2026-11-16T04:47:03.520685+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/tachikawa/",
+      "sha256": "63ac67fe540870ef0837036ec866d1e357cfd19121a119d32b9af31a7f270cce",
+      "observed_at": "2026-11-16T04:47:03.937095+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/matsudo/",
+      "sha256": "37ee2f6bd5c3838ec9ae93d91bd56ceb8cc93388f7525128d0e601692dd551af",
+      "observed_at": "2026-11-16T04:47:04.618762+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/kawasaki/",
+      "sha256": "fda6cd2cb5fc7f1890507cba58ccea63cddfb2d4d5981d8fb59f16f6f40d3f1c",
+      "observed_at": "2026-11-16T04:47:05.241907+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/hiratsuka/",
+      "sha256": "a6241ea472fd54b6ea2cf313563c65f3e68598f3674f3caeec56d38451ebc1c9",
+      "observed_at": "2026-11-16T04:47:05.950892+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/odawara/",
+      "sha256": "77e16a3f3341bf6710566579dd4d0402bcb1557aa729e9f145a52d8cc726deba",
+      "observed_at": "2026-11-16T04:47:06.773546+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/shizuoka/",
+      "sha256": "fbcc7f99e05362f675fd5a9e2c5ed4895f431a744823ea3d712e5621bf6dc4b0",
+      "observed_at": "2026-11-16T04:47:07.704852+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/nagoya/",
+      "sha256": "6fe2ce525a845f17e8472b4424b8d1b0ada5714ab34e95db6d0c81403c7a2cbd",
+      "observed_at": "2026-11-16T04:47:08.301842+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/gifu/",
+      "sha256": "c6be6f9177c5e2ae2162cf126a7abe97bfe33e8e2a7a42063ded047f2e7d1dd7",
+      "observed_at": "2026-11-16T04:47:08.931349+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/ogaki/",
+      "sha256": "bec2b7bd5ca12c4e5d29cb5279d94fb21c775b546728a829fd809da7b8e83257",
+      "observed_at": "2026-11-16T04:47:09.244257+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/toyohashi/",
+      "sha256": "bb63446492555308d0b623379e31d01fbb5dab589a289767a137f5187339263f",
+      "observed_at": "2026-11-16T04:47:09.852705+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/toyama/",
+      "sha256": "67f8ee4458f50f7c45902ce34f4ad2be8d5d269e488fe9b858e1bbfd59e89ef9",
+      "observed_at": "2026-11-16T04:47:10.583923+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/matsusaka/",
+      "sha256": "e29df5bd1cc0508faa5c8de199a56936017201c29126f8b1ebb7f74c094a2fee",
+      "observed_at": "2026-11-16T04:47:11.207056+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/yokkaichi/",
+      "sha256": "39b8d376a64e726651e1a692213c22afab568460fb773f85af2c15a122a28716",
+      "observed_at": "2026-11-16T04:47:12.212349+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/fukui/",
+      "sha256": "e53f23b630c324ebcb0f8ecd2696bfb08a7152f3c7b3b0190fa3192c11b05ca2",
+      "observed_at": "2026-11-16T04:47:12.831905+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/nara/",
+      "sha256": "190588681f14e8307e9c4b2d6c6cf81abd3a59faa9f86b3d5236ded2ae5ae7fd",
+      "observed_at": "2026-11-16T04:47:13.442528+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/wakayama/",
+      "sha256": "67f421a3e66645ad8ccd6b3f0079fe6f96edc403add72749b5022123a3ee11b8",
+      "observed_at": "2026-11-16T04:47:14.338825+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/kishiwada/",
+      "sha256": "a68bf027fc11251b476cbf035e5482ac89637c699378fc8e74a22bb05bf84464",
+      "observed_at": "2026-11-16T04:47:15.032821+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/tamano/",
+      "sha256": "572f7ea7c2e6e0ad07f6ad72041f18bf21d2f9db811e50c88412c9668456ba25",
+      "observed_at": "2026-11-16T04:47:15.353557+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/hiroshima/",
+      "sha256": "5ff23dd9b53dbf78b1513b9eb1e2317638591cbe282e1be56eca04fdc18dc6cb",
+      "observed_at": "2026-11-16T04:47:15.981934+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/hofu/",
+      "sha256": "82b3d567efc2f8c484108680ef0c699876832b3878c5c9d4968c5cebee434877",
+      "observed_at": "2026-11-16T04:47:16.800886+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/takamatsu/",
+      "sha256": "1d1bbe78cb8a07e05149f5d88108aefd36f74c9b78d5aa48f4bb3ae667e13118",
+      "observed_at": "2026-11-16T04:47:17.099835+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/komatsushima/",
+      "sha256": "9fcd1723ce34ded008f4675f891c8567cfb9f48392ea53e9c0fa451a5d11653d",
+      "observed_at": "2026-11-16T04:47:17.391377+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/kochi/",
+      "sha256": "332681bea96d384f3e1d0bd5db190aa176e9d164387394de1362fc8150f010a9",
+      "observed_at": "2026-11-16T04:47:17.706494+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/matsuyama/",
+      "sha256": "bdeb903a80e7ddba600c7e1960548abcec6f553edf7090cb8b72afb4d4517ab4",
+      "observed_at": "2026-11-16T04:47:18.034272+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/kokura/",
+      "sha256": "ff96c95a817f051dde738dfa5a2185c978e3f9879d6548659057c132c724bebe",
+      "observed_at": "2026-11-16T04:47:18.669939+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/kurume/",
+      "sha256": "64519d82dbcbeb9204aa2289457f65c33bdef690dc4edf22692fadd9160a398c",
+      "observed_at": "2026-11-16T04:47:19.584368+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/takeo/",
+      "sha256": "92cfdb73c4bcf2df7ee23ef7cb96c97dabb0b587d4127c8e4d50ba198e0d574b",
+      "observed_at": "2026-11-16T04:47:19.890290+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/sasebo/",
+      "sha256": "ee46dfab16064e89d8ca1c5c0d3380f5298d29f5b5b28639e8841922258b0e03",
+      "observed_at": "2026-11-16T04:47:20.525516+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/beppu/",
+      "sha256": "289141938a982debb0b4002c783dac431873b0f1d3a43b576679e613840b4225",
+      "observed_at": "2026-11-16T04:47:21.122031+00:00",
+      "http_status": 200
+    },
+    {
+      "url": "https://keirin.kdreams.jp/kumamoto/",
+      "sha256": "d96dbad8eba81e153d08c5354777afb64af106468ebff18ccc780b3442229a61",
+      "observed_at": "2026-11-16T04:47:22.062775+00:00",
+      "http_status": 200
+    }
+  ],
+  "meetings": [
+    {
+      "id": "46-2026-11-15-F1",
+      "code": "46",
+      "venue": "富山",
+      "start": "2026-11-15",
+      "end": "2026-11-17",
+      "href": "https://keirin.kdreams.jp/toyama/assen/4620261115/",
+      "source_url": "https://keirin.kdreams.jp/toyama/",
+      "sha256": "99283fae554244ba41675b2792bd78546f73191eb8a1397e5eebd1cdbb1f5cf4",
+      "observed_at": "2026-11-16T04:47:10.888372+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "86-2026-11-15-F1",
+      "code": "86",
+      "venue": "別府",
+      "start": "2026-11-15",
+      "end": "2026-11-17",
+      "href": "https://keirin.kdreams.jp/beppu/assen/8620261115/",
+      "source_url": "https://keirin.kdreams.jp/beppu/",
+      "sha256": "0b1102d5c56c5e2da118beed108c739cbba2d971f99302674b85c519e7721d4d",
+      "observed_at": "2026-11-16T04:47:21.418532+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "26-2026-11-18-F1",
+      "code": "26",
+      "venue": "西武園",
+      "start": "2026-11-18",
+      "end": "2026-11-20",
+      "href": "https://keirin.kdreams.jp/seibuen/assen/2620261118/",
+      "source_url": "https://keirin.kdreams.jp/seibuen/",
+      "sha256": "b57f8f018bb9dbf710a06aebbf984f62f630ad2eef9ffcee67ec88f845f8f3b1",
+      "observed_at": "2026-11-16T04:47:02.894375+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "44-2026-11-18-F1",
+      "code": "44",
+      "venue": "大垣",
+      "start": "2026-11-18",
+      "end": "2026-11-20",
+      "href": "https://keirin.kdreams.jp/ogaki/assen/4420261118/",
+      "source_url": "https://keirin.kdreams.jp/ogaki/",
+      "sha256": "935e9b6565df8e3d3784a17125ec039d9966f2590d0ad136691d789d76f08ef9",
+      "observed_at": "2026-11-16T04:47:09.546781+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "81-2026-11-18-G1",
+      "code": "81",
+      "venue": "小倉",
+      "start": "2026-11-18",
+      "end": "2026-11-23",
+      "href": "https://keirin.kdreams.jp/kokura/assen/8120261118/",
+      "source_url": "https://keirin.kdreams.jp/kokura/",
+      "sha256": "d2a77712159538c2818ec92c7a5c1a0c3d834e7eb105bb2a9d6324c04187f752",
+      "observed_at": "2026-11-16T04:47:18.957967+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "36-2026-11-21-F1",
+      "code": "36",
+      "venue": "小田原",
+      "start": "2026-11-21",
+      "end": "2026-11-23",
+      "href": "https://keirin.kdreams.jp/odawara/assen/3620261121/",
+      "source_url": "https://keirin.kdreams.jp/odawara/",
+      "sha256": "deaced51abc2d42091fbf35bf361645e161a68eecb1cea296cef0c92d314f88f",
+      "observed_at": "2026-11-16T04:47:07.107798+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "45-2026-11-21-F1",
+      "code": "45",
+      "venue": "豊橋",
+      "start": "2026-11-21",
+      "end": "2026-11-23",
+      "href": "https://keirin.kdreams.jp/toyohashi/assen/4520261121/",
+      "source_url": "https://keirin.kdreams.jp/toyohashi/",
+      "sha256": "b6db7642c6949cc9ad755fb5950b1846c5fc1221e08e8bc99cf09d8720c47517",
+      "observed_at": "2026-11-16T04:47:10.159529+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "38-2026-11-24-F1",
+      "code": "38",
+      "venue": "静岡",
+      "start": "2026-11-24",
+      "end": "2026-11-26",
+      "href": "https://keirin.kdreams.jp/shizuoka/assen/3820261124/",
+      "source_url": "https://keirin.kdreams.jp/shizuoka/",
+      "sha256": "d833438261ae8cb3a5e7e28532d7de9692497fc55c581a53ff0b7e6a19122995",
+      "observed_at": "2026-11-16T04:47:08.017230+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "75-2026-11-24-F1",
+      "code": "75",
+      "venue": "松山",
+      "start": "2026-11-24",
+      "end": "2026-11-26",
+      "href": "https://keirin.kdreams.jp/matsuyama/assen/7520261124/",
+      "source_url": "https://keirin.kdreams.jp/matsuyama/",
+      "sha256": "ea9ec3e2fd01bcbd66caf7c18e78da0dc3bc255b076eab1db81c792095a68645",
+      "observed_at": "2026-11-16T04:47:18.343487+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "51-2026-11-25-F1",
+      "code": "51",
+      "venue": "福井",
+      "start": "2026-11-25",
+      "end": "2026-11-27",
+      "href": "https://keirin.kdreams.jp/fukui/assen/5120261125/",
+      "source_url": "https://keirin.kdreams.jp/fukui/",
+      "sha256": "74952fc6fce507e19d624db971944b6e584506ac5a544840d5473b09adf3e1fa",
+      "observed_at": "2026-11-16T04:47:13.139771+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "47-2026-11-26-F1",
+      "code": "47",
+      "venue": "松阪",
+      "start": "2026-11-26",
+      "end": "2026-11-28",
+      "href": "https://keirin.kdreams.jp/matsusaka/assen/4720261126/",
+      "source_url": "https://keirin.kdreams.jp/matsusaka/",
+      "sha256": "4def2f17df72d57288d27d66ee4edb228abfac1b03a516ea7ba0dec9880313da",
+      "observed_at": "2026-11-16T04:47:11.577522+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "35-2026-11-27-F1",
+      "code": "35",
+      "venue": "平塚",
+      "start": "2026-11-27",
+      "end": "2026-11-29",
+      "href": "https://keirin.kdreams.jp/hiratsuka/assen/3520261127/",
+      "source_url": "https://keirin.kdreams.jp/hiratsuka/",
+      "sha256": "2bd63a71e20a73aa82c38583c7638d7c7d4dfa44f4626d7dbcb239728012893e",
+      "observed_at": "2026-11-16T04:47:06.270047+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "53-2026-11-29-F1",
+      "code": "53",
+      "venue": "奈良",
+      "start": "2026-11-29",
+      "end": "2026-12-01",
+      "href": "https://keirin.kdreams.jp/nara/assen/5320261129/",
+      "source_url": "https://keirin.kdreams.jp/nara/",
+      "sha256": "6a4279b2f172a54c2ca6d57b18dcc752fdfe68b405948828a13de4d38d1dfba5",
+      "observed_at": "2026-11-16T04:47:13.748457+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "61-2026-11-29-F1",
+      "code": "61",
+      "venue": "玉野",
+      "start": "2026-11-29",
+      "end": "2026-12-01",
+      "href": "https://keirin.kdreams.jp/tamano/assen/6120261129/",
+      "source_url": "https://keirin.kdreams.jp/tamano/",
+      "sha256": "c9d5dd5be707336fc7588d05289643c9befb5ba786efb8a524c73a38def4b57b",
+      "observed_at": "2026-11-16T04:47:15.678529+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "36-2026-12-01-F1",
+      "code": "36",
+      "venue": "小田原",
+      "start": "2026-12-01",
+      "end": "2026-12-03",
+      "href": "https://keirin.kdreams.jp/odawara/assen/3620261201/",
+      "source_url": "https://keirin.kdreams.jp/odawara/",
+      "sha256": "eb0bf40835386a476091a98b148fc89bdc22dcadad3875ccd0ab51ac20fa0d7b",
+      "observed_at": "2026-11-16T04:47:07.412502+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "48-2026-12-01-F1",
+      "code": "48",
+      "venue": "四日市",
+      "start": "2026-12-01",
+      "end": "2026-12-03",
+      "href": "https://keirin.kdreams.jp/yokkaichi/assen/4820261201/",
+      "source_url": "https://keirin.kdreams.jp/yokkaichi/",
+      "sha256": "72d6489ceecbd74447378c4c0ba7e05ebda60d5ef5bbdf7d0b4b7b897c097f40",
+      "observed_at": "2026-11-16T04:47:12.540444+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "86-2026-12-03-G3",
+      "code": "86",
+      "venue": "別府",
+      "start": "2026-12-03",
+      "end": "2026-12-06",
+      "href": "https://keirin.kdreams.jp/beppu/assen/8620261203/",
+      "source_url": "https://keirin.kdreams.jp/beppu/",
+      "sha256": "8ddd9275dc960f9f822f4a022c15c9bf90ff9555fe65f01a6e6501e101e82dcc",
+      "observed_at": "2026-11-16T04:47:21.754744+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "26-2026-12-04-F1",
+      "code": "26",
+      "venue": "西武園",
+      "start": "2026-12-04",
+      "end": "2026-12-06",
+      "href": "https://keirin.kdreams.jp/seibuen/assen/2620261204/",
+      "source_url": "https://keirin.kdreams.jp/seibuen/",
+      "sha256": "e80a3e8f1ed97bb5e20c625688724e0f535076b5d1bccdbd94947b1853beae6e",
+      "observed_at": "2026-11-16T04:47:03.177434+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "55-2026-12-05-F1",
+      "code": "55",
+      "venue": "和歌山",
+      "start": "2026-12-05",
+      "end": "2026-12-07",
+      "href": "https://keirin.kdreams.jp/wakayama/assen/5520261205/",
+      "source_url": "https://keirin.kdreams.jp/wakayama/",
+      "sha256": "e4c68ecadb3adc7663635b3c30ef9d571337832e3eacb93e342c002461037646",
+      "observed_at": "2026-11-16T04:47:14.655485+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "81-2026-12-07-F1",
+      "code": "81",
+      "venue": "小倉",
+      "start": "2026-12-07",
+      "end": "2026-12-09",
+      "href": "https://keirin.kdreams.jp/kokura/assen/8120261207/",
+      "source_url": "https://keirin.kdreams.jp/kokura/",
+      "sha256": "b667a43b08917f46433f624cad77aad432863b3a2786ff84d3eb99b94bd9de96",
+      "observed_at": "2026-11-16T04:47:19.286741+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "31-2026-12-10-F1",
+      "code": "31",
+      "venue": "松戸",
+      "start": "2026-12-10",
+      "end": "2026-12-12",
+      "href": "https://keirin.kdreams.jp/matsudo/assen/3120261210/",
+      "source_url": "https://keirin.kdreams.jp/matsudo/",
+      "sha256": "a7a6d2d37f7348c2c98d5af1b714be25c374d72d191eda77a89dd314d4eb369a",
+      "observed_at": "2026-11-16T04:47:04.937173+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "85-2026-12-10-G3",
+      "code": "85",
+      "venue": "佐世保",
+      "start": "2026-12-10",
+      "end": "2026-12-13",
+      "href": "https://keirin.kdreams.jp/sasebo/assen/8520261210/",
+      "source_url": "https://keirin.kdreams.jp/sasebo/",
+      "sha256": "8a14e14c6fa265bfb076f326a90e21889e41f19a0102ce7e07d4ee2d348a9af1",
+      "observed_at": "2026-11-16T04:47:20.800254+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "62-2026-12-12-F1",
+      "code": "62",
+      "venue": "広島",
+      "start": "2026-12-12",
+      "end": "2026-12-14",
+      "href": "https://keirin.kdreams.jp/hiroshima/assen/6220261212/",
+      "source_url": "https://keirin.kdreams.jp/hiroshima/",
+      "sha256": "1f5890a06c431b5c6e2d2f6ed3d4184b7d03d67ae40200221e66ff91148e9e39",
+      "observed_at": "2026-11-16T04:47:16.495636+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "53-2026-12-13-F1",
+      "code": "53",
+      "venue": "奈良",
+      "start": "2026-12-13",
+      "end": "2026-12-15",
+      "href": "https://keirin.kdreams.jp/nara/assen/5320261213/",
+      "source_url": "https://keirin.kdreams.jp/nara/",
+      "sha256": "0756e9c4c50ebe382ffb7db85804c359fa32c117230311d52f25cbb7346b5d5b",
+      "observed_at": "2026-11-16T04:47:14.038101+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "47-2026-12-15-F1",
+      "code": "47",
+      "venue": "松阪",
+      "start": "2026-12-15",
+      "end": "2026-12-17",
+      "href": "https://keirin.kdreams.jp/matsusaka/assen/4720261215/",
+      "source_url": "https://keirin.kdreams.jp/matsusaka/",
+      "sha256": "023007f7d03c87b4e1f0474e4c5fcd76d0768f0e5d6869eb5f0fb25d8cc9c3ae",
+      "observed_at": "2026-11-16T04:47:11.922717+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "28-2026-12-18-F1",
+      "code": "28",
+      "venue": "立川",
+      "start": "2026-12-18",
+      "end": "2026-12-20",
+      "href": "https://keirin.kdreams.jp/tachikawa/assen/2820261218/",
+      "source_url": "https://keirin.kdreams.jp/tachikawa/",
+      "sha256": "e14bb4bec2aa0f220f4e95d6a9baf799a2822df0cfa47e4f2e9d3abe15f89b70",
+      "observed_at": "2026-11-16T04:47:04.290771+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "34-2026-12-19-G3",
+      "code": "34",
+      "venue": "川崎",
+      "start": "2026-12-19",
+      "end": "2026-12-22",
+      "href": "https://keirin.kdreams.jp/kawasaki/assen/3420261219/",
+      "source_url": "https://keirin.kdreams.jp/kawasaki/",
+      "sha256": "e107c006bd2595e2eacd55560e4eeaa9bef7b67eb8e52c978cbc3849a78c5007",
+      "observed_at": "2026-11-16T04:47:05.587754+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "87-2026-12-21-F1",
+      "code": "87",
+      "venue": "熊本",
+      "start": "2026-12-21",
+      "end": "2026-12-23",
+      "href": "https://keirin.kdreams.jp/kumamoto/assen/8720261221/",
+      "source_url": "https://keirin.kdreams.jp/kumamoto/",
+      "sha256": "a41ecc02ccd0b587ebbc20746d163dd1e591098a50c101195553bab468a98481",
+      "observed_at": "2026-11-16T04:47:22.364777+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "23-2026-12-25-F1",
+      "code": "23",
+      "venue": "取手",
+      "start": "2026-12-25",
+      "end": "2026-12-27",
+      "href": "https://keirin.kdreams.jp/toride/assen/2320261225/",
+      "source_url": "https://keirin.kdreams.jp/toride/",
+      "sha256": "7432865dae985c46596656af8137794acf88ce9674c20894c5a1734eafcfd3ea",
+      "observed_at": "2026-11-16T04:47:01.931817+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "84-2026-12-28-F1",
+      "code": "84",
+      "venue": "武雄",
+      "start": "2026-12-28",
+      "end": "2026-12-30",
+      "href": "https://keirin.kdreams.jp/takeo/assen/8420261228/",
+      "source_url": "https://keirin.kdreams.jp/takeo/",
+      "sha256": "fa057af2b94974787469731e7046a23ed55510d128497a58e79eac85726309a8",
+      "observed_at": "2026-11-16T04:47:20.219842+00:00",
+      "http_status": 200
+    },
+    {
+      "id": "42-2026-12-30-F1",
+      "code": "42",
+      "venue": "名古屋",
+      "start": "2026-12-30",
+      "end": "2027-01-01",
+      "href": "https://keirin.kdreams.jp/nagoya/assen/4220261230/",
+      "source_url": "https://keirin.kdreams.jp/nagoya/",
+      "sha256": "71a32374dfe3ee20b3999ec6c8b05ed0a6e954da0ae97fdf073fc3ed6a7d5be0",
+      "observed_at": "2026-11-16T04:47:08.630708+00:00",
+      "http_status": 200
+    }
+  ]
+}
