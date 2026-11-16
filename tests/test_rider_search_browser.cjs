@@ -114,8 +114,9 @@ const root=path.resolve(process.argv[2]||'public');
       await page.locator('#profile-refresh').tap();await page.waitForFunction(()=>document.querySelector('#profile-status').textContent.includes('失敗'));
       assert.equal(await page.locator('#rider-meetings').textContent(),before,'Source failure must retain the stock');
       if(width===390){
+        await page.locator('#directory-back').tap();await page.locator('#show-top').tap();
         await page.clock.install({time:new Date('2027-03-31T14:59:00Z')});
-        await page.locator('#show-top').tap();
+        await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
         assert.equal(await page.locator('#rider-list .birthday-done').count(),30,'All checked birthdays have passed by fiscal year end');
         await page.clock.fastForward(60000);
         assert.equal(await page.locator('#rider-list .birthday-done').count(),0,'The open page resets every mark at April1 JST');

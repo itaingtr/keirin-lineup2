@@ -44,6 +44,7 @@ jobs:
       - name: Verify mobile name search, density and error recovery
         run: NODE_PATH=/tmp/rider-search-qa/node_modules node tests/test_rider_search_browser.cjs public
       - name: Verify the read-only published profile API
+        if: ${{ !cancelled() }}
         run: node tests/check_live_rider_profile.cjs
       - name: Keep only normalized display evidence and screenshot
         if: always()
