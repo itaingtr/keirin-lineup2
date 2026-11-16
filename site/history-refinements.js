@@ -90,11 +90,25 @@
       const groups=[...lineup.children].filter(node=>node.classList.contains('line-group'));
       groups.forEach((group,index)=>{
         const current=group.querySelector(':scope > .line-separator');
-        if (index===groups.length-1) {current?.remove();return;}
+        const backSeparator=group.querySelector(':scope > .line-back-separator');
+        if (index===groups.length-1) {current?.remove();backSeparator?.remove();return;}
         if (!current) {
           const separator=document.createElement('span');separator.className='line-separator';separator.textContent='•';
           separator.setAttribute('aria-hidden','true');group.append(separator);
         }
+        const back=group.querySelector('.stats .stat-b,.stats .stat-b-zero');
+        if (back) {
+          const separator=backSeparator || document.createElement('span');
+          if (!backSeparator) {
+            separator.className='line-back-separator';separator.textContent='•';
+            separator.setAttribute('aria-hidden','true');
+          }
+          const zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+          const box=back.getBoundingClientRect(),origin=group.getBoundingClientRect();
+          const top=(Math.round((box.top+box.height/2-origin.top)/zoom*100)/100)+'px';
+          if (separator.style.top!==top) separator.style.top=top;
+          if (!backSeparator) group.append(separator);
+        } else backSeparator?.remove();
       });
     }
     for (const block of root.querySelectorAll('.ten-meeting')) alignTen(block);
@@ -133,7 +147,8 @@
     fitMobile();
   }
   function schedule() { if (!scheduled) {scheduled=true;queueMicrotask(refine);} }
-  new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
-  window.addEventListener('resize',fitMobile);
+  new MutationObserver(schedule).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','aria-expanded']});
+  root.addEventListener('click',event=>{if(event.target.closest('.period-toggle'))requestAnimationFrame(schedule);});
+  window.addEventListener('resize',()=>{fitMobile();schedule();});
   refine();
 })();

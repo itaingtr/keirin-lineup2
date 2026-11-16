@@ -96,6 +96,7 @@
       if (!state.panel.contains(state.refresh)) state.panel.prepend(state.refresh);
       return;
     }
+    decorateLineSeparators(table);
     // Use the empty corner above the second-place labels. Every name keeps
     // its original, centered position directly beneath its car number.
     const corner = table.tHead.rows[0].cells[0];
@@ -120,6 +121,32 @@
     attribute(time, 'data-stale', String(stale));
     attribute(time, 'title', state.status.textContent);
     attribute(state.refresh, 'title', stale ? state.status.textContent : '二車単オッズを更新するにゃ');
+  }
+
+  function decorateLineSeparators(table) {
+    const headers=[...table.tHead.rows[0].cells].slice(1,-1);
+    const zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+    headers.forEach((cell,index)=>{
+      const rider=cell.querySelector('.exacta-column-rider');
+      let separator=rider?.querySelector(':scope > .exacta-line-separator');
+      if (!cell.classList.contains('exacta-line-start') || index===0 || !rider) {
+        separator?.remove();return;
+      }
+      const previous=headers[index-1]?.querySelector('.exacta-column-rider');
+      const currentNumber=rider.querySelector('.exacta-number');
+      const previousNumber=previous?.querySelector('.exacta-number');
+      if (!previousNumber || !currentNumber) {separator?.remove();return;}
+      if (!separator) {
+        separator=document.createElement('span');separator.className='exacta-line-separator';
+        separator.textContent='•';separator.setAttribute('aria-hidden','true');rider.append(separator);
+      }
+      const owner=rider.getBoundingClientRect(),before=previousNumber.getBoundingClientRect(),after=currentNumber.getBoundingClientRect();
+      const left=((before.left+before.width/2+after.left+after.width/2)/2-owner.left)/zoom;
+      const top=(after.top+after.height/2-owner.top)/zoom;
+      const nextLeft=(Math.round(left*100)/100)+'px',nextTop=(Math.round(top*100)/100)+'px';
+      if (separator.style.left!==nextLeft) separator.style.left=nextLeft;
+      if (separator.style.top!==nextTop) separator.style.top=nextTop;
+    });
   }
 
   function mixedAxes(state) {

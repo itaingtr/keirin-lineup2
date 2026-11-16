@@ -1,6 +1,9 @@
 body[data-history-refinements="20261116"] .lineup{--rider-width:32px;--history-inset:2px;--line-gap:calc(12px - 1ch);font-size:10px;font-variant-numeric:tabular-nums;gap:var(--line-gap)}
 body[data-history-refinements="20261116"] .lineup .line-group{position:relative}
-body[data-history-refinements="20261116"] .lineup .line-separator{position:absolute;left:calc(100% + var(--line-gap)/2);top:39px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;height:19px;font-size:10px;line-height:1;font-weight:400;color:#18212f;pointer-events:none;white-space:nowrap}
+body[data-history-refinements="20261116"] .lineup .line-separator,
+body[data-history-refinements="20261116"] .lineup .line-back-separator{position:absolute;left:calc(100% + var(--line-gap)/2);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;font-weight:800;color:#18212f;pointer-events:none;white-space:nowrap}
+body[data-history-refinements="20261116"] .lineup .line-separator{top:39px;transform:translateX(-50%);height:19px}
+body[data-history-refinements="20261116"] .lineup .line-back-separator{transform:translate(-50%,-50%);height:12px}
 body[data-history-refinements="20261116"] .lineup-odds-visible .line-separator{top:74px}
 body[data-history-refinements="20261116"] .lineup .rider-odds,
 body[data-history-refinements="20261116"] .lineup .rider-win-odds,
