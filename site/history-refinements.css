@@ -68,7 +68,7 @@ body[data-history-refinements="20261116"] .race-comments-email{font-size:17px!im
 }
 
 @media(max-width:360px){
-body[data-history-refinements="20261116"] .table-wrap td.race{gap:4px}
-body[data-history-refinements="20261116"] .table-wrap .video-actions{gap:2px}
-body[data-history-refinements="20261116"] .table-wrap .video-link{padding-left:5px;padding-right:5px}
+body[data-history-refinements="20261116"] .table-wrap td.race{gap:2px}
+body[data-history-refinements="20261116"] .table-wrap .video-actions{gap:1px}
+body[data-history-refinements="20261116"] .table-wrap .video-link{padding-left:4px;padding-right:4px}
 }
