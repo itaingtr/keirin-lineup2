@@ -30,9 +30,9 @@
     document.body.style.setProperty('--race-header-width',baseHeaderWidth+'px');
     const edge=(live.getBoundingClientRect().right+window.scrollX)/zoom;
     if (!(edge>0&&width>0)) return;
-    const requested=Math.floor((width-1)/edge*10000)/10000;
+    const requested=Math.floor((width-2)/edge*10000)/10000;
     const fitted=Math.max(1,Math.min(1.2544,requested));
-    const targetEdge=(width-1)/fitted;
+    const targetEdge=(width-2)/fitted;
     const expandedHeader=baseHeaderWidth+Math.max(0,targetEdge-edge);
     const balancedHeader=Math.floor(expandedHeader*100)/100;
     document.body.style.setProperty('--race-header-width',balancedHeader+'px');
