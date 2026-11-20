@@ -73,12 +73,12 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    const fit=await page.evaluate(()=>{
     const lineup=document.querySelector('.lineup'),style=getComputedStyle(lineup),canvas=document.createElement('canvas'),context=canvas.getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
     return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom:parseFloat(getComputedStyle(document.body).zoom),
-     digit:context.measureText('0').width,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
+     digit:context.measureText('0').width,baseGap:lineup.classList.contains('lineup-nine')?12:19,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
      rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
    });
    assert.ok(fit.right<=width+.2&&fit.right>=width-2.5,JSON.stringify(fit));
    assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.equal(fit.within,0,JSON.stringify(fit));
-   assert.ok(Math.abs(fit.between-(19-fit.digit))<.1,JSON.stringify(fit));
+   assert.ok(Math.abs(fit.between-(fit.baseGap-fit.digit))<.1,JSON.stringify(fit));
    await page.waitForSelector('.rider-odds .exacta-line-pair');
    const oddsAndDots=await page.evaluate(()=>[...document.querySelectorAll('#rows > tr')].map(row=>{
     const groups=[...row.querySelectorAll('.lineup > .line-group')],link=row.querySelector('.race-link');
