@@ -25,11 +25,17 @@
       const gap=parseFloat(getComputedStyle(header).columnGap)||0;
       headerWidth=Math.max(headerWidth,parts.reduce((sum,node)=>sum+node.getBoundingClientRect().width/zoom,0)+gap*(parts.length-1));
     }
+    const baseHeaderWidth=Math.ceil(headerWidth+1);
     document.body.style.setProperty('--card-venue-width',Math.ceil(venueWidth)+'px');
-    document.body.style.setProperty('--race-header-width',Math.ceil(headerWidth+1)+'px');
+    document.body.style.setProperty('--race-header-width',baseHeaderWidth+'px');
     const edge=(live.getBoundingClientRect().right+window.scrollX)/zoom;
     if (!(edge>0&&width>0)) return;
-    const fitted=Math.floor((width-1)/edge*10000)/10000;
+    const requested=Math.floor((width-1)/edge*10000)/10000;
+    const fitted=Math.max(1,Math.min(1.2544,requested));
+    const targetEdge=(width-1)/fitted;
+    const expandedHeader=baseHeaderWidth+Math.max(0,targetEdge-edge);
+    const balancedHeader=Math.floor(expandedHeader*100)/100;
+    document.body.style.setProperty('--race-header-width',balancedHeader+'px');
     document.body.style.setProperty('--lineup-zoom',String(fitted));
     document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
   }

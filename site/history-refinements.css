@@ -58,7 +58,11 @@ body[data-history-refinements="20261116"] .lineup.lineup-nine{--line-gap:calc(12
 body[data-history-refinements="20261116"] .lineup .line-separator{top:38px;height:18px}
 body[data-history-refinements="20261116"] .lineup-odds-visible .line-separator{top:73px}
 body[data-history-refinements="20261116"] .table-wrap tbody tr{grid-template-columns:var(--card-venue-width,38px) var(--race-header-width,250px) minmax(0,1fr)}
+body[data-history-refinements="20261116"] .table-wrap td.race{justify-self:stretch;width:100%;min-width:0;justify-content:space-between}
 body[data-history-refinements="20261116"] .race-link,
 body[data-history-refinements="20261116"] .race-time,
 body[data-history-refinements="20261116"] .video-actions{flex-shrink:0;white-space:nowrap}
+body[data-history-refinements="20261116"] .page-bottom #search,
+body[data-history-refinements="20261116"] .race-comment-input,
+body[data-history-refinements="20261116"] .race-comments-email{font-size:17px!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 }
