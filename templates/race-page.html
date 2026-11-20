@@ -9,13 +9,13 @@
 /* Keep this layout local to today's page and the matching index. */
 .table-wrap{width:100%;max-width:none;overflow-x:auto;overscroll-behavior-x:contain}
 .table-wrap table{width:860px;min-width:860px;max-width:860px}
-.table-wrap tbody tr{grid-template-columns:52px 314px minmax(0,1fr);grid-template-areas:"venue race comment" "lineup lineup comment" "composer composer comment";column-gap:12px;align-items:start}
+.table-wrap tbody tr{grid-template-columns:52px 314px minmax(0,1fr);grid-template-areas:"venue race race" "lineup lineup lineup" "composer composer composer" "comment comment comment";column-gap:12px;align-items:start}
 .table-wrap td.race{flex-wrap:nowrap;gap:8px}
 .table-wrap .video-actions{display:inline-flex;align-items:center;gap:4px;flex:none}
 .table-wrap .live-link{background:#155eef;padding:4px 6px;font-size:10px}
 .table-wrap .live-link:hover{background:#1047b8}
 .table-wrap td.race-comment-cell{display:contents}
-.table-wrap .race-comment-feed{grid-area:comment;margin-left:8px;min-width:0;max-height:none;overflow:visible}
+.table-wrap .race-comment-feed{grid-area:comment;margin:2px 0 0;min-width:0;max-height:none;overflow:visible}
 .table-wrap .race-comment-post{min-width:0;overflow-wrap:anywhere}
 .table-wrap .race-comment-body{white-space:pre-wrap;overflow-wrap:anywhere}
 .table-wrap .race-comment-form{grid-area:composer;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px;margin:0;min-width:0}
@@ -36,7 +36,7 @@
 .page-bottom #search,.page-bottom .race-comments-email{font-size:16px}
 .table-wrap .race-comment-save{font-size:10px;padding:4px 7px}
 }
-.table-wrap tbody tr.odds-open{grid-template-areas:"venue race comment" "lineup lineup comment" "composer composer comment" "odds odds odds"}
+.table-wrap tbody tr.odds-open{grid-template-areas:"venue race race" "lineup lineup lineup" "composer composer composer" "comment comment comment" "odds odds odds"}
 .table-wrap .odds-toggle,.table-wrap .odds-refresh{font:inherit;font-size:11px;padding:5px 9px;border:1px solid #c8d2df;border-radius:6px;background:#eff6ff;color:#155eef;cursor:pointer}
 .table-wrap .odds-toggle{margin-top:4px}
 .table-wrap .odds-cell{grid-area:odds;width:calc(var(--exacta-width) + var(--exacta-lineup-width,var(--exacta-width)) + 12px);max-width:100%;min-width:0;border:0;padding:0;justify-self:start}
