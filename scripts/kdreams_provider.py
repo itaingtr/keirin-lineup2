@@ -19,6 +19,9 @@ RIDER = re.compile(r'(.+?)(?:'+'|'.join(PREFECTURES)+r')/\d+/(\d+)')
 RIDER_PROFILE = re.compile(r'(.+?)('+'|'.join(PREFECTURES)+r')/(\d{1,3})/(\d{1,3})')
 MARKS = ('', '◎', '○', '◯', '▲', '△', '×', '注', '☆', '★', '穴')
 KDREAMS_SLUGS = {code: ('iwakitaira' if code == '13' else item[1]) for code, item in VENUES.items()}
+# This G1 title omits the class prefix in the public source. Only normalize
+# this exact label after checking every entrant's current class below.
+SPECIAL_S_CLASS_RACES = {'ダイヤモンドレース': 'Ｓ級ダイヤモンドレース'}
 
 
 def require(condition, message):
@@ -243,7 +246,7 @@ def _player_id(cell):
     return next(iter(found), None)
 
 
-def parse_players(doc):
+def parse_players(doc, *, expected_classes=None):
     tables = [t for t in doc.find_all('table') if 'racecard_table' in classes(t) and 'none' not in classes(t)
               and '直近4ヶ月の成績' in compact(t.text())]
     if not tables:
@@ -270,6 +273,9 @@ def parse_players(doc):
             rider_text = withdrawal[1]
         rider = RIDER.fullmatch(rider_text)
         require(rider is not None and len(values) >= index+11, 'Incomplete K Dreams rider/statistics')
+        if expected_classes is not None:
+            require(compact(values[index+1].text()) in expected_classes,
+                    'K Dreams special-race rider class differs')
         profile = RIDER_PROFILE.fullmatch(rider_text)
         require(profile is not None and 18 <= int(profile[3]) <= 100, 'Missing/invalid K Dreams rider prefecture or age')
         score = compact(values[index+4].text())
@@ -304,16 +310,24 @@ def parse_players(doc):
 def parse_card(doc, url, meeting):
     title = _title(doc, url)
     kind = re.search(r'\b(\d+)R\s+([ＳS]級[^|]+?)\s*\|', title)
+    expected_classes = None
     if not kind:
         if re.search(r'\d+R\s+(?:[ＡAＬL]級|ガールズ|チャレンジ)', title):
             return None
-        raise ValueError('Unrecognized K Dreams race class')
-    players = parse_players(doc)
+        special = re.search(r'\b(\d+)R\s+([^|]+?)\s*\|', title)
+        require(special is not None and special[2] in SPECIAL_S_CLASS_RACES
+                and meeting['grade_code'] == 5 and meeting['venue'] == '小倉'
+                and race_identity(url)['code'] == '81', 'Unrecognized K Dreams race class')
+        number, race_type = int(special[1]), SPECIAL_S_CLASS_RACES[special[2]]
+        expected_classes = {'SS', 'S1', 'S2'}
+    else:
+        number, race_type = int(kind[1]), kind[2]
+    players = parse_players(doc, expected_classes=expected_classes)
     lineup = parse_lineup(doc, [p['no'] for p in players])
     start = re.search(r'発走予定\s*(\d{1,2}:\d{2})', re.sub(r'\s+', ' ', doc.text()))
     require(start is not None and re.fullmatch(r'(?:[01]?\d|2[0-3]):[0-5]\d', start[1]), 'Missing K Dreams start time')
-    return {'venue': meeting['venue'], 'race': int(kind[1]), 'source': canonical_source(url),
-            'race_type': kind[2], 'grade_code': meeting['grade_code'], 'start_time': start[1].zfill(5),
+    return {'venue': meeting['venue'], 'race': number, 'source': canonical_source(url),
+            'race_type': race_type, 'grade_code': meeting['grade_code'], 'start_time': start[1].zfill(5),
             'lineup': lineup, 'players': players}
 
 

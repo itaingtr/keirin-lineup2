@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import date, timedelta
 from pathlib import Path
 import sys
 import unittest
@@ -34,6 +35,19 @@ def calendar():
     return '<div class="raceinfo_table"><table><tr><td>高知競輪</td><td><i class="gr2"></i><a href="'+URL+'">6R</a></td></tr></table></div>'
 
 
+def festival_card(number=12, kind='ダイヤモンドレース', day=4, rider_classes=('SS','S1','S2')):
+    # Source title/URL structure observed on Kokura 2026-11-21 12R. Keep
+    # synthetic identities/statistics rather than committing collected data.
+    source=f'https://keirin.kdreams.jp/kokura/racedetail/8120261118{day:02}{number:04}/'
+    actual=date(2026,11,18)+timedelta(days=day-1)
+    title=f'小倉競輪 レース詳細 | 朝日新聞社杯競輪祭 {number}R {kind} | {actual.year}年{actual.month}月{actual.day}日'
+    markup=card().replace(URL,source).replace(
+        '高知競輪 レース詳細 | テスト杯 6R Ｓ級予選 | 2026年10月18日',title)
+    for rider_class in rider_classes:
+        markup=markup.replace('<td>A1</td>','<td>'+rider_class+'</td>',1)
+    return source,markup
+
+
 def result_table():
     labels=['予想','着順','車番','選手名','着差','上り','決まり手','S／B','勝敗因']
     rows='<tr>'+''.join('<th>'+value+'</th>' for value in labels)+'</tr>'
@@ -58,6 +72,90 @@ def contested_lineup():
 
 
 class KdreamsProviderTests(unittest.TestCase):
+    def test_diamond_race_is_normalized_only_after_current_s_class_verification(self):
+        meeting={'venue':'小倉','grade_code':5,'night':True}
+        for grades in [('SS','S1','S2'),('ＳＳ','Ｓ１','Ｓ２')]:
+            with self.subTest(grades=grades):
+                source,markup=festival_card(rider_classes=grades)
+                result=parse_card(Document(markup).root,source,meeting)
+                self.assertEqual(result['race'],12)
+                self.assertEqual(result['race_type'],'Ｓ級ダイヤモンドレース')
+                self.assertEqual(result['source'],source)
+                self.assertEqual(result['lineup'],'12/3')
+                self.assertEqual([p['stats'] for p in result['players']],
+                                 [[n,12,4,3,2,1] for n in (1,2,3)])
+                self.assertEqual(race_identity(source)['date'],'20261121')
+                # The normalized label stays inside the existing S-class
+                # renderer contract; rider sidecars keep their old schema.
+                from render_races import validate
+                validate({'schema_version':1,'target_date':'2026-11-21',
+                          'expected_races':1,'races':[result]})
+                self.assertNotIn('class',result['players'][0])
+
+    def test_special_race_never_infers_class_from_grade_name_or_another_table(self):
+        meeting={'venue':'小倉','grade_code':5,'night':True}
+        for grades in [('SS','A1','S2'),('SS','L1','S2'),('SS','','S2'),
+                       ('SS','S3','S2'),('SS','S1/A1','S2')]:
+            with self.subTest(grades=grades):
+                source,markup=festival_card(rider_classes=grades)
+                # An unrelated hidden S-class table cannot validate a bad
+                # entrant in the one visible current-statistics table.
+                _,hidden=festival_card()
+                hidden=hidden[hidden.index('<table'):hidden.index('</table>')+8]
+                hidden=hidden.replace('racecard_table','racecard_table none')
+                with self.assertRaisesRegex(ValueError,'rider class differs'):
+                    parse_card(Document(markup+hidden).root,source,meeting)
+        source,markup=festival_card()
+        for grade in (1,2,3,4,6):
+            with self.subTest(grade=grade),self.assertRaisesRegex(ValueError,'Unrecognized'):
+                parse_card(Document(markup).root,source,{**meeting,'grade_code':grade})
+        with self.assertRaisesRegex(ValueError,'Unrecognized'):
+            parse_card(Document(markup).root,source,{**meeting,'venue':'高知'})
+        other_source=source.replace('/kokura/racedetail/81','/kochi/racedetail/74')
+        other_markup=markup.replace(source,other_source).replace('小倉競輪','高知競輪')
+        for venue in ('高知','小倉'):
+            with self.subTest(venue=venue),self.assertRaisesRegex(ValueError,'Unrecognized'):
+                parse_card(Document(other_markup).root,other_source,{**meeting,'venue':venue})
+        for kind in ('未知特別競走','ダイヤモンドレース（予選）','ダイヤモンドレース Ｓ級予選'):
+            source,markup=festival_card(kind=kind)
+            with self.subTest(kind=kind),self.assertRaisesRegex(ValueError,'Unrecognized'):
+                parse_card(Document(markup).root,source,meeting)
+        source,markup=festival_card()
+        duplicate=markup[markup.index('<table'):markup.index('</table>')+8]
+        with self.assertRaisesRegex(ValueError,'Ambiguous'):
+            parse_card(Document(markup+duplicate).root,source,meeting)
+
+    def test_six_day_meeting_uses_calendar_day_without_a_four_day_limit(self):
+        meeting={'venue':'小倉','grade_code':5,'night':True}
+        for day in range(1,7):
+            with self.subTest(day=day):
+                source,markup=festival_card(kind='Ｓ級選抜',day=day)
+                result=parse_card(Document(markup).root,source,meeting)
+                target=date(2026,11,18)+timedelta(days=day-1)
+                self.assertEqual(race_identity(result['source'])['date'],target.strftime('%Y%m%d'))
+                schedule='<div class="raceinfo_table"><table><tr><td>小倉競輪</td><td><i class="gr5"></i><a href="'+source+'">12R</a></td></tr></table></div>'
+                self.assertEqual(parse_schedule(Document(schedule).root,
+                                 'https://keirin.kdreams.jp/',target)[0]['urls'],[source])
+
+    def test_collect_festival_keeps_all_twelve_races_including_diamond(self):
+        cards={}
+        for number in range(1,13):
+            source,markup=festival_card(number,kind='ダイヤモンドレース' if number==12 else 'Ｓ級選抜')
+            cards[source]=markup
+        schedule='<div class="raceinfo_table"><table><tr><td>小倉競輪</td><td><i class="gr5"></i><i class="s2"></i>'+''.join(
+            '<a href="'+source+'">'+str(number)+'R</a>' for number,source in enumerate(cards,1))+'</td></tr></table></div>'
+        calls=[]
+        def read(url):
+            calls.append(url)
+            return Document(schedule if '/racecard/' in url else cards[url]).root,STAMP
+        dataset=collect_cards('2026-11-21',read)
+        self.assertEqual(dataset['expected_races'],12)
+        self.assertEqual([r['race'] for r in dataset['races']],list(range(1,13)))
+        self.assertEqual(dataset['races'][-1]['race_type'],'Ｓ級ダイヤモンドレース')
+        self.assertEqual(dataset['excluded_meetings'],{})
+        self.assertEqual(len(calls),13)
+        self.assertFalse(any('pageType=odds' in url for url in calls))
+
     def test_empty_withdrawn_rows_and_columns_keep_active_exacta_prices(self):
         from source_http import cells
         doc=Document(matrix()).root
