@@ -36,6 +36,12 @@ def apply(page, site, output, day):
         tags[name] = '/keirin-lineup2/'+name+'?v='+version
     page = page.replace('</head>', ''.join('<link rel="stylesheet" href="'+tags[name]+'">'
                         for name in ('history-refinements.css', 'odds-overlay.css'))+'</head>', 1)
+    if day >= '20261121':
+        page = page.replace('</head>', '''<style id="comments-below-input-style">
+body[data-history-refinements="20261116"] .table-wrap #rows > tr{grid-template-areas:"venue race ." "lineup lineup ." "composer composer ." "comment comment ."}
+body[data-history-refinements="20261116"] .table-wrap #rows > tr.odds-open{grid-template-areas:"odds odds odds" "venue race ." "lineup lineup ." "composer composer ." "comment comment ."}
+body[data-history-refinements="20261116"] .table-wrap .race-comment-feed{margin-left:0}
+</style></head>''', 1)
     before = '<script src="/keirin-lineup2/'+RESULT_READER
     page = page.replace(before, '<script src="'+tags['public-results-reader.js']+'"></script>'+before, 1)
     return page.replace('</body>', ''.join('<script src="'+tags[name]+'"></script>'
