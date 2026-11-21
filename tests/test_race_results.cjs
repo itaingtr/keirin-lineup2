@@ -13,11 +13,11 @@ const races=Array.from({length:5},(_,i)=>({source:'https://keirin.kdreams.jp/tac
 function payload(race,state='results'){
  return {schema_version:1,source_url:race.source,result_url:race.source+'?pageType=showResult',race_id:String(race.race).padStart(2,'0')+'2820261114',race_date:'2026-11-14',race_number:race.race,observed_at:new Date().toISOString(),state,
   rows:state==='results'?[{rank:'2',no:2,name:'川越勇星',margin:'1/2車輪',time:'11.7',finish:'ク',shb:'S',reason:'前に続いて'},{rank:'1',no:1,name:'湊聖二',margin:'',time:'11.8',finish:'差',shb:'B',reason:'直線伸びて'},{rank:'失',no:3,name:'松永将',margin:'',time:'',finish:'',shb:'',reason:'失格'}]:[],
-  payouts:state==='pending'?{exacta:[],trifecta:[]}:{exacta:[{combination:'1-2',yen:3760}],trifecta:[{combination:'1-2-3',yen:63040}]}};
+  payouts:state==='pending'?{exacta:[],trifecta:[],quinella:[],wide:[]}:{exacta:[{combination:'1-2',yen:3760}],trifecta:[{combination:'1-2-3',yen:63040}],quinella:[{combination:'1=2',yen:800}],wide:[{combination:'1=2',yen:600},{combination:'1=3',yen:1200},{combination:'2=3',yen:560}]}};
 }
 const rowHTML=race=>'<tr><td class="race"><a class="race-link" data-race-source="'+race.source+'" href="'+race.source+'">'+race.race+'R</a><span class="video-actions"><a class="video-link" href="https://wm.st.keirin.jp/wm-keirin28/20261114-28-03-'+String(race.race).padStart(2,'0')+'-01-00.mp4">映像</a></span></td><td class="lineup-cell"><div class="lineup"><div class="previous-controls"><button class="previous-toggle" aria-expanded="false">前回</button><div class="previous-results" hidden>前回の成績</div></div><button class="ten-toggle" aria-expanded="false">成績</button><div class="ten-results" hidden>10場所</div></div></td></tr>';
-async function boot({all=false,reply=payload,fail=false}={}){
- const dom=new JSDOM('<!doctype html><html><head><style>'+fs.readFileSync(path.join(project,'site/race-results.css'),'utf8')+'</style></head><body data-all-results-date="20261114" data-race-results="true"'+(all?' data-race-results-all="true"':'')+' data-race-results-config="/keirin-lineup2/race-results-config.json"><nav id="venue-nav"><a>立川</a></nav><div class="table-wrap"><table><tbody id="rows">'+races.map(rowHTML).join('')+'</tbody></table></div></body></html>',{url:'https://itaingtr.github.io/keirin-lineup2/line20261114.html',runScripts:'outside-only'});
+async function boot({all=false,reply=payload,fail=false,aligned=true}={}){
+ const dom=new JSDOM('<!doctype html><html><head><style>'+fs.readFileSync(path.join(project,'site/race-results.css'),'utf8')+'</style></head><body data-all-results-date="20261114" data-race-results="true"'+(aligned?' data-result-payouts="aligned-20261122"':'')+(all?' data-race-results-all="true"':'')+' data-race-results-config="/keirin-lineup2/race-results-config.json"><nav id="venue-nav"><a>立川</a></nav><div class="table-wrap"><table><tbody id="rows">'+races.map(rowHTML).join('')+'</tbody></table></div></body></html>',{url:'https://itaingtr.github.io/keirin-lineup2/line20261114.html',runScripts:'outside-only'});
  let configReads=0,reads=0,active=0,maxActive=0;
  dom.window.fetch=async(url,options)=>{
   if(String(url).includes('race-results-config.json')){configReads++;return {ok:true,json:async()=>({endpoint:'https://ritinxywblgsccjvqoeh.supabase.co/functions/v1/race-results',anon_key:'eyJ.public.anon'})};}
@@ -39,7 +39,7 @@ async function boot({all=false,reply=payload,fail=false}={}){
  for(const bad of [source.replace('https:','http:'),source.replace('keirin.kdreams.jp','example.com'),source.replace('toyohashi','gifu'),source+'?to=http://localhost',source.replace('20261102','20260230'),source.replace(/0012\/$/,'0099/')])assert.throws(()=>raceIdentity(bad),bad);
  const results=parse(placingTable()+payouts);
  assert.equal(results.rows.length,7);assert.equal(results.rows[0].name,'深谷知広');assert.equal(results.rows[0].time,'11.0');assert.equal(results.rows[1].shb,'S');assert.equal(results.rows[3].shb,'B');
- assert.deepEqual(results.payouts,{exacta:[{combination:'2-4',yen:370},{combination:'4-2',yen:510}],trifecta:[{combination:'2-4-1',yen:1240}]});
+ assert.deepEqual(results.payouts,{exacta:[{combination:'2-4',yen:370},{combination:'4-2',yen:510}],trifecta:[{combination:'2-4-1',yen:1240}],quinella:[{combination:'2=4',yen:210}],wide:[]});
  assert.equal(parse('').state,'pending');assert.deepEqual(parse('').rows,[]);
  const only=parse(payouts);assert.equal(only.state,'payouts');assert.equal(only.rows.length,0);assert.equal(only.payouts.exacta.length,2);
  assert.throws(()=>parseResult(new JSDOM(page(placingTable()).replace('2026年11月03日','2026年11月04日')).window.document,source),/title/);
@@ -58,14 +58,30 @@ async function boot({all=false,reply=payload,fail=false}={}){
  assert.equal(panel.querySelector('tr[data-car-number="2"] .race-result-margin').title,'1/2車輪','source margin remains available');
  assert.ok(panel.querySelector('.race-result-car').classList.contains('c1'));
  const replay=doc.querySelector('.race-result-video');assert.equal(replay.href,doc.querySelector('.video-actions .video-link').href);assert.equal(replay.target,'_self');assert.equal(replay.getAttribute('onclick'),null);
- assert.equal(panel.querySelector('.race-result-name').textContent,'湊聖二');assert.match(panel.textContent,/63,040円/);assert.match(panel.textContent,/直線伸びて/);
+ assert.equal(panel.querySelector('.race-result-name').textContent,'湊聖二');assert.match(panel.textContent,/63040円/);assert.doesNotMatch(panel.querySelector('.race-result-payout-table').textContent,/,/);assert.match(panel.textContent,/直線伸びて/);
+ const payoutRows=panel.querySelector('.race-result-payout-table').rows;
+ assert.equal(payoutRows.length,2);
+ assert.deepEqual(Array.from(payoutRows[0].cells,n=>n.textContent).slice(0,6),['2車単','1-2','3760円','2車複','1-2','800円']);
+ assert.deepEqual(Array.from(payoutRows[1].cells,n=>n.textContent),['3連単','1-2-3','63040円','ワイド','1-2','600円','1-3','1200円','2-3','560円']);
+ assert.ok([...panel.querySelectorAll('.race-result-yen')].every(n=>app.dom.window.getComputedStyle(n).textAlign==='right'));
  const style=app.dom.window.getComputedStyle(button);assert.equal(style.width,'22px');assert.equal(style.height,'12px');assert.equal(style.fontSize,'8px');
  button.click();stage='payouts';button.click();await pause();assert.equal(app.reads(),2,'reopening reads the latest result');
- panel=doc.querySelector('.race-result-panel');assert.equal(panel.querySelector('table'),null);assert.equal(panel.querySelectorAll('.race-result-payout').length,2);
+ panel=doc.querySelector('.race-result-panel');assert.equal(panel.querySelector('.race-result-table'),null);assert.equal(panel.querySelectorAll('.race-result-payout').length,2);
  button.click();stage='pending';button.click();await pause();assert.equal(doc.querySelector('.race-result-panel').textContent,'未定にゃ！');
  doc.getElementById('venue-nav').innerHTML='<a>立川</a>';await pause();assert.equal(doc.querySelectorAll('.all-results-button').length,1,'search redraw retains one navigation button');
  doc.getElementById('rows').innerHTML=races.slice(0,1).map(rowHTML).join('');await pause();assert.equal(doc.querySelector('.race-result-toggle').getAttribute('aria-expanded'),'true');assert.equal(app.reads(),3,'redraw preserves the checked result without duplicate reads');
  app.dom.window.close();
+ const legacy=await boot({aligned:false});legacy.document.querySelector('.race-result-toggle').click();await pause();
+ assert.equal(legacy.document.querySelector('.race-result-payout-table'),null);assert.match(legacy.document.querySelector('.race-result-panel').textContent,/63,040円/);legacy.dom.window.close();
+ const oldAPI=await boot({reply:r=>{const p=payload(r);delete p.payouts.quinella;delete p.payouts.wide;return p;}});
+ oldAPI.document.querySelector('.race-result-toggle').click();await pause();assert.equal(oldAPI.document.querySelector('.race-result-error'),null);oldAPI.dom.window.close();
+ const onlyWide=await boot({reply:r=>{const p=payload(r,'payouts');p.payouts={exacta:[],trifecta:[],quinella:[],wide:[{combination:'2=3',yen:560}]};return p;}});
+ onlyWide.document.querySelector('.race-result-toggle').click();await pause();assert.match(onlyWide.document.querySelector('.race-result-panel').textContent,/ワイド2-3560円/);assert.equal(onlyWide.document.querySelector('.race-result-pending'),null);onlyWide.dom.window.close();
+ const tied=await boot({reply:r=>{const p=payload(r,'payouts');p.payouts.exacta.push({combination:'2-1',yen:5200});p.payouts.trifecta.push({combination:'2-1-3',yen:75000});p.payouts.wide.push({combination:'特払',yen:70});return p;}});
+ tied.document.querySelector('.race-result-toggle').click();await pause();
+ assert.equal(tied.document.querySelectorAll('.race-result-yen[data-bet-type="exacta"][aria-label]').length,2);
+ assert.equal(tied.document.querySelectorAll('.race-result-yen[data-bet-type="trifecta"][aria-label]').length,2);
+ assert.equal(tied.document.querySelectorAll('.race-result-yen[data-bet-type="wide"][aria-label]').length,4);tied.dom.window.close();
  for(const [source,expected] of [['３/４車身','3/4B'],['タイヤ差','ﾀｲﾔ'],['微差','微差'],['1車身1/2','1B1/2']]){
   const sample=await boot({reply:r=>{const p=payload(r);p.rows.find(row=>row.no===2).margin=source;return p;}});
   sample.document.querySelector('.race-result-toggle').click();await pause();

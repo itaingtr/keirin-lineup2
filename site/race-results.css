@@ -24,3 +24,14 @@ body[data-race-results="true"] .race-result-car{display:grid;place-items:center;
 body[data-race-results="true"] .race-result-payout{display:flex;align-items:baseline;gap:5px;min-height:16px;margin:0;padding:0;font-size:11px;line-height:16px}
 body[data-race-results="true"] .race-result-bet{min-width:3em}
 body[data-race-results="true"] .race-result-pending,body[data-race-results="true"] .race-result-loading,body[data-race-results="true"] .race-result-error{font-size:11px;line-height:16px}
+
+/* Keep combinations separate from right-aligned amounts, with no visible grid. */
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table{display:table;table-layout:auto;border-collapse:collapse;border-spacing:0;width:max-content;min-width:0;max-width:none;margin:3px 0 0;border:0;font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table tbody{display:table-row-group}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table tr{display:table-row;background:none;box-shadow:none;border:0;border-radius:0;padding:0;min-height:0}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table td{display:table-cell;border:0;padding:0;min-width:0;height:auto;font-size:11px;font-weight:400;line-height:16px;vertical-align:baseline;white-space:nowrap}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table .race-result-bet{min-width:3em;padding-right:.75em;text-align:left}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table .race-result-combination{min-width:5ch;text-align:left}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table .race-result-yen{min-width:8ch;padding-left:1.5em;padding-right:1.5em;text-align:right}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table td:last-child{padding-right:0}
+body[data-result-payouts="aligned-20261122"] .table-wrap td.lineup-cell{overflow:visible}

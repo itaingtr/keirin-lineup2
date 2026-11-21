@@ -153,11 +153,15 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
   await compactNavigation('20261113');
   const known=page.locator('#race-28-7 .race-results-cell');
   assert.match(await known.innerText(),/2車単/);assert.match(await known.innerText(),/3連単/);
-  const resultRows=await known.locator('tbody > tr').count();
+  assert.match(await known.innerText(),/2車複/);assert.match(await known.innerText(),/ワイド/);
+  assert.doesNotMatch(await known.locator('.race-result-payout-table').innerText(),/,/);
+  assert.ok(await known.locator('.race-result-yen[data-bet-type="quinella"][aria-label]').count()>0);
+  assert.ok(await known.locator('.race-result-yen[data-bet-type="wide"][aria-label]').count()>=3);
+  const resultRows=await known.locator('.race-result-table tbody > tr').count();
   assert.equal(resultRows,await page.locator('#race-28-7 .lineup .car').count());
-  assert.equal(await known.locator('tbody > tr').first().locator('.race-result-rank').textContent(),'1');
+  assert.equal(await known.locator('.race-result-table tbody > tr').first().locator('.race-result-rank').textContent(),'1');
   assert.equal(await known.locator('.race-result-shb').first().evaluate(node=>getComputedStyle(node).fontWeight),'400');
-  assert.deepEqual(await known.locator('th').allTextContents(),['着順','車番','選手名','あがり','勝敗因','決','SHB','着差']);
+  assert.deepEqual(await known.locator('.race-result-table th').allTextContents(),['着順','車番','選手名','あがり','勝敗因','決','SHB','着差']);
   const presentation=await known.evaluate(block=>{
    const row=block.closest('#rows > tr'),table=block.querySelector('.race-result-table'),lineup=row.querySelector('.lineup');
    const video=block.querySelector('.race-result-video'),header=row.querySelector('.video-actions .video-link'),button=block.querySelector('.race-result-toggle');

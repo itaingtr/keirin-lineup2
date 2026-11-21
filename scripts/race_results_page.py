@@ -46,6 +46,9 @@ def apply(page, site, output, day, *, force=False, all_results=False):
         page = page.replace('<body', '<body data-race-results="true" data-race-results-config="'+config+'"', 1)
         page = page.replace('</head>', '<link rel="stylesheet" href="'+BASE+'race-results.css?v='+versions['race-results.css']+'"></head>', 1)
         page = page.replace('</body>', '<script src="'+BASE+'race-results.js?v='+versions['race-results.js']+'"></script></body>', 1)
+    if day >= '20261122' or all_results:
+        if 'data-result-payouts=' not in page:
+            page = page.replace('<body', '<body data-result-payouts="aligned-20261122"', 1)
     if all_results:
         page = page.replace('<body', '<body data-race-results-all="true"', 1)
         page = page.replace('</title>', '（全結果）</title>', 1)

@@ -95,11 +95,56 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
       font:getComputedStyle(row.querySelector('.race-comment-input')).fontSize};
     });
     assert.ok(result.input.width>150&&result.input.right<width-10,JSON.stringify(result));
+    assert.ok(result.input.right<result.save.left,JSON.stringify(result));
     assert.ok(result.save.right<width&&result.feed.right<width&&result.search.right<width+.5,JSON.stringify(result));
     assert.ok(result.feed.top>=result.form.bottom&&Math.abs(result.feed.left-result.form.left)<.2,JSON.stringify(result));
     assert.ok(result.gap>=0&&result.gap<=10*result.zoom,JSON.stringify(result));
     assert.ok(result.media.every(right=>right<=width+.3),JSON.stringify(result));assert.equal(result.font,'17px');
     return result;
+   }
+   async function checkEditing(){
+    const input=page.locator('.race-comment-input').first();
+    await input.evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+    await page.waitForTimeout(80);
+    const measure=()=>page.evaluate(()=>{
+     const input=document.querySelector('.race-comment-input'),rect=input.getBoundingClientRect(),style=getComputedStyle(input);
+     let zoom=1;for(let node=input;node;node=node.parentElement)zoom*=parseFloat(getComputedStyle(node).zoom)||1;
+     return {scale:visualViewport.scale,left:visualViewport.pageLeft,top:visualViewport.pageTop,
+      offset:[visualViewport.offsetLeft,visualViewport.offsetTop],scroll:[scrollX,scrollY],active:document.activeElement===input,
+      box:[rect.x,rect.y,rect.width,rect.height],bodyZoom:getComputedStyle(document.body).zoom,
+      effectiveZoom:zoom,font:parseFloat(style.fontSize),documentWidth:document.scrollingElement.scrollWidth};
+    });
+    const before=await measure();
+    // Locator.tap() scrolls the layout viewport itself. Use the same real
+    // visual-viewport touch coordinates as the existing native replay tests.
+    const point=await input.evaluate(node=>{const b=node.getBoundingClientRect(),v=visualViewport;return {
+     x:(b.left+b.width/2-v.offsetLeft)*v.scale,y:(b.top+b.height/2-v.offsetTop)*v.scale};});
+    await page.touchscreen.tap(point.x,point.y);const focused=await measure();
+    assert.equal(focused.active,true,'The physical touch must focus the comment field');
+    await page.keyboard.insertText('入力しても倍率を変えないにゃ');
+    await page.keyboard.press('Enter');await page.keyboard.insertText('二行目のコメントにゃ');
+    await page.waitForTimeout(80);const after=await measure();
+    assert.ok(Math.abs(after.effectiveZoom-1)<.002&&after.font>=17,JSON.stringify(after));
+    assert.equal(after.scale,before.scale);assert.equal(after.bodyZoom,before.bodyZoom);
+    assert.equal(after.documentWidth,before.documentWidth);assert.ok(Math.abs(after.left-before.left)<.5);
+    assert.ok(Math.abs(after.top-before.top)<.5,JSON.stringify({before,focused,after}));
+    after.box.forEach((value,index)=>assert.ok(Math.abs(value-before.box[index])<.5,JSON.stringify({before,focused,after})));
+    await input.evaluate(node=>{node.blur();node.value='';});return {before,focused,after};
+   }
+   async function checkConditionAlignment(){
+    const values=await page.evaluate(()=>[...document.querySelectorAll('.meeting-result')]
+     .filter(result=>['1','2'].includes(result.dataset.meetingDay)).map(result=>{
+      const condition=result.querySelector('.condition-history'),rank=result.querySelector('.meeting-rank'),reason=result.querySelector('.meeting-reason');
+      if(!condition||!rank||!reason)return null;
+      const before=rank.getBoundingClientRect();condition.textContent=result.dataset.meetingDay==='1'?'5':'-2';
+      const box=condition.getBoundingClientRect(),after=rank.getBoundingClientRect(),start=reason.getBoundingClientRect();
+      const style=getComputedStyle(reason),zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+      const expected=start.left+(parseFloat(style.paddingLeft)+5*parseFloat(style.fontSize))*zoom;
+      return {day:result.dataset.meetingDay,text:condition.textContent,right:box.right,expected,rankBefore:[before.x,before.y],rankAfter:[after.x,after.y],color:getComputedStyle(condition).color};
+     }).filter(Boolean));
+    assert.ok(values.some(value=>value.day==='1')&&values.some(value=>value.day==='2'));
+    for(const value of values){assert.ok(Math.abs(value.right-value.expected)<.4,JSON.stringify(value));assert.deepEqual(value.rankAfter,value.rankBefore);assert.equal(value.color,'rgb(211, 47, 47)');}
+    return values.length;
    }
    const mobileControls=await checkControls();
    assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.equal(fit.within,0,JSON.stringify(fit));
@@ -207,6 +252,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     await page.evaluate(y=>window.scrollTo({left:0,top:y,behavior:'instant'}),openedOdds.scroll[1]);
     await band.tap();await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
     assert.equal(await panel.isVisible(),false);await checkControls();
+    const editing=await checkEditing(),conditions=await checkConditionAlignment();
     await page.locator('.ten-toggle').first().evaluate(n=>n.click());
     await page.waitForSelector('.ten-results:not([hidden]) .ten-venue');
     await page.locator('.previous-toggle').first().evaluate(n=>n.click());
@@ -221,7 +267,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     await page.waitForTimeout(80);await checkControls();
     await page.screenshot({path:'/tmp/lineup2-mobile-'+width+'.png'});
     assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
-    console.log('HANDSET CONTROLS PASS',JSON.stringify({width,height:width===393?852:736,mobileControls,fit,expansion,writeRequests:0}));
+    console.log('HANDSET CONTROLS PASS',JSON.stringify({width,height:width===393?852:736,mobileControls,fit,expansion,editing,conditions,writeRequests:0}));
     await context.close();continue;
    }
    // Read the complete expanded table using ordinary document scrolling.

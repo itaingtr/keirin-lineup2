@@ -46,14 +46,16 @@
       require(/^[SHB]*$/.test(row.shb) && new Set(row.shb).size === row.shb.length,'result flags differ');
     }
     require(payload.payouts && typeof payload.payouts === 'object','payouts missing');
-    for (const type of ['exacta','trifecta']) {
-      const values = payload.payouts[type];
-      require(Array.isArray(values) && values.length <= 12,'payout count differs');
+    const payments = {};
+    for (const type of ['exacta','trifecta','quinella','wide']) {
+      const values = payload.payouts[type] === undefined && ['quinella','wide'].includes(type) ? [] : payload.payouts[type];
+      require(Array.isArray(values) && values.length <= (type === 'wide' ? 36 : 12),'payout count differs');
+      payments[type] = values;
       for (const item of values) require(typeof item.combination === 'string' && item.combination.length <= 20
         && Number.isSafeInteger(item.yen) && item.yen > 0 && item.yen <= 1_000_000_000,'payout differs');
     }
-    require(payload.state === (payload.rows.length?'results':payload.payouts.exacta.length||payload.payouts.trifecta.length?'payouts':'pending'),'result state differs');
-    return payload;
+    require(payload.state === (payload.rows.length?'results':Object.values(payments).some(rows=>rows.length)?'payouts':'pending'),'result state differs');
+    return {...payload,payouts:payments};
   }
   function resultTable(payload) {
     const table = element('table','race-result-table');
@@ -82,6 +84,39 @@
     }
     table.append(body);return table;
   }
+  function payoutTable(payments) {
+    if (!Object.values(payments).some(items=>items.length)) return null;
+    const table = element('table','race-result-payout-table');
+    table.setAttribute('aria-label','レースの払戻金');
+    const body = element('tbody');
+    const labels = {exacta:'2車単',quinella:'2車複',trifecta:'3連単',wide:'ワイド'};
+    function cells(row,type,item,showLabel,withLabel=true) {
+      const combination = item?.combination.replaceAll('=','-') || '';
+      if (withLabel) row.append(element('td','race-result-bet',item && showLabel ? labels[type] : ''));
+      const pair = element('td','race-result-combination',combination);
+      const amount = element('td','race-result-yen',item ? String(item.yen)+'円' : '');
+      pair.dataset.betType = amount.dataset.betType = type;
+      if (item) {
+        pair.dataset.sourceCombination = item.combination;
+        amount.setAttribute('aria-label',labels[type]+' '+combination+' '+item.yen+'円');
+      }
+      row.append(pair,amount);
+    }
+    for (const [first,second,slots] of [['exacta','quinella',1],['trifecta','wide',3]]) {
+      const count = Math.max(payments[first].length,Math.ceil(payments[second].length/slots));
+      for (let index=0;index<count;index++) {
+        const row = element('tr','race-result-payout');
+        row.dataset.payoutBand = first;
+        cells(row,first,payments[first][index],index===0);
+        for (let slot=0;slot<3;slot++) {
+          const item = slot<slots ? payments[second][index*slots+slot] : undefined;
+          cells(row,second,item,index===0,slot===0);
+        }
+        body.append(row);
+      }
+    }
+    table.append(body);return table;
+  }
   function paint(row) {
     const source = sourceFor(row), value = states.get(source), cell = row.querySelector('.race-results-cell');
     if (!value || !cell) return;
@@ -94,12 +129,17 @@
       const payload = value.value;
       panel.title = '楽天Kドリームス '+payload.observed_at;
       if (payload.rows.length) panel.append(resultTable(payload));
-      for (const [type,label] of [['exacta','2車単'],['trifecta','3連単']]) {
-        for (const payout of payload.payouts[type]) {
-          const line = element('div','race-result-payout');
-          line.append(element('span','race-result-bet',label),element('span','race-result-combination',payout.combination),
-            element('span','race-result-yen',payout.yen.toLocaleString('ja-JP')+'円'));
-          panel.append(line);
+      if (document.body.dataset.resultPayouts === 'aligned-20261122') {
+        const payouts = payoutTable(payload.payouts);
+        if (payouts) panel.append(payouts);
+      } else {
+        for (const [type,label] of [['exacta','2車単'],['trifecta','3連単']]) {
+          for (const payout of payload.payouts[type]) {
+            const line = element('div','race-result-payout');
+            line.append(element('span','race-result-bet',label),element('span','race-result-combination',payout.combination),
+              element('span','race-result-yen',payout.yen.toLocaleString('ja-JP')+'円'));
+            panel.append(line);
+          }
         }
       }
       if (payload.state === 'pending') panel.append(element('span','race-result-pending','未定にゃ！'));

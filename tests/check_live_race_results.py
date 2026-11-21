@@ -28,7 +28,9 @@ def main():
     assert data['rows'][0]['time']=='11.8' and data['rows'][0]['reason']=='直線伸びて'
     assert {'combination':'1-5','yen':3760} in data['payouts']['exacta']
     assert {'combination':'1-5-6','yen':63040} in data['payouts']['trifecta']
-    print('LIVE RESULT PASS: anonymous JWT/CORS, exact race, 9 placings, accident rows, time/reason, 2車単3760円 / 3連単63040円; no database writes')
+    assert data['payouts']['quinella']==[{'combination':'1=5','yen':2230}]
+    assert data['payouts']['wide']==[{'combination':'1=5','yen':940},{'combination':'1=6','yen':2280},{'combination':'5=6','yen':4590}]
+    print('LIVE RESULT PASS: anonymous JWT/CORS, exact race, 9 placings, accident rows, time/reason, 2車単3760円 / 3連単63040円 / 2車複2230円 / ワイド3組; no database writes')
 
 
 if __name__=='__main__':main()

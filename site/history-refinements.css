@@ -51,6 +51,9 @@ body[data-history-refinements="20261116"] .lineup .meeting-rank-circle,
 body[data-history-refinements="20261116"] .lineup .meeting-rank-solid{box-sizing:border-box;width:8px;min-width:8px;height:8px;line-height:6px;font-size:8px}
 body[data-history-refinements="20261116"] .lineup .meeting-time{height:8px;line-height:8px}
 body[data-history-refinements="20261116"] .lineup .meeting-reason{display:block;box-sizing:border-box;flex:0 0 6px;width:var(--rider-width);height:6px;padding-left:var(--history-inset);font-size:6px;line-height:6px;font-weight:400;color:#627086;white-space:nowrap;text-align:left}
+body[data-mobile-layout="compact-20261122"] .lineup .meeting-order-line{position:relative}
+/* Five full-width reason characters at 6px, starting at the shared inset. */
+body[data-mobile-layout="compact-20261122"] .lineup .meeting-order-line .condition-history{position:absolute;top:0;right:calc(100% - var(--history-inset) - 30px);min-width:0;line-height:9px;text-align:right}
 @media(max-width:640px){
 body[data-history-refinements="20261116"]{width:calc(100vw / var(--lineup-zoom,1.2544));zoom:var(--lineup-zoom,1.2544)}
 body[data-history-refinements="20261116"] .lineup{--line-gap:calc(19px - 1ch)}
@@ -71,11 +74,18 @@ body[data-mobile-layout="compact-20261122"] .table-wrap td.race{justify-self:sta
 body[data-mobile-layout="compact-20261122"] .table-wrap td.race-comment-cell{width:calc(100vw / var(--lineup-zoom,1.2544) - 46px);max-width:100%;min-width:0}
 body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-form,
 body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-feed{width:100%;min-width:0}
-body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-input{width:100%;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+/* Native iOS editing must not inherit the card's layout magnification. Keep
+   each field's outer footprint while its cumulative CSS zoom stays one. */
+body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-input{zoom:calc(1 / var(--lineup-zoom,1.2544));width:auto;justify-self:stretch;min-width:0;max-width:none;height:calc(32px * var(--lineup-zoom,1.2544));min-height:calc(32px * var(--lineup-zoom,1.2544));padding:calc(5px * var(--lineup-zoom,1.2544)) calc(6px * var(--lineup-zoom,1.2544));line-height:calc(20px * var(--lineup-zoom,1.2544));white-space:pre-wrap;overflow-wrap:anywhere}
 body[data-mobile-layout="compact-20261122"] .page-bottom #search,
 body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
 body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{min-width:0;max-width:100%;font-size:17px!important}
-body[data-mobile-layout="compact-20261122"] .page-bottom #search{width:100%}
+body[data-mobile-layout="compact-20261122"] .page-bottom #search,
+body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
+body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{zoom:calc(1 / var(--lineup-zoom,1.2544));max-width:calc(100% * var(--lineup-zoom,1.2544))}
+body[data-mobile-layout="compact-20261122"] .page-bottom #search{width:calc(100% * var(--lineup-zoom,1.2544))}
+body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
+body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{width:min(calc(230px * var(--lineup-zoom,1.2544)),calc(100% * var(--lineup-zoom,1.2544)))}
 }
 
 @media(max-width:360px){

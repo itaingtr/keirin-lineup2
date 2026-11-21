@@ -53,14 +53,16 @@ function tableGrid(table) {
 }
 
 function payoutItems(cell, type) {
-  const output = [], count = type === 'exacta' ? 2 : 3;
+  const output = [], count = type === 'trifecta' ? 3 : 2;
+  const unordered = type === 'quinella' || type === 'wide';
   const add = (combination, value) => {
     combination = compact(combination).replace(/[‐‑‒–—−ー－→]/g,'-');
     const amount = compact(value).match(/([0-9][0-9,]*)円/);
     if (!amount) return;
-    const pattern = count === 2 ? /^[1-9]-[1-9]$/ : /^[1-9]-[1-9]-[1-9]$/;
+    const pattern = count === 3 ? /^[1-9]-[1-9]-[1-9]$/
+      : unordered ? /^[1-9][=-][1-9]$/ : /^[1-9]-[1-9]$/;
     if (!pattern.test(combination) && !['特払','特払い','返還','全返還'].includes(combination)) return;
-    if (pattern.test(combination)) require(new Set(combination.split('-')).size === count, 'Invalid winning combination');
+    if (pattern.test(combination)) require(new Set(combination.split(/[=-]/)).size === count, 'Invalid winning combination');
     const yen = Number(amount[1].replaceAll(',',''));
     require(Number.isSafeInteger(yen) && yen > 0 && yen <= 1_000_000_000, 'Invalid payout');
     if (!output.some(item => item.combination === combination && item.yen === yen)) output.push({combination,yen});
@@ -74,24 +76,37 @@ function payoutItems(cell, type) {
   }
   if (!output.length) {
     const raw = compact(text(cell));
-    const pattern = count === 2 ? /([1-9][-‐‑‒–—−ー－→][1-9])([0-9][0-9,]*円)/g : /([1-9][-‐‑‒–—−ー－→][1-9][-‐‑‒–—−ー－→][1-9])([0-9][0-9,]*円)/g;
+    const separator = unordered ? '[-=‐‑‒–—−ー－→]' : '[-‐‑‒–—−ー－→]';
+    const pair = '[1-9]'+separator+'[1-9]';
+    const combination = count === 3 ? pair+separator+'[1-9]' : pair;
+    const pattern = new RegExp('(?<![1-9=‐‑‒–—−ー－→-])('+combination+'|特払い?|全?返還)([0-9][0-9,]*円)','g');
     for (const match of raw.matchAll(pattern)) add(match[1],match[2]);
   }
   return output;
 }
 
 function payouts(document) {
-  const result = {exacta:[],trifecta:[]}, seen = new Set();
+  const result = {exacta:[],trifecta:[],quinella:[],wide:[]}, seen = new Set();
+  const labels = { '2車単':'exacta', '2車連単':'exacta', '3連単':'trifecta',
+    '2車複':'quinella', '2車連複':'quinella', 'ワイド':'wide', '拡大2連複':'wide' };
   for (const table of document.querySelectorAll('table')) {
     const headers = Array.from(table.querySelectorAll('th')).map(node => compact(text(node)));
-    if (!headers.some(value => /^(?:2車(?:連|単)|3連(?:勝|単))$/.test(value))) continue;
+    if (!headers.some(value => labels[value] || value === '2車連' || value === '3連勝')) continue;
     for (const row of tableGrid(table)) for (let i=0;i<row.length;i++) {
+      if (i && row[i] === row[i-1]) continue;
       const label = compact(text(row[i]));
-      const type = /^2車(?:連|単)$/.test(label) ? 'exacta' : /^3連(?:勝|単)$/.test(label) ? 'trifecta' : null;
+      let next = i+1;
+      while (row[next] && row[next] === row[i]) next++;
+      let type = labels[label];
+      if (label === '2車連' || label === '3連勝') {
+        const subtype = compact(text(row[next]));
+        type = label === '2車連' ? {'単':'exacta','複':'quinella'}[subtype]
+          : subtype === '単' ? 'trifecta' : null;
+        const subheader = row[next];
+        while (row[next] && row[next] === subheader) next++;
+      }
       if (!type) continue;
-      const combined = label.endsWith('単');
-      if (!combined && compact(text(row[i+1])) !== '単') continue;
-      const cell = row[i+(combined ? 1 : 2)];
+      const cell = row[next];
       if (!cell || seen.has(cell)) continue;
       seen.add(cell);
       result[type].push(...payoutItems(cell,type));
@@ -138,5 +153,5 @@ export function parseResult(document, rawSource, observedAt = new Date().toISOSt
   }
   rows.sort((a,b) => (/^[1-9]$/.test(a.rank)?Number(a.rank):99)-(/^[1-9]$/.test(b.rank)?Number(b.rank):99));
   const payments = payouts(document);
-  return {schema_version:1,...identity,observed_at:observedAt,state:rows.length?'results':payments.exacta.length||payments.trifecta.length?'payouts':'pending',rows,payouts:payments};
+  return {schema_version:1,...identity,observed_at:observedAt,state:rows.length?'results':Object.values(payments).some(items=>items.length)?'payouts':'pending',rows,payouts:payments};
 }

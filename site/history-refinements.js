@@ -42,6 +42,19 @@
     document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
   }
 
+  function nativeInputs() {
+    if (document.body.dataset.mobileLayout!=='compact-20261122') return;
+    const mobile=window.matchMedia('(max-width:640px)').matches;
+    const zoom=mobile ? parseFloat(getComputedStyle(document.body).zoom)||1 : 1;
+    // Use a numeric zoom for older iOS WebKit, which may not accept calc()
+    // for this property. This runs on layout/redraw, never on focus/typing.
+    const value=String(1/zoom);
+    for (const input of document.querySelectorAll('.race-comment-input,.page-bottom #search,.page-bottom .race-comments-email,.page-bottom .race-comments-code')) {
+      if (mobile) {if(Math.abs((parseFloat(input.style.zoom)||0)-1/zoom)>.000001)input.style.zoom=value;}
+      else if(input.style.zoom)input.style.removeProperty('zoom');
+    }
+  }
+
   function alignTen(block) {
     if (block.dataset.refined === 'true') return;
     const heading = block.querySelector('.ten-heading'), ranks = block.querySelector('.ten-ranks'), venue = block.querySelector('.ten-venue');
@@ -95,6 +108,7 @@
   function refine() {
     scheduled=false;
     fitMobile();
+    nativeInputs();
     for (const lineup of root.querySelectorAll('.lineup')) {
       const groups=[...lineup.children].filter(node=>node.classList.contains('line-group'));
       groups.forEach((group,index)=>{
