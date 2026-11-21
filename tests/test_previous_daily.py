@@ -30,6 +30,40 @@ def history_for(card,races):
 
 
 class DailyHistoryTests(unittest.TestCase):
+    def test_replacement_with_a_missing_source_table_stays_pending_until_history_arrives(self):
+        card,races=card_for()
+        with tempfile.TemporaryDirectory() as folder:
+            data=history_for(card,races)
+            data['races'][0]['players'][0]['unavailable_meetings']=['previous_previous','previous']
+            first=ensure_daily(card,races,'run-100-1',folder,collector=lambda *_:data,refresh=True)
+            original=(Path(folder)/first['path']).read_bytes()
+            self.assertEqual(len(first['data']['pending_history']),1)
+            available=history_for(card,races)
+            available['races'][0]['players'][0]['meetings']=[{'position':'previous','days':[
+                {'race_date':'2026-10-20','order':2,'final_half_record':'11.9'}]}]
+            reader=Mock(return_value=available)
+            second=ensure_daily(card,races,'run-101-1',folder,collector=reader,refresh=True)
+            reader.assert_called_once()
+            self.assertNotIn('pending_history',second['data'])
+            self.assertEqual(second['data']['races'][0]['players'][0]['meetings'],available['races'][0]['players'][0]['meetings'])
+            self.assertEqual((Path(folder)/first['path']).read_bytes(),original)
+
+    def test_failed_replacement_race_keeps_pending_while_another_race_is_updated(self):
+        card,races=card_for()
+        added=deepcopy(races[0]);added['source']=added['source'].replace('0006/','0007/')
+        added['players'][0].update(playerId='014498',name='追加選手')
+        races.append(added);card['html']='const races='+json.dumps(races,ensure_ascii=False)+';\nconst body='
+        def reader(selected,target):
+            if selected[0]['source']==races[0]['source']:raise ValueError('source unavailable')
+            fresh=history_for(card,selected)
+            fresh['races'][0]['players'][0]['meetings']=[{'position':'previous','days':[
+                {'race_date':'2026-10-20','order':1,'final_half_record':'11.8'}]}]
+            return fresh
+        with tempfile.TemporaryDirectory() as folder:
+            result=ensure_daily(card,races,'run-100-1',folder,collector=reader,refresh=True,allow_partial=True)
+            self.assertEqual(result['data']['pending_history'],[{'source_url':races[0]['source'],'player_id':'013497'}])
+            self.assertEqual(len(result['data']['races'][1]['players'][0]['meetings']),1)
+
     def test_prepared_history_is_reused_across_three_days_races_and_car_changes(self):
         card,races=card_for();data=history_for(card,races)
         data['races'][0]['players'][0]['meetings']=[{'position':'previous','start_date':'2026-10-20','days':[

@@ -296,14 +296,15 @@ def main():
             print('PREVIOUS MEETINGS UNAVAILABLE: publish the checked card first',history_error,flush=True)
     publication_pending=not is_confirmed(read_receipt(ref,git_read),card,
                                        source_commit=git('rev-parse','HEAD'))
-    if shared_history is None and not history_error:
+    if shared_history is None:
         from rider_history import ensure as ensure_shared_history
         try:
             if target<now.astimezone(JST).date().isoformat():
                 from rider_history import load_snapshot
                 load_snapshot(ROOT/'site',target.replace('-',''),card['html'])
                 shared_history={'changed':False,'pending':0}
-            else:shared_history=ensure_shared_history(ROOT/'site',card,races,args.run_key)
+            else:shared_history=ensure_shared_history(ROOT/'site',card,races,args.run_key,
+                                                      allow_missing_previous=bool(history_error))
         except Exception as error:
             history_error=type(error).__name__+': '+str(error)[:300]
             print('SHARED HISTORY UNAVAILABLE: publish the checked card first',history_error,flush=True)

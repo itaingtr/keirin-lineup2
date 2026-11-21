@@ -65,6 +65,17 @@ body[data-history-refinements="20261116"] .video-actions{flex-shrink:0;white-spa
 body[data-history-refinements="20261116"] .page-bottom #search,
 body[data-history-refinements="20261116"] .race-comment-input,
 body[data-history-refinements="20261116"] .race-comments-email{font-size:17px!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body[data-mobile-layout="compact-20261122"] .table-wrap #rows > tr{grid-template-areas:"venue race race" "lineup lineup lineup" "composer composer composer"}
+body[data-mobile-layout="compact-20261122"] .table-wrap #rows > tr.odds-open{grid-template-areas:"odds odds odds" "venue race race" "lineup lineup lineup" "composer composer composer"}
+body[data-mobile-layout="compact-20261122"] .table-wrap td.race{justify-self:start;width:max-content;justify-content:flex-start}
+body[data-mobile-layout="compact-20261122"] .table-wrap td.race-comment-cell{width:calc(100vw / var(--lineup-zoom,1.2544) - 46px);max-width:100%;min-width:0}
+body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-form,
+body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-feed{width:100%;min-width:0}
+body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-input{width:100%;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+body[data-mobile-layout="compact-20261122"] .page-bottom #search,
+body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
+body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{min-width:0;max-width:100%;font-size:17px!important}
+body[data-mobile-layout="compact-20261122"] .page-bottom #search{width:100%}
 }
 
 @media(max-width:360px){

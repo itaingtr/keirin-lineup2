@@ -161,6 +161,12 @@ def parse_previous(doc, source, expected, observed, *, allow_partial=False):
                    'player_id': p.get('playerId') or p.get('player_id'), 'meetings': []}
               for no, p in known.items()}
     if not tables:
+        # A newly added replacement can appear on the main card before K's
+        # separate history table is available. This is unobserved history,
+        # not confirmation that the rider has no previous starts. Keep it
+        # pending so a later history update retries the same meeting.
+        for player in output.values():
+            player['unavailable_meetings'] = ['previous_previous', 'previous']
         return [output[no] for no in sorted(output)]
     table = tables[0]
     require(any([compact(c.text()) for c in cells(row)] == HEADERS for row in table.find_all('tr')),

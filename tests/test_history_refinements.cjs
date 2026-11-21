@@ -31,8 +31,8 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
   const launch={headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};
   if(process.env.CHROME_PATH)browser=await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
   else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,...(fs.existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{})});}}
-  for(const width of [320,390,428]){
-   const context=await browser.newContext({viewport:{width,height:926},isMobile:true,hasTouch:true});
+  for(const width of [320,390,393,414,428]){
+   const context=await browser.newContext({viewport:{width,height:width===393?852:width===414?736:926},isMobile:true,hasTouch:true});
    const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0,servedOdds=oddsFixture,oddsFailure=false,oddsDelay=0;
    await context.route('**/*',async route=>{
     const request=route.request(),url=new URL(request.url());
@@ -76,7 +76,32 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
      digit:context.measureText('0').width,baseGap:lineup.classList.contains('lineup-nine')?12:19,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
      rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
    });
-   assert.ok(fit.right<=width+.2&&fit.right>=width-2.5,JSON.stringify(fit));
+   const compact=await page.evaluate(()=>document.body.dataset.mobileLayout==='compact-20261122');
+   assert.ok(fit.right<=width+.2&&(compact||fit.right>=width-2.5),JSON.stringify(fit));
+   async function checkControls(){
+    if(!compact)return;
+    const result=await page.evaluate(()=>{
+     for(const row of document.querySelectorAll('#rows > tr')){
+      if(row.querySelector('.race-comment-cell'))continue;
+      const cell=document.createElement('td');cell.className='race-comment-cell';
+      cell.innerHTML='<div class="race-comment-feed"><article class="race-comment-post"><span class="race-comment-body">検証用コメントにゃ</span></article></div><form class="race-comment-form"><textarea class="race-comment-input" aria-label="検証用コメント" placeholder="このレースの予想や気づき"></textarea><button class="race-comment-save" type="button">投稿</button><span class="race-comment-status"></span></form>';
+      row.append(cell);
+     }
+     const row=document.querySelector('#rows > tr'),box=n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};};
+     return {input:box(row.querySelector('.race-comment-input')),save:box(row.querySelector('.race-comment-save')),feed:box(row.querySelector('.race-comment-feed')),
+      form:box(row.querySelector('.race-comment-form')),search:box(document.querySelector('#search')),
+      gap:box(row.querySelector('.video-actions')).left-box(row.querySelector('.race-time')).right,
+      media:[...document.querySelectorAll('#rows > tr .live-link')].map(n=>box(n).right),zoom:parseFloat(getComputedStyle(document.body).zoom),
+      font:getComputedStyle(row.querySelector('.race-comment-input')).fontSize};
+    });
+    assert.ok(result.input.width>150&&result.input.right<width-10,JSON.stringify(result));
+    assert.ok(result.save.right<width&&result.feed.right<width&&result.search.right<width+.5,JSON.stringify(result));
+    assert.ok(result.feed.top>=result.form.bottom&&Math.abs(result.feed.left-result.form.left)<.2,JSON.stringify(result));
+    assert.ok(result.gap>=0&&result.gap<=10*result.zoom,JSON.stringify(result));
+    assert.ok(result.media.every(right=>right<=width+.3),JSON.stringify(result));assert.equal(result.font,'17px');
+    return result;
+   }
+   const mobileControls=await checkControls();
    assert.ok(Math.abs(fit.rider-32)<.1,JSON.stringify(fit));assert.equal(fit.within,0,JSON.stringify(fit));
    assert.ok(Math.abs(fit.between-(fit.baseGap-fit.digit))<.1,JSON.stringify(fit));
    await page.waitForSelector('.rider-odds .exacta-line-pair');
@@ -121,6 +146,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    const panel=firstRow.locator('.odds-cell'),refresh=panel.locator('.odds-refresh');
    const openedOdds=await cardPosition();
+   await checkControls();
    function sameCoordinates(actual,expected,label){
     assert.equal(actual.length,expected.length);
     actual.forEach((point,index)=>point.forEach((value,axis)=>assert.ok(Math.abs(value-expected[index][axis])<1.1,label+': '+JSON.stringify({actual:point,expected:expected[index]}))));
@@ -174,6 +200,30 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     assert.equal(cell.text,price==null?'—':price>=100?String(Math.floor(price)):price.toFixed(1),'The directed quote must stay at its correct axis intersection');
    }
    expansion.first=axes.first;expansion.second=axes.second;
+   // The two requested handset sizes cover the controls through each layout
+   // state. Cache latency, refresh failures and gesture regressions remain
+   // exercised by the complete 320/390/428px runs below.
+   if(compact&&(width===393||width===414)){
+    await page.evaluate(y=>window.scrollTo({left:0,top:y,behavior:'instant'}),openedOdds.scroll[1]);
+    await band.tap();await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+    assert.equal(await panel.isVisible(),false);await checkControls();
+    await page.locator('.ten-toggle').first().evaluate(n=>n.click());
+    await page.waitForSelector('.ten-results:not([hidden]) .ten-venue');
+    await page.locator('.previous-toggle').first().evaluate(n=>n.click());
+    await page.waitForTimeout(80);await checkControls();
+    await page.evaluate(()=>window.scrollTo(0,0));
+    await page.screenshot({path:'/tmp/lineup2-mobile-history-'+width+'.png'});
+    await page.locator('.ten-toggle').first().evaluate(n=>n.click());
+    await page.locator('.previous-toggle').first().evaluate(n=>n.click());
+    await page.evaluate(()=>{const search=document.querySelector('#search');search.value=races[0].venue;search.dispatchEvent(new Event('input'));});
+    await page.waitForTimeout(80);await checkControls();
+    await page.evaluate(()=>{const search=document.querySelector('#search');search.value='';search.dispatchEvent(new Event('input'));window.scrollTo(0,0);});
+    await page.waitForTimeout(80);await checkControls();
+    await page.screenshot({path:'/tmp/lineup2-mobile-'+width+'.png'});
+    assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
+    console.log('HANDSET CONTROLS PASS',JSON.stringify({width,height:width===393?852:736,mobileControls,fit,expansion,writeRequests:0}));
+    await context.close();continue;
+   }
    // Read the complete expanded table using ordinary document scrolling.
    await page.evaluate(()=>window.scrollTo({left:scrollX,top:0,behavior:'instant'}));
    await page.waitForTimeout(50);
@@ -238,6 +288,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await page.waitForSelector('.ten-results:not([hidden]) .ten-venue');
    await page.locator('.previous-toggle').first().evaluate(n=>n.click());
    await page.waitForTimeout(50);
+   await checkControls();
    const geometry=await page.locator('#rows > tr').first().evaluate(row=>{
     const riders=[...row.querySelectorAll('.rider')];
     return riders.map(r=>{
@@ -305,7 +356,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await drag(35,width-35);
    await cdp.detach();await page.evaluate(()=>window.scrollTo(0,0));
    if(width===390)await page.screenshot({path:'/tmp/history-refinements-mobile.png'});
-   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),expansion,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
+   console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,mobileControls,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),expansion,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
    await context.close();
   }
  }finally{if(browser)await browser.close();}

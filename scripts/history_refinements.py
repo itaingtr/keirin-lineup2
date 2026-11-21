@@ -28,6 +28,8 @@ def apply(page, site, output, day):
     if count != 1:
         raise ValueError('History result reader tag differs')
     page = page.replace('<body', '<body '+MARKER+' data-lineup-spacing="readable-20261116" data-odds-overlay="up-20261116"', 1)
+    if day >= '20261122':
+        page = page.replace('<body ', '<body data-mobile-layout="compact-20261122" ', 1)
     tags = {}
     for name in ASSETS:
         content = (site/name).read_bytes()

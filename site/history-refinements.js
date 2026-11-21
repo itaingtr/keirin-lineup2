@@ -28,12 +28,14 @@
     const baseHeaderWidth=Math.ceil(headerWidth+1);
     document.body.style.setProperty('--card-venue-width',Math.ceil(venueWidth)+'px');
     document.body.style.setProperty('--race-header-width',baseHeaderWidth+'px');
-    const edge=(live.getBoundingClientRect().right+window.scrollX)/zoom;
+    const compact=document.body.dataset.mobileLayout==='compact-20261122';
+    const edge=compact ? Math.max(...rows.map(row=>((row.querySelector('.live-link')?.getBoundingClientRect().right||0)+window.scrollX)/zoom))
+      : (live.getBoundingClientRect().right+window.scrollX)/zoom;
     if (!(edge>0&&width>0)) return;
     const requested=Math.floor((width-2)/edge*10000)/10000;
     const fitted=Math.max(1,Math.min(1.2544,requested));
     const targetEdge=(width-2)/fitted;
-    const expandedHeader=baseHeaderWidth+Math.max(0,targetEdge-edge);
+    const expandedHeader=compact ? baseHeaderWidth : baseHeaderWidth+Math.max(0,targetEdge-edge);
     const balancedHeader=Math.floor(expandedHeader*100)/100;
     document.body.style.setProperty('--race-header-width',balancedHeader+'px');
     document.body.style.setProperty('--lineup-zoom',String(fitted));

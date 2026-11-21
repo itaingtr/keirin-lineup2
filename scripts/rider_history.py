@@ -189,16 +189,19 @@ def _eligible(meetings,race):
     return [deepcopy(m) for m in meetings if m['start_date']<before
             and all(d['race_date']<before for d in m['days'])][-10:]
 
-def ensure(site,card,races,run_key):
+def ensure(site,card,races,run_key,*,allow_missing_previous=False):
     """Build a reference-only date snapshot without a historical source read."""
     site=Path(site);day=card['target_date'].replace('-','')
     if day<CUTOVER:return {'changed':False,'pending':0}
     require(re.fullmatch(r'run-\d+-\d+',run_key),'Invalid shared-history run')
     require(identity_digest(parse_page(card['html']))==identity_digest(races),'Shared-history card differs')
     index=read_index(site);before_index=encode(index);_bootstrap(site,index)
-    previous=load_daily(site,day,card['html'])
-    require(previous is not None,'Checked previous meetings missing for shared history')
-    recent={r['source_url']:{p['player_id']:p for p in r['players']} for r in previous['races']}
+    try:previous=load_daily(site,day,card['html'])
+    except (ValueError,FileNotFoundError):
+        if not allow_missing_previous:raise
+        previous=None
+    require(previous is not None or allow_missing_previous,'Checked previous meetings missing for shared history')
+    recent={r['source_url']:{p['player_id']:p for p in r['players']} for r in (previous or {}).get('races',[])}
     try:prepared=load_snapshot(site,day,card['html'])
     except (ValueError,FileNotFoundError):prepared=None
     prepared_refs={person(p):p['history_ref'] for r in (prepared or {}).get('races',[]) for p in r['players']}
@@ -214,7 +217,8 @@ def ensure(site,card,races,run_key):
             fallback=None
             try:
                 count_before=len(cached)
-                cached=merge_meetings(cached,[] if ctx in checked else _previous_meetings(recent[race['source']][identifier]))
+                recent_player=recent.get(race['source'],{}).get(identifier,{})
+                cached=merge_meetings(cached,[] if ctx in checked else _previous_meetings(recent_player))
                 if len(cached)<count_before:checked=[x for x in checked if x!=ctx]
             except HistoryConflict as error:
                 print('SHARED HISTORY RIDER PENDING',identifier,ctx,str(error),flush=True)

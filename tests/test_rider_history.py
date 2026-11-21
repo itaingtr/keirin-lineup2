@@ -37,6 +37,22 @@ def prime(site,races):
     (site/'rider-history/current.json').write_text(encode(index))
 
 class SharedRiderHistoryTests(unittest.TestCase):
+    def test_previous_history_failure_still_keeps_known_results_and_registers_new_replacement(self):
+        with tempfile.TemporaryDirectory() as folder:
+            site=Path(folder);card,races=card_for();prime(site,races)
+            card,members=card_for(players=2)
+            original={p:p.read_bytes() for p in (site/'rider-history').glob('*/*.json')}
+            with self.assertRaisesRegex(ValueError,'Checked previous meetings missing'):
+                ensure(site,card,members,'run-100-1')
+            result=ensure(site,card,members,'run-101-1',allow_missing_previous=True)
+            self.assertEqual(result['pending'],1)
+            snapshot=load_snapshot(site,'20261113',card['html'])
+            full=hydrate(site,snapshot,card['html'])
+            self.assertEqual([len(p['meetings']) for p in full['races'][0]['players']],[10,0])
+            self.assertIn('015102',read_index(site)['players'])
+            self.assertEqual([p['playerId'] for p in refresh_subset(site,members)[0]['players']],['015102'])
+            self.assertEqual(original,{p:p.read_bytes() for p in original})
+
     def test_inferred_profile_dates_do_not_duplicate_identified_races_at_another_venue(self):
         exact=meeting('2026-10-24',provider='kdreams');inferred=deepcopy(exact)
         inferred.update(venue='小田原',venue_code='36',provider='keirin.jp')

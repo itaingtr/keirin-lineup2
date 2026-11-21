@@ -87,6 +87,7 @@ class PreviousMeetingsTests(unittest.TestCase):
     def test_missing_history_table_or_video_is_unavailable_not_zero_or_fake_identity(self):
         rows = parse_previous(Document(card()).root, URL, PLAYERS, STAMP)
         self.assertEqual([p['meetings'] for p in rows], [[], [], []])
+        self.assertTrue(all(p['unavailable_meetings']==['previous_previous','previous'] for p in rows))
         rows = parse_previous(Document(markup(missing_video=True)).root, URL, PLAYERS, STAMP)
         result = rows[0]['meetings'][0]['days'][0]
         self.assertEqual(result['order'], 1)

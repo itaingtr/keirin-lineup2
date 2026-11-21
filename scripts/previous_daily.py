@@ -205,13 +205,32 @@ def seed_daily(card,races,run_key,site):
     return _save_daily(card,races,run_key,site,data)
 
 
-def _fill_pending(data,races,reader,target):
+def _fill_pending(data,races,reader,target,*,allow_partial=False):
     needed={p['source_url'] for p in data.get('pending_history',[])}
     selected=[r for r in races if r['source'] in needed]
     if not selected:return data
-    fresh=reader(selected,target)
+    if allow_partial:
+        # Read unresolved races independently: a source failure for one new
+        # replacement must not discard another rider's checked history.
+        batches=[];failed=set()
+        for race in selected:
+            try:
+                batch=reader([race],target)
+                validate_data(batch,'const races='+json.dumps([race],ensure_ascii=False)+';\nconst body=')
+                batches.append(batch)
+            except Exception as error:
+                failed.add(race['source'])
+                print('PREVIOUS RACE PENDING',race['source'],type(error).__name__,str(error)[:300],flush=True)
+        fresh={'schema_version':1,'provider':'kdreams','target_date':target,
+               'races':[r for batch in batches for r in batch['races']],
+               'sources':[s for batch in batches for s in batch.get('sources',[])]}
+        selected=[r for r in selected if r['source'] not in failed]
+        if not selected:return data
+    else:
+        failed=set();fresh=reader(selected,target)
     validate_data(fresh,'const races='+json.dumps(selected,ensure_ascii=False)+';\nconst body=')
-    result=deepcopy(data);incoming={r['source_url']:r for r in fresh['races']};pending=[]
+    result=deepcopy(data);incoming={r['source_url']:r for r in fresh['races']}
+    pending=[deepcopy(p) for p in data.get('pending_history',[]) if p['source_url'] in failed]
     waiting={p['player_id'] for p in data.get('pending_history',[])}
     for race in result['races']:
         if race['source_url'] not in incoming:continue
@@ -255,7 +274,7 @@ def ensure_daily(card, races, run_key, site, *, collector=None, refresh=False,al
     reused_preview = False
     if refresh:
         reader=collector or (lambda rows,day:collect(rows,day,allow_partial=allow_partial))
-        data=enrich(_fill_pending(_seed_data(card,races,site),races,reader,target),site)
+        data=enrich(_fill_pending(_seed_data(card,races,site),races,reader,target,allow_partial=allow_partial),site)
         from recent_flags import enrich as enrich_recent_flags
         data=enrich_recent_flags(data,site)
         if checked is not None and checked[0]['identity_sha256']==expected and _same_display(checked[1],data):
