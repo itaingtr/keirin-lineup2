@@ -83,6 +83,11 @@ async function geometry(page,width){
    await band.evaluate(node=>node.click());await page.waitForSelector('.odds-cell:not([hidden]) .exacta-matrix');await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);await geometry(page,width);
    await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);await geometry(page,width);
    await page.locator('.race-result-toggle').first().evaluate(node=>node.click());await page.waitForSelector('.race-result-table');
+   const controlAlignment=await page.locator('#rows > tr').first().evaluate(row=>({
+    result:row.querySelector('.race-result-toggle').getBoundingClientRect().left,
+    previous:row.querySelector('.previous-toggle').getBoundingClientRect().left}));
+   assert.ok(Math.abs(controlAlignment.result-controlAlignment.previous)<.5,JSON.stringify(controlAlignment));
+
    const packed=await page.locator('.race-result-table').first().evaluate(table=>{
     const row=table.tBodies[0].rows[0],box=key=>row.querySelector('.race-result-'+key).getBoundingClientRect(),range=key=>{const r=document.createRange();r.selectNodeContents(row.querySelector('.race-result-'+key));return r.getBoundingClientRect();};
     return {width:table.getBoundingClientRect().width,pane:table.closest('.lineup-cell').getBoundingClientRect().width,reason:box('reason').width,scale:parseFloat(getComputedStyle(document.body).zoom)||1,font:parseFloat(getComputedStyle(table).fontSize),padding:['time','reason','finish','shb'].map(key=>parseFloat(getComputedStyle(row.querySelector('.race-result-'+key)).paddingRight)),time:box('time').width,margin:box('margin').width,gaps:[box('reason').left-range('time').right,box('finish').left-range('reason').right],fields:['reason','finish','shb','margin'].map(key=>[key,box(key).left,box(key).right])};

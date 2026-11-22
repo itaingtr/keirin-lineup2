@@ -50,6 +50,11 @@
     const current=pixels(lineup.style.getPropertyValue('--lineup-center-shift'));
     const shift=Math.round((current+(box.left+box.width/2-middle)/x)*100)/100;
     if (Math.abs(shift-current)>.01)lineup.style.setProperty('--lineup-center-shift',shift+'px');
+    const first=Math.min(...[...lineup.querySelectorAll('.rider')].map(rider=>rider.getBoundingClientRect().left));
+    const inset=(Math.round((first-box.left)/x*100)/100)+'px';
+    if(lineup.parentElement.style.getPropertyValue('--lineup-member-inset')!==inset)
+      lineup.parentElement.style.setProperty('--lineup-member-inset',inset);
+
   }
   function measuredSeparators(groups) {
     groups.forEach((group,index)=>{

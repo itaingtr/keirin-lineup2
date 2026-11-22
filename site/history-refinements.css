@@ -98,6 +98,7 @@ body[data-history-refinements="20261116"] .table-wrap .video-link{padding-left:4
 body[data-lineup-fit="nine-centered-20261122"] .lineup,
 body[data-lineup-fit="nine-centered-20261122"] .lineup.lineup-nine{--line-gap:calc(12px - 1ch);justify-content:center;width:100%}
 body[data-lineup-fit="nine-centered-20261122"] .lineup > .line-group{flex:none;left:var(--lineup-center-shift,0px)}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap .race-results-cell{margin-left:var(--lineup-member-inset,0px);width:calc(100% - var(--lineup-member-inset,0px))}
 body[data-lineup-fit="nine-centered-20261122"] .lineup .line-separator,
 body[data-lineup-fit="nine-centered-20261122"] .lineup .line-back-separator{position:absolute;top:0;left:0;transform:translate(-50%,-50%);width:10px;height:12px;font-size:0;line-height:0}
 body[data-lineup-fit="nine-centered-20261122"] .lineup .line-separator::before,
