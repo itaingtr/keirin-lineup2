@@ -73,7 +73,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    const fit=await page.evaluate(()=>{
     const lineup=document.querySelector('.lineup'),style=getComputedStyle(lineup),canvas=document.createElement('canvas'),context=canvas.getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
     return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom:parseFloat(getComputedStyle(document.body).zoom),
-     digit:context.measureText('0').width,baseGap:lineup.classList.contains('lineup-nine')?12:19,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
+     digit:context.measureText('0').width,baseGap:document.body.dataset.lineupFit||lineup.classList.contains('lineup-nine')?12:19,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
      rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
    });
    const compact=await page.evaluate(()=>document.body.dataset.mobileLayout==='compact-20261122');
@@ -393,7 +393,8 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await page.locator('.ten-toggle').first().evaluate(node=>node.click());await page.waitForTimeout(30);
    const afterPan=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
    const panMetrics=await page.evaluate(()=>({inner:innerWidth,client:document.documentElement.clientWidth,scrollWidth:document.scrollingElement.scrollWidth,vv:{width:visualViewport.width,pageLeft:visualViewport.pageLeft,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale},table:document.querySelector('.table-wrap table').getBoundingClientRect().width,bodyOverflow:getComputedStyle(document.body).overflowX,rootOverflow:getComputedStyle(document.documentElement).overflowX}));
-   assert.ok(panned>0&&Math.abs(afterPan-panned)<1,'A history redraw must preserve horizontal panning: '+JSON.stringify({panned,afterPan,panMetrics}));
+   assert.ok(Math.abs(afterPan-panned)<1,'A history redraw must preserve horizontal panning: '+JSON.stringify({panned,afterPan,panMetrics}));
+   if(panMetrics.scrollWidth>panMetrics.client+1)assert.ok(panned>0,'An overflowing result must remain pannable');
    await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
    const duringPannedOdds=await page.evaluate(()=>visualViewport.pageLeft);
    assert.ok(Math.abs(duringPannedOdds-afterPan)<1,'An upward expansion must preserve a manually panned horizontal position');

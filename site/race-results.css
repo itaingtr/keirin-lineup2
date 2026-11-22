@@ -35,3 +35,18 @@ body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-tab
 body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table .race-result-yen{min-width:8ch;padding-left:1.5em;padding-right:1.5em;text-align:right}
 body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-payout-table td:last-child{padding-right:0}
 body[data-result-payouts="aligned-20261122"] .table-wrap td.lineup-cell{overflow:visible}
+
+/* Reserve each result field's own width; do not stretch win/loss reasons. */
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-table{width:24.2em;max-width:100%;table-layout:fixed}
+body[data-result-payouts="aligned-20261122"] .race-result-col-rank{width:1.8em}
+body[data-result-payouts="aligned-20261122"] .race-result-col-no{width:2em}
+body[data-result-payouts="aligned-20261122"] .race-result-col-name,
+body[data-result-payouts="aligned-20261122"] .race-result-col-reason{width:5.5em}
+body[data-result-payouts="aligned-20261122"] .race-result-col-time,
+body[data-result-payouts="aligned-20261122"] .race-result-col-margin{width:2.8em}
+body[data-result-payouts="aligned-20261122"] .race-result-col-finish{width:1.5em}
+body[data-result-payouts="aligned-20261122"] .race-result-col-shb{width:2.3em}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-table th,
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-table td{padding-right:5.5px}
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-table th:last-child,
+body[data-result-payouts="aligned-20261122"] .table-wrap .race-result-table td:last-child{padding-right:0}

@@ -6,13 +6,82 @@
   const current = new Map(races.map(race=>[race.source,race]));
   const normalize = value=>String(value || '').normalize('NFKC').replace(/\s+/g,'');
   const notes = new Map();
-  let scheduled = false, fittedWidth = 0;
+  let scheduled = false, fittedWidth = 0, referenceWidth = 0;
+  const centered = document.body.dataset.lineupFit === 'nine-centered-20261122';
   const sourceFor = row=>{const link=row.querySelector('.race-link');return link?.dataset.raceSource || link?.href;};
 
+  const pixels = value=>parseFloat(value)||0;
+  function dimensions(node) {
+    const box=node.getBoundingClientRect(),style=getComputedStyle(node);
+    return {box,x:box.width/(pixels(style.width)||node.offsetWidth||box.width||1),y:box.height/(pixels(style.height)||node.offsetHeight||box.height||1)};
+  }
+  function fitNine(width) {
+    const lineups=[...root.querySelectorAll('.lineup')];
+    if (!lineups.length) return;
+    let measured=0;
+    for (const lineup of lineups) {
+      const groups=[...lineup.children].filter(node=>node.classList.contains('line-group'));
+      const gap=pixels(getComputedStyle(lineup).columnGap);
+      const rider=lineup.querySelector('.rider');
+      const column=rider ? pixels(getComputedStyle(rider).width) : 32;
+      // Reserve nine complete rider columns and four line boundaries even
+      // on a seven-rider-only card. Wider contests/singletons win this max.
+      measured=Math.max(measured,9*column+4*gap,
+        groups.reduce((sum,group)=>sum+(pixels(getComputedStyle(group).width)||group.offsetWidth),0)+Math.max(0,groups.length-1)*gap);
+    }
+    referenceWidth=Math.max(referenceWidth,measured);
+    const row=lineups[0].closest('#rows > tr'),main=document.querySelector('main');
+    const rowStyle=getComputedStyle(row),mainStyle=getComputedStyle(main);
+    const gutter=pixels(mainStyle.paddingLeft)+pixels(mainStyle.paddingRight)
+      +pixels(rowStyle.paddingLeft)+pixels(rowStyle.paddingRight)+pixels(rowStyle.borderLeftWidth)+pixels(rowStyle.borderRightWidth);
+    const zoom=Math.floor(width/(referenceWidth+gutter)*10000)/10000;
+    if (!(zoom>0)) return;
+    const venue=Math.max(38,...[...root.children].map(row=>row.querySelector('.venue')?.scrollWidth||0));
+    document.body.style.setProperty('--card-venue-width',Math.ceil(venue)+'px');
+    document.body.style.setProperty('--lineup-reference-width',referenceWidth+'px');
+    document.body.style.setProperty('--lineup-zoom',String(zoom));
+    document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
+  }
+  function centerMembers(lineup) {
+    const cars=[...lineup.querySelectorAll('.car')];
+    if (!cars.length) return;
+    const {box,x}=dimensions(lineup),bounds=cars.map(car=>car.getBoundingClientRect());
+    const middle=(Math.min(...bounds.map(b=>b.left))+Math.max(...bounds.map(b=>b.right)))/2;
+    const current=pixels(lineup.style.getPropertyValue('--lineup-center-shift'));
+    const shift=Math.round((current+(box.left+box.width/2-middle)/x)*100)/100;
+    if (Math.abs(shift-current)>.01)lineup.style.setProperty('--lineup-center-shift',shift+'px');
+  }
+  function measuredSeparators(groups) {
+    groups.forEach((group,index)=>{
+      if (index===groups.length-1) {
+        group.querySelector(':scope > .line-separator')?.remove();
+        group.querySelector(':scope > .line-back-separator')?.remove();return;
+      }
+      const cars=[...group.querySelectorAll('.car')],car=cars.at(-1),next=groups[index+1].querySelector('.car');
+      if (!car||!next)return;
+      const {box,x,y}=dimensions(group),before=car.getBoundingClientRect(),after=next.getBoundingClientRect();
+      const left=((before.left+before.width/2+after.left+after.width/2)/2-box.left)/x;
+      const back=group.querySelector('.stats .stat-b,.stats .stat-b-zero');
+      for (const [className,target] of [['line-separator',before],['line-back-separator',back?.getBoundingClientRect()]]) {
+        let dot=group.querySelector(':scope > .'+className);
+        if (!target){dot?.remove();continue;}
+        if (!dot) {
+          dot=document.createElement('span');dot.className=className;dot.textContent='•';
+          dot.setAttribute('aria-hidden','true');group.append(dot);
+        }
+        const top=(target.top+target.height/2-box.top)/y;
+        for (const [name,value] of [['left',left],['top',top]]) {
+          const position=(Math.round(value*100)/100)+'px';
+          if (dot.style[name]!==position)dot.style[name]=position;
+        }
+      }
+    });
+  }
   function fitMobile() {
     const width=document.documentElement.clientWidth;
     if (!window.matchMedia('(max-width:640px)').matches) {fittedWidth=0;return;}
     if (width===fittedWidth) return;
+    if (centered) {fitNine(width);return;}
     const rows=[...root.children], live=rows[0]?.querySelector('.live-link');
     if (!live) return;
     const zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
@@ -111,6 +180,7 @@
     nativeInputs();
     for (const lineup of root.querySelectorAll('.lineup')) {
       const groups=[...lineup.children].filter(node=>node.classList.contains('line-group'));
+      if (centered) {centerMembers(lineup);measuredSeparators(groups);continue;}
       groups.forEach((group,index)=>{
         const current=group.querySelector(':scope > .line-separator');
         const backSeparator=group.querySelector(':scope > .line-back-separator');
@@ -172,10 +242,13 @@
       }
     }
     document.body.dataset.historyRefinementsStatus='ready';
+    if(centered)document.body.dataset.lineupFitStatus='ready';
   }
   function schedule() { if (!scheduled) {scheduled=true;queueMicrotask(refine);} }
   new MutationObserver(schedule).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','aria-expanded']});
   root.addEventListener('click',event=>{if(event.target.closest('.period-toggle'))requestAnimationFrame(schedule);});
   window.addEventListener('resize',()=>{fitMobile();schedule();});
+  if(centered&&typeof ResizeObserver!=='undefined')new ResizeObserver(schedule).observe(root);
+  if(centered&&document.fonts)document.fonts.ready.then(()=>{fittedWidth=0;schedule();});
   refine();
 })();

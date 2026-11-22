@@ -176,7 +176,7 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=
     replayMatches:video.href===header.href,replayTarget:video.target,replayHandler:video.getAttribute('onclick'),
     videoHeight:video.getBoundingClientRect().height,headerHeight:header.getBoundingClientRect().height,gap:video.getBoundingClientRect().left-button.getBoundingClientRect().right};
   });
-  assert.ok(Math.abs(presentation.tableWidth-presentation.lineupWidth)<1,'results must fit the lineup width');
+  assert.ok(presentation.tableWidth<=presentation.lineupWidth+1,'packed results must fit the lineup width');
   assert.ok(Math.abs(presentation.timeWidth-presentation.marginWidth)<1,'margin and individual time use the same compact width');
   assert.ok(presentation.font>8 && presentation.marginFont===presentation.font-1);
   assert.ok(presentation.colors && presentation.replayMatches);assert.equal(presentation.replayTarget,'_self');assert.equal(presentation.replayHandler,null);

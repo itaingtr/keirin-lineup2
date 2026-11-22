@@ -141,8 +141,11 @@
         separator.textContent='•';separator.setAttribute('aria-hidden','true');rider.append(separator);
       }
       const owner=rider.getBoundingClientRect(),before=previousNumber.getBoundingClientRect(),after=currentNumber.getBoundingClientRect();
-      const left=((before.left+before.width/2+after.left+after.width/2)/2-owner.left)/zoom;
-      const top=(after.top+after.height/2-owner.top)/zoom;
+      const measured=document.body.dataset.lineupFit==='nine-centered-20261122',style=getComputedStyle(rider);
+      const scaleX=measured ? owner.width/(parseFloat(style.width)||owner.width||1) : zoom;
+      const scaleY=measured ? owner.height/(parseFloat(style.height)||owner.height||1) : zoom;
+      const left=((before.left+before.width/2+after.left+after.width/2)/2-owner.left)/scaleX;
+      const top=(after.top+after.height/2-owner.top)/scaleY;
       const nextLeft=(Math.round(left*100)/100)+'px',nextTop=(Math.round(top*100)/100)+'px';
       if (separator.style.left!==nextLeft) separator.style.left=nextLeft;
       if (separator.style.top!==nextTop) separator.style.top=nextTop;

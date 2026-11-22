@@ -93,3 +93,23 @@ body[data-history-refinements="20261116"] .table-wrap td.race{gap:2px}
 body[data-history-refinements="20261116"] .table-wrap .video-actions{gap:1px}
 body[data-history-refinements="20261116"] .table-wrap .video-link{padding-left:4px;padding-right:4px}
 }
+
+/* One geometry for every device: center actual members and measure both dots. */
+body[data-lineup-fit="nine-centered-20261122"] .lineup,
+body[data-lineup-fit="nine-centered-20261122"] .lineup.lineup-nine{--line-gap:calc(12px - 1ch);justify-content:center;width:100%}
+body[data-lineup-fit="nine-centered-20261122"] .lineup > .line-group{flex:none;left:var(--lineup-center-shift,0px)}
+body[data-lineup-fit="nine-centered-20261122"] .lineup .line-separator,
+body[data-lineup-fit="nine-centered-20261122"] .lineup .line-back-separator{position:absolute;top:0;left:0;transform:translate(-50%,-50%);width:10px;height:12px;font-size:0;line-height:0}
+body[data-lineup-fit="nine-centered-20261122"] .lineup .line-separator::before,
+body[data-lineup-fit="nine-centered-20261122"] .lineup .line-back-separator::before{content:"";display:block;width:3px;height:3px;border-radius:50%;background:currentColor}
+@media(max-width:640px){
+body[data-lineup-fit="nine-centered-20261122"]{--lineup-zoom:1}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap > table{width:100%;min-width:0;max-width:none}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap #rows > tr{grid-template-columns:var(--card-venue-width,38px) minmax(0,1fr);grid-template-areas:"venue race" "lineup lineup" "composer composer";min-width:0}
+body[data-lineup-fit="nine-centered-20261122"][data-odds-overlay="up-20261116"] .table-wrap #rows > tr.odds-open{grid-template-areas:"odds odds" "venue race" "lineup lineup" "composer composer"}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap td.race{width:100%;min-width:0;flex-wrap:wrap;gap:6px;justify-self:stretch;justify-content:flex-start}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap .video-actions{gap:4px;margin-left:0}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap .video-link{padding:4px 7px}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap td.race-comment-cell{width:100%;max-width:100%}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap .race-comment-input{height:max(32px,calc(32px * var(--lineup-zoom)));min-height:max(32px,calc(32px * var(--lineup-zoom)))}
+}

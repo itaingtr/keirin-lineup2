@@ -31,3 +31,6 @@ body[data-odds-overlay="up-20261116"] .table-wrap .exacta-time[data-stale="true"
 /* Place first-axis line markers inside the existing header cells. */
 body[data-odds-overlay="up-20261116"] .table-wrap .exacta-column-rider{position:relative}
 body[data-odds-overlay="up-20261116"] .table-wrap .exacta-line-separator{position:absolute;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);font-size:10px;line-height:1;font-weight:800;color:#18212f;pointer-events:none;white-space:nowrap}
+
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap .exacta-line-separator{width:10px;height:12px;font-size:0;line-height:0}
+body[data-lineup-fit="nine-centered-20261122"] .table-wrap .exacta-line-separator::before{content:"";display:block;width:3px;height:3px;border-radius:50%;background:currentColor}
