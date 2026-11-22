@@ -8,6 +8,15 @@
   const notes = new Map();
   let scheduled = false, fittedWidth = 0, referenceWidth = 0;
   const centered = document.body.dataset.lineupFit === 'nine-centered-20261122';
+  const legacyIOSZoom = (() => {
+    const ua=navigator.userAgent||'';
+    const ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    if (!ios) return false;
+    const version=ua.match(/(?:CPU (?:iPhone )?OS|iPhone OS) (\d+)[._](\d+)/)||ua.match(/Version\/(\d+)\.(\d+)/);
+    if (!version) return true;
+    const major=Number(version[1]),minor=Number(version[2]);
+    return major<26||(major===26&&minor<4);
+  })();
   const sourceFor = row=>{const link=row.querySelector('.race-link');return link?.dataset.raceSource || link?.href;};
 
   const pixels = value=>parseFloat(value)||0;
@@ -34,12 +43,14 @@
     const rowStyle=getComputedStyle(row),mainStyle=getComputedStyle(main);
     const gutter=pixels(mainStyle.paddingLeft)+pixels(mainStyle.paddingRight)
       +pixels(rowStyle.paddingLeft)+pixels(rowStyle.paddingRight)+pixels(rowStyle.borderLeftWidth)+pixels(rowStyle.borderRightWidth);
-    const zoom=Math.floor(width/(referenceWidth+gutter)*10000)/10000;
-    if (!(zoom>0)) return;
+    const fittedZoom=Math.floor(width/(referenceWidth+gutter)*10000)/10000;
+    if (!(fittedZoom>0)) return;
+    const zoom=legacyIOSZoom?1:fittedZoom;
     const venue=Math.max(38,...[...root.children].map(row=>row.querySelector('.venue')?.scrollWidth||0));
     document.body.style.setProperty('--card-venue-width',Math.ceil(venue)+'px');
     document.body.style.setProperty('--lineup-reference-width',referenceWidth+'px');
     document.body.style.setProperty('--lineup-zoom',String(zoom));
+    document.body.dataset.mobileZoomCompatibility=legacyIOSZoom?'ios-safe':'native';
     document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
   }
   function centerMembers(lineup) {

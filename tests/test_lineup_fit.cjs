@@ -45,12 +45,14 @@ async function geometry(page,width){
  if(process.env.CHROME_PATH)browser=await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
  else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,executablePath:'/usr/bin/chromium'});}}
  try{
-  const cases=[...([280,320,360,375,390,393,414,428,640,900].map(width=>({width,mode:'mixed'}))),...([320,393,414].map(width=>({width,mode:'seven'}))),...(['contest','singles'].flatMap(mode=>[320,414].map(width=>({width,mode}))))];
+  const cases=[...([280,320,360,375,390,393,414,428,640,900].map(width=>({width,mode:'mixed'}))),...([320,393,414].map(width=>({width,mode:'seven'}))),...(['contest','singles'].flatMap(mode=>[320,414].map(width=>({width,mode})))),{width:414,mode:'ios16'}];
   if(currentHTML!==fixtureHTML)cases.unshift({width:393,mode:'current'});
   for(const {width,mode} of cases){
    const html=altered(mode==='current'?currentHTML:fixtureHTML,mode),races=parse(html),bySource=new Map(races.map(r=>[r.source,r]));
    const feed={results:races.map(r=>({ok:true,snapshot:{provider:'kdreams',parser_version:2,race_key:new URL(r.source).pathname,bet_type:'exacta',status:'snapshot',observed_at:new Date().toISOString(),odds:r.players.flatMap(a=>r.players.filter(b=>b.no!==a.no).map(b=>({first:a.no,second:b.no,value:a.no*10+b.no+.125})))}}))};
-   const context=await browser.newContext({viewport:{width,height:width===414?736:852},isMobile:width<900,hasTouch:width<900});const errors=[],writes=[];
+   const contextOptions={viewport:{width,height:width===414?736:852},isMobile:width<900,hasTouch:width<900};
+   if(mode==='ios16')contextOptions.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+   const context=await browser.newContext(contextOptions);const errors=[],writes=[];
    await context.route('**/*',async route=>{
     const request=route.request(),url=new URL(request.url());
     if(!['GET','HEAD','OPTIONS'].includes(request.method())){writes.push(request.method());return route.abort();}
@@ -72,7 +74,10 @@ async function geometry(page,width){
    await page.goto(prefix);await page.waitForFunction(()=>document.body.dataset.lineupFitStatus==='ready');
    const initial=await geometry(page,width);
    if(mode==='seven')assert.ok(initial.rows.every(row=>row.count===7));
-   if(width<=640)assert.ok(Math.abs(initial.reference*initial.zoom-(initial.rows[0].pane[1]-initial.rows[0].pane[0]))<1,JSON.stringify({width,zoom:initial.zoom,reference:initial.reference,pane:initial.rows[0].pane}));
+   if(mode==='ios16'){
+    assert.equal(initial.zoom,1,'Legacy iOS WebKit must avoid body CSS zoom');
+    assert.equal(await page.evaluate(()=>document.body.dataset.mobileZoomCompatibility),'ios-safe');
+   }else if(width<=640)assert.ok(Math.abs(initial.reference*initial.zoom-(initial.rows[0].pane[1]-initial.rows[0].pane[0]))<1,JSON.stringify({width,zoom:initial.zoom,reference:initial.reference,pane:initial.rows[0].pane}));
    // Source summaries, profile details and both histories may change height.
    await page.waitForSelector('.rider-odds');await geometry(page,width);
    for(const selector of ['.period-toggle','.ten-toggle','.previous-toggle']){
