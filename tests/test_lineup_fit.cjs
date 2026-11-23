@@ -25,7 +25,7 @@ async function geometry(page,width){
  await waitLayout(page);
  const data=await page.evaluate(()=>({zoom:parseFloat(getComputedStyle(document.body).zoom)||1,reference:parseFloat(document.body.style.getPropertyValue('--lineup-reference-width')),
   scale:parseFloat(document.body.style.getPropertyValue('--page-scale'))||1,scaleMode:document.body.dataset.mobileScaleMode,
-  canvas:(()=>{const node=document.getElementById('page-canvas');if(!node)return null;const box=node.getBoundingClientRect();return {position:getComputedStyle(node).position,left:box.left,width:box.width,height:box.height,bodyHeight:parseFloat(getComputedStyle(document.body).height),textSizeAdjust:getComputedStyle(node).webkitTextSizeAdjust||getComputedStyle(node).textSizeAdjust};})(),
+  canvas:(()=>{const node=document.getElementById('page-canvas');if(!node)return null;const box=node.getBoundingClientRect(),style=getComputedStyle(node);return {position:style.position,left:box.left,width:box.width,height:box.height,bodyHeight:parseFloat(getComputedStyle(document.body).height),textSizeAdjust:style.getPropertyValue('-webkit-text-size-adjust')||style.getPropertyValue('text-size-adjust')||style.webkitTextSizeAdjust||style.textSizeAdjust};})(),
   scroll:[scrollX,scrollY],client:document.documentElement.clientWidth,
   rows:[...document.querySelectorAll('#rows > tr')].map(row=>{
    const lineup=row.querySelector('.lineup'),pane=lineup.getBoundingClientRect(),cars=[...lineup.querySelectorAll('.car')].map(n=>n.getBoundingClientRect());
