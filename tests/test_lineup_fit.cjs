@@ -5,8 +5,11 @@ const browserName=process.env.LAYOUT_BROWSER==='webkit'?'webkit':'chromium';
 const directory=path.resolve(process.argv[2]||'public'),prefix='https://itaingtr.github.io/keirin-lineup2/';
 const currentHTML=fs.readFileSync(path.join(directory,'index.html'),'utf8');
 const archivedHTML=fs.readFileSync(path.join(directory,'line20261122.html'),'utf8');
+const refinementsCSS=fs.readFileSync(path.join(directory,'history-refinements.css'),'utf8');
 if(!currentHTML.includes('data-page-scale="fixed-canvas-20261123"'))throw new Error('Current page must use the fixed canvas');
 if(archivedHTML.includes('data-page-scale="fixed-canvas-20261123"'))throw new Error('The archived November 22 page must retain its previous layout');
+assert.match(refinementsCSS,/-webkit-text-size-adjust:\s*100%/);
+assert.match(refinementsCSS,/text-size-adjust:\s*100%/);
 const parse=html=>JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
 const original=parse(currentHTML),sevenVenue=original.find(r=>r.players.length===7).venue;
 const waitLayout=page=>page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
@@ -42,7 +45,7 @@ async function geometry(page,width){
   if(width<=640){assert.ok(row.left>=-.3&&row.right<=width+.3,JSON.stringify({width,row}));assert.ok(Math.abs(row.center+data.scroll[0]-width/2)<.7,JSON.stringify({width,row}));}
   for(const dot of row.dots){assert.equal(dot.position,'absolute');assert.ok(dot.ink.every(value=>Math.abs(parseFloat(value)-3)<.05));assert.ok(Math.abs(dot.x-dot.expectedX)<.5&&Math.abs(dot.y-dot.expectedY)<.5,JSON.stringify({width,dot}));}
  }
- if(width<=640){assert.equal(data.reference,312);assert.equal(data.zoom,1);assert.equal(data.scaleMode,'fixed-canvas');assert.ok(Math.abs(data.scale-width/358)<.00001);assert.ok(data.canvas&&data.canvas.position==='absolute'&&Math.abs(data.canvas.left)<.1&&Math.abs(data.canvas.width-width)<1,JSON.stringify(data.canvas));assert.ok(Math.abs(data.canvas.bodyHeight-data.canvas.height)<1,JSON.stringify(data.canvas));assert.match(data.canvas.textSizeAdjust,/100%/);}
+ if(width<=640){assert.equal(data.reference,312);assert.equal(data.zoom,1);assert.equal(data.scaleMode,'fixed-canvas');assert.ok(Math.abs(data.scale-width/358)<.00001);assert.ok(data.canvas&&data.canvas.position==='absolute'&&Math.abs(data.canvas.left)<.1&&Math.abs(data.canvas.width-width)<1,JSON.stringify(data.canvas));assert.ok(Math.abs(data.canvas.bodyHeight-data.canvas.height)<1,JSON.stringify(data.canvas));if(data.canvas.textSizeAdjust)assert.match(data.canvas.textSizeAdjust,/100%/);}
  return data;
 }
 (async()=>{
