@@ -98,13 +98,15 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
       form:box(row.querySelector('.race-comment-form')),search:box(document.querySelector('#search')),
       gap:box(row.querySelector('.video-actions')).left-box(row.querySelector('.race-time')).right,
       media:[...document.querySelectorAll('#rows > tr .live-link')].map(n=>box(n).right),zoom:parseFloat(getComputedStyle(document.body).zoom)||1,
-      font:getComputedStyle(row.querySelector('.race-comment-input')).fontSize};
+      fixed:document.body.dataset.pageScale==='fixed-canvas-20261123',font:getComputedStyle(row.querySelector('.race-comment-input')).fontSize};
     });
     assert.ok(result.input.width>150&&result.input.right<width-10,JSON.stringify(result));
     assert.ok(result.input.right<result.save.left,JSON.stringify(result));
     assert.ok(result.save.right<width&&result.feed.right<width&&result.search.right<width+.5,JSON.stringify(result));
     assert.ok(result.feed.top>=result.form.bottom&&Math.abs(result.feed.left-result.form.left)<.2,JSON.stringify(result));
-    assert.ok(result.gap>=0&&result.gap<=10*result.zoom,JSON.stringify(result));
+    assert.ok(result.gap>=0,JSON.stringify(result));
+    if(result.fixed)assert.ok(result.media.every(right=>right>=width-24),JSON.stringify(result));
+    else assert.ok(result.gap<=10*result.zoom,JSON.stringify(result));
     assert.ok(result.media.every(right=>right<=width+.3),JSON.stringify(result));assert.equal(result.font,'17px');
     return result;
    }
