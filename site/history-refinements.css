@@ -130,4 +130,9 @@ body[data-lineup-fit="nine-centered-20261122"] .table-wrap .video-link{padding:4
 body[data-lineup-fit="nine-centered-20261122"] .table-wrap td.race-comment-cell{width:100%;max-width:100%}
 body[data-lineup-fit="nine-centered-20261122"] .table-wrap .race-comment-input{height:max(32px,calc(32px * var(--lineup-zoom)));min-height:max(32px,calc(32px * var(--lineup-zoom)))}
 }
-@media(max-width:640px){body[data-page-scale="fixed-canvas-20261123"] .lineup{--line-gap:6px}body[data-page-scale="fixed-canvas-20261123"] .table-wrap .lineup-cell{overflow:visible}}
+@media(max-width:640px){
+body[data-page-scale="fixed-canvas-20261123"] .lineup{--line-gap:6px}
+body[data-page-scale="fixed-canvas-20261123"] .table-wrap .lineup-cell{overflow:visible}
+body[data-page-scale="fixed-canvas-20261123"] .table-wrap #rows>tr>td.race{width:100%;min-width:0;justify-content:space-between}
+body[data-page-scale="fixed-canvas-20261123"] .table-wrap #rows>tr>td.race>.video-actions{margin-left:0;margin-right:-8px}
+}
