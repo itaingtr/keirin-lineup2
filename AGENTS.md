@@ -1,6 +1,6 @@
 # 2026-11-23以降の固定キャンバス・表示倍率仕様（最優先）にゃ
 - `data-page-scale="fixed-canvas-20261123"` がある通常ページだけに適用するにゃ。公開時は `scripts/history_refinements.py` が2026-11-23以降の日別ページへ印を付けるにゃ。11-22以前のHTML・見た目・UA分岐は変更しないにゃ。
-- 幅358pxの `#page-canvas` を `position:absolute; left:0; top:0` で配置し、`scale = viewport幅 / 358` のCSS `transform` でヘッダーとmain全体を拡大縮小するにゃ。9車基準の選手列幅は312px、9車単騎の最大336pxもカード内へ収めるにゃ。倍率はブラウザ名・UA・iPhone機種・テキスト計測から決めないにゃ。bodyへCSS `zoom` を設定しないにゃ。
+- 幅358pxの `#page-canvas` を `position:absolute; left:0; top:0` で配置し、`scale = viewport幅 / 358` のCSS `transform` でヘッダーとmain全体を拡大縮小するにゃ。9車基準の選手列幅は312px、9車単騎の最大336pxもカード内へ収めるにゃ。倍率はブラウザ名・UA・iPhone機種・テキスト計測から決めないにゃ。bodyのCSS `zoom` は1に固定し、拡大縮小には使わないにゃ。ライブ操作はレース見出し列の右端へ揃えるにゃ。
 - `text-size-adjust:100%` でSafari独自の文字膨張を抑え、検索・コメント・認証欄も17px CSSのままキャンバス全体と同じ倍率で表示するにゃ。縦スクロールは `#page-canvas.scrollHeight × scale` をbody高へ反映して保ち、ピンチ操作を制限しないにゃ。入力・詳細開閉・スクロールでは倍率を変えないにゃ。
 - 画面幅640px以下だけ固定キャンバスを使い、640pxを超えたら通常デスクトップ配置へ戻すにゃ。幅の異なるスマホではキャンバス内の配置と文字サイズを固定し、表示倍率だけを幅に合わせるにゃ。
 - `tests/test_lineup_fit.cjs` で280〜640px、9車単騎・競り・7車、開閉・検索・画面幅変更を確認し、同じテストをChromiumとPlaywright WebKitで実行するにゃ。Playwright WebKitの結果は物理iPhone Safari実機確認とは別に報告するにゃ。

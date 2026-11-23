@@ -76,12 +76,14 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     const lineup=document.querySelector('.lineup'),style=getComputedStyle(lineup),canvas=document.createElement('canvas'),context=canvas.getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
     const zoom=parseFloat(getComputedStyle(document.body).zoom)||1,fixed=document.body.dataset.pageScale==='fixed-canvas-20261123';
     const digit=context.measureText('0').width;
-    return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom,scale:parseFloat(document.body.style.getPropertyValue('--page-scale'))||zoom,
+    return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom,scale:parseFloat(document.body.style.getPropertyValue('--page-scale'))||zoom,fixed,
      digit,baseGap:fixed?6+digit:(document.body.dataset.lineupFit||lineup.classList.contains('lineup-nine')?12:19),between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
      rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
    });
    const compact=await page.evaluate(()=>document.body.dataset.mobileLayout==='compact-20261122');
+   if(fit.fixed)assert.equal(fit.zoom,1,JSON.stringify(fit));
    assert.ok(fit.right<=width+.2&&(compact||fit.right>=width-2.5),JSON.stringify(fit));
+   if(fit.fixed)assert.ok(fit.right>=width-24,JSON.stringify(fit));
    async function checkControls(){
     if(!compact)return;
     const result=await page.evaluate(()=>{
