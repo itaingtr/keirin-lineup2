@@ -90,6 +90,10 @@ jobs:
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_history_refinements.cjs public
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_payout_layout.cjs public
           NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_lineup_fit.cjs public
+          node /tmp/lineup2-qa/node_modules/playwright-core/cli.js install --with-deps webkit
+          # Safari実機とは別のWebKitエンジンで414×736を含む画面を検査するにゃ。
+          LAYOUT_BROWSER=webkit NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_history_refinements.cjs public
+          LAYOUT_BROWSER=webkit NODE_PATH=/tmp/lineup2-qa/node_modules node tests/test_lineup_fit.cjs public
       - name: Configure GitHub Pages
         if: steps.update.outputs.publish == 'true'
         uses: actions/configure-pages@v5

@@ -1,11 +1,14 @@
 // Verified exported cards; all result/odds responses below are display fixtures.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require('playwright-core');
+const {chromium,webkit}=require('playwright-core');
+const browserName=process.env.LAYOUT_BROWSER==='webkit'?'webkit':'chromium';
 const directory=path.resolve(process.argv[2]||'public'),prefix='https://itaingtr.github.io/keirin-lineup2/';
 const currentHTML=fs.readFileSync(path.join(directory,'index.html'),'utf8');
-const fixtureHTML=fs.readFileSync(path.join(directory,'line20261122.html'),'utf8');
+const archivedHTML=fs.readFileSync(path.join(directory,'line20261122.html'),'utf8');
+if(!currentHTML.includes('data-page-scale="fixed-canvas-20261123"'))throw new Error('Current page must use the fixed canvas');
+if(archivedHTML.includes('data-page-scale="fixed-canvas-20261123"'))throw new Error('The archived November 22 page must retain its previous layout');
 const parse=html=>JSON.parse(/const races=(.*);\nconst body=/.exec(html)[1]);
-const original=parse(fixtureHTML),sevenVenue=original.find(r=>r.players.length===7).venue;
+const original=parse(currentHTML),sevenVenue=original.find(r=>r.players.length===7).venue;
 const waitLayout=page=>page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
 function altered(html,mode){
  if(mode==='seven')return html.replace('<input id="search"','<input value="'+sevenVenue+'" id="search"');
@@ -21,6 +24,8 @@ function altered(html,mode){
 async function geometry(page,width){
  await waitLayout(page);
  const data=await page.evaluate(()=>({zoom:parseFloat(getComputedStyle(document.body).zoom)||1,reference:parseFloat(document.body.style.getPropertyValue('--lineup-reference-width')),
+  scale:parseFloat(document.body.style.getPropertyValue('--page-scale'))||1,scaleMode:document.body.dataset.mobileScaleMode,
+  canvas:(()=>{const node=document.getElementById('page-canvas');if(!node)return null;const box=node.getBoundingClientRect();return {position:getComputedStyle(node).position,left:box.left,width:box.width,height:box.height,bodyHeight:parseFloat(getComputedStyle(document.body).height),textSizeAdjust:getComputedStyle(node).webkitTextSizeAdjust||getComputedStyle(node).textSizeAdjust};})(),
   scroll:[scrollX,scrollY],client:document.documentElement.clientWidth,
   rows:[...document.querySelectorAll('#rows > tr')].map(row=>{
    const lineup=row.querySelector('.lineup'),pane=lineup.getBoundingClientRect(),cars=[...lineup.querySelectorAll('.car')].map(n=>n.getBoundingClientRect());
@@ -37,18 +42,18 @@ async function geometry(page,width){
   if(width<=640){assert.ok(row.left>=-.3&&row.right<=width+.3,JSON.stringify({width,row}));assert.ok(Math.abs(row.center+data.scroll[0]-width/2)<.7,JSON.stringify({width,row}));}
   for(const dot of row.dots){assert.equal(dot.position,'absolute');assert.ok(dot.ink.every(value=>Math.abs(parseFloat(value)-3)<.05));assert.ok(Math.abs(dot.x-dot.expectedX)<.5&&Math.abs(dot.y-dot.expectedY)<.5,JSON.stringify({width,dot}));}
  }
- if(width<=640)assert.ok(data.reference>=9*31.9);
+ if(width<=640){assert.equal(data.reference,312);assert.equal(data.zoom,1);assert.equal(data.scaleMode,'fixed-canvas');assert.ok(Math.abs(data.scale-width/358)<.00001);assert.ok(data.canvas&&data.canvas.position==='absolute'&&Math.abs(data.canvas.left)<.1&&Math.abs(data.canvas.width-width)<1,JSON.stringify(data.canvas));assert.ok(Math.abs(data.canvas.bodyHeight-data.canvas.height)<1,JSON.stringify(data.canvas));assert.match(data.canvas.textSizeAdjust,/100%/);}
  return data;
 }
 (async()=>{
- const launch={headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};let browser;
- if(process.env.CHROME_PATH)browser=await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
+ const launch=browserName==='webkit'?{headless:true}:{headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};let browser;
+ if(browserName==='webkit')browser=await webkit.launch(launch);
+ else if(process.env.CHROME_PATH)browser=await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
  else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,executablePath:'/usr/bin/chromium'});}}
  try{
-  const cases=[...([280,320,360,375,390,393,414,428,640,900].map(width=>({width,mode:'mixed'}))),...([320,393,414].map(width=>({width,mode:'seven'}))),...(['contest','singles'].flatMap(mode=>[320,414].map(width=>({width,mode})))),{width:414,mode:'ios16'}];
-  if(currentHTML!==fixtureHTML)cases.unshift({width:393,mode:'current'});
+  const cases=browserName==='webkit'?[{width:393,mode:'mixed'},{width:414,mode:'mixed'},{width:414,mode:'ios16'},{width:320,mode:'mixed'}]:[...([280,320,360,375,390,393,414,428,640,900].map(width=>({width,mode:'mixed'}))),...([320,393,414].map(width=>({width,mode:'seven'}))),...(['contest','singles'].flatMap(mode=>[320,414].map(width=>({width,mode})))),{width:414,mode:'ios16'}];
   for(const {width,mode} of cases){
-   const html=altered(mode==='current'?currentHTML:fixtureHTML,mode),races=parse(html),bySource=new Map(races.map(r=>[r.source,r]));
+   const html=altered(currentHTML,mode),races=parse(html),bySource=new Map(races.map(r=>[r.source,r]));
    const feed={results:races.map(r=>({ok:true,snapshot:{provider:'kdreams',parser_version:2,race_key:new URL(r.source).pathname,bet_type:'exacta',status:'snapshot',observed_at:new Date().toISOString(),odds:r.players.flatMap(a=>r.players.filter(b=>b.no!==a.no).map(b=>({first:a.no,second:b.no,value:a.no*10+b.no+.125})))}}))};
    const contextOptions={viewport:{width,height:width===414?736:852},isMobile:width<900,hasTouch:width<900};
    if(mode==='ios16')contextOptions.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
@@ -74,10 +79,7 @@ async function geometry(page,width){
    await page.goto(prefix);await page.waitForFunction(()=>document.body.dataset.lineupFitStatus==='ready');
    const initial=await geometry(page,width);
    if(mode==='seven')assert.ok(initial.rows.every(row=>row.count===7));
-   if(mode==='ios16'){
-    assert.equal(initial.zoom,1,'Legacy iOS WebKit must avoid body CSS zoom');
-    assert.equal(await page.evaluate(()=>document.body.dataset.mobileZoomCompatibility),'ios-safe');
-   }else if(width<=640)assert.ok(Math.abs(initial.reference*initial.zoom-(initial.rows[0].pane[1]-initial.rows[0].pane[0]))<1,JSON.stringify({width,zoom:initial.zoom,reference:initial.reference,pane:initial.rows[0].pane}));
+   if(width<=640)assert.ok(Math.abs(initial.reference*initial.scale-(initial.rows[0].pane[1]-initial.rows[0].pane[0]))<1,JSON.stringify({width,scale:initial.scale,reference:initial.reference,pane:initial.rows[0].pane}));
    // Source summaries, profile details and both histories may change height.
    await page.waitForSelector('.rider-odds');await geometry(page,width);
    for(const selector of ['.period-toggle','.ten-toggle','.previous-toggle']){
@@ -95,7 +97,7 @@ async function geometry(page,width){
 
    const packed=await page.locator('.race-result-table').first().evaluate(table=>{
     const row=table.tBodies[0].rows[0],box=key=>row.querySelector('.race-result-'+key).getBoundingClientRect(),range=key=>{const r=document.createRange();r.selectNodeContents(row.querySelector('.race-result-'+key));return r.getBoundingClientRect();};
-    return {width:table.getBoundingClientRect().width,pane:table.closest('.lineup-cell').getBoundingClientRect().width,reason:box('reason').width,scale:parseFloat(getComputedStyle(document.body).zoom)||1,font:parseFloat(getComputedStyle(table).fontSize),padding:['time','reason','finish','shb'].map(key=>parseFloat(getComputedStyle(row.querySelector('.race-result-'+key)).paddingRight)),time:box('time').width,margin:box('margin').width,gaps:[box('reason').left-range('time').right,box('finish').left-range('reason').right],fields:['reason','finish','shb','margin'].map(key=>[key,box(key).left,box(key).right])};
+    return {width:table.getBoundingClientRect().width,pane:table.closest('.lineup-cell').getBoundingClientRect().width,reason:box('reason').width,scale:parseFloat(document.body.style.getPropertyValue('--page-scale'))||1,font:parseFloat(getComputedStyle(table).fontSize),padding:['time','reason','finish','shb'].map(key=>parseFloat(getComputedStyle(row.querySelector('.race-result-'+key)).paddingRight)),time:box('time').width,margin:box('margin').width,gaps:[box('reason').left-range('time').right,box('finish').left-range('reason').right],fields:['reason','finish','shb','margin'].map(key=>[key,box(key).left,box(key).right])};
    });
    assert.ok(packed.width<=packed.pane+.5&&packed.reason<=5.5*packed.font*packed.scale+.5,JSON.stringify(packed));
    assert.ok(Math.abs(packed.time-packed.margin)<.5,JSON.stringify(packed));
@@ -103,13 +105,13 @@ async function geometry(page,width){
    for(let i=1;i<packed.fields.length;i++)assert.ok(Math.abs(packed.fields[i][1]-packed.fields[i-1][2])<.5,JSON.stringify(packed));
    if(mode==='mixed'&&[393,414].includes(width)){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'/tmp/lineup2-centered-'+width+'.png'});}
    await page.evaluate(()=>{const search=document.querySelector('#search');search.value='';search.dispatchEvent(new Event('input'));window.scrollTo(0,0);});
-   await geometry(page,width);assert.equal(await page.evaluate(()=>parseFloat(getComputedStyle(document.body).zoom)||1),initial.zoom,'Search must keep the initial nine-rider fit');
+   await geometry(page,width);assert.equal(await page.evaluate(()=>parseFloat(document.body.style.getPropertyValue('--page-scale'))||1),initial.scale,'Search must keep the fixed canvas scale');
    if(mode==='mixed'&&width===414){
     await page.setViewportSize({width:393,height:852});await page.waitForTimeout(40);await geometry(page,393);
     await page.setViewportSize({width:414,height:736});await page.waitForTimeout(40);await geometry(page,414);
    }
    assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
-   console.log('LINEUP FIT PASS',JSON.stringify({width,mode,zoom:initial.zoom,counts:[...new Set(initial.rows.map(r=>r.count))],dots:initial.rows.reduce((n,r)=>n+r.dots.length,0),result:packed,writeRequests:0}));
+   console.log('LINEUP FIT PASS',JSON.stringify({browser:browserName,width,mode,scale:initial.scale,counts:[...new Set(initial.rows.map(r=>r.count))],dots:initial.rows.reduce((n,r)=>n+r.dots.length,0),result:packed,writeRequests:0}));
    await context.close();
   }
  }finally{await browser.close();}

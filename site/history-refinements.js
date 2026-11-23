@@ -6,9 +6,11 @@
   const current = new Map(races.map(race=>[race.source,race]));
   const normalize = value=>String(value || '').normalize('NFKC').replace(/\s+/g,'');
   const notes = new Map();
-  let scheduled = false, fittedWidth = 0, referenceWidth = 0;
+  let scheduled = false, fittedWidth = 0, referenceWidth = 0, pageCanvas = null, pageCanvasObserver = null;
   const centered = document.body.dataset.lineupFit === 'nine-centered-20261122';
-  const legacyIOSZoom = (() => {
+  const fixedCanvas = document.body.dataset.pageScale === 'fixed-canvas-20261123';
+  const PAGE_CANVAS_WIDTH = 358;
+  const legacyIOSZoom = !fixedCanvas && (() => {
     const ua=navigator.userAgent||'';
     const ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
     if (!ios) return false;
@@ -53,6 +55,44 @@
     document.body.dataset.mobileZoomCompatibility=legacyIOSZoom?'ios-safe':'native';
     document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
   }
+  function updateCanvasHeight() {
+    if (!pageCanvas || !window.matchMedia('(max-width:640px)').matches) return;
+    const scale=parseFloat(document.body.style.getPropertyValue('--page-scale'))||1;
+    const height=Math.ceil(pageCanvas.scrollHeight*scale);
+    if (Math.abs((parseFloat(document.body.style.height)||0)-height)>0.5)
+      document.body.style.height=height+'px';
+  }
+  function fitCanvas(width) {
+    if (!pageCanvas) {
+      const header=document.querySelector('body > header'),main=document.querySelector('body > main');
+      if (!header&&!main) return;
+      pageCanvas=document.createElement('div');pageCanvas.id='page-canvas';pageCanvas.className='page-canvas';
+      document.body.insertBefore(pageCanvas,header||main);
+      if (header) pageCanvas.append(header);
+      if (main) pageCanvas.append(main);
+      if (typeof ResizeObserver!=='undefined') {
+        pageCanvasObserver=new ResizeObserver(updateCanvasHeight);pageCanvasObserver.observe(pageCanvas);
+      }
+    }
+    const scale=Math.round(width/PAGE_CANVAS_WIDTH*1e6)/1e6;
+    document.body.style.setProperty('--page-scale',String(scale));
+    document.body.style.setProperty('--page-canvas-width',PAGE_CANVAS_WIDTH+'px');
+    document.body.style.setProperty('--lineup-reference-width','312px');
+    document.body.dataset.mobileScaleMode='fixed-canvas';
+    document.body.dataset.mobileLineupFit='ready';fittedWidth=width;
+    updateCanvasHeight();
+  }
+  function removeCanvas() {
+    if (!pageCanvas) return;
+    const parent=pageCanvas.parentNode;
+    while (pageCanvas.firstChild) parent.insertBefore(pageCanvas.firstChild,pageCanvas);
+    pageCanvasObserver?.disconnect();pageCanvas.remove();pageCanvas=null;pageCanvasObserver=null;
+    document.body.style.removeProperty('height');
+    document.body.style.removeProperty('--page-scale');
+    document.body.style.removeProperty('--page-canvas-width');
+    document.body.style.removeProperty('--lineup-reference-width');
+    delete document.body.dataset.mobileScaleMode;delete document.body.dataset.mobileLineupFit;
+  }
   function centerMembers(lineup) {
     const cars=[...lineup.querySelectorAll('.car')];
     if (!cars.length) return;
@@ -95,8 +135,9 @@
   }
   function fitMobile() {
     const width=document.documentElement.clientWidth;
-    if (!window.matchMedia('(max-width:640px)').matches) {fittedWidth=0;return;}
+    if (!window.matchMedia('(max-width:640px)').matches) {if(fixedCanvas)removeCanvas();fittedWidth=0;return;}
     if (width===fittedWidth) return;
+    if (fixedCanvas) {fitCanvas(width);return;}
     if (centered) {fitNine(width);return;}
     const rows=[...root.children], live=rows[0]?.querySelector('.live-link');
     if (!live) return;
@@ -128,6 +169,7 @@
   }
 
   function nativeInputs() {
+    if (fixedCanvas) return;
     if (document.body.dataset.mobileLayout!=='compact-20261122') return;
     const mobile=window.matchMedia('(max-width:640px)').matches;
     const zoom=mobile ? parseFloat(getComputedStyle(document.body).zoom)||1 : 1;
@@ -258,6 +300,7 @@
       }
     }
     document.body.dataset.historyRefinementsStatus='ready';
+    if (fixedCanvas) updateCanvasHeight();
     if(centered)document.body.dataset.lineupFitStatus='ready';
   }
   function schedule() { if (!scheduled) {scheduled=true;queueMicrotask(refine);} }

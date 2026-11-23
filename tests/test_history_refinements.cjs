@@ -1,6 +1,7 @@
 // Actual exported cards, geometry and strict prior-rider matching; no external writes.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require('playwright-core');
+const {chromium,webkit}=require('playwright-core');
+const browserName=process.env.LAYOUT_BROWSER==='webkit'?'webkit':'chromium';
 const directory=path.resolve(process.argv[2]||'public');
 let target='index.html';
 const parseCard=name=>JSON.parse(/const races=(.*);\nconst body=/.exec(fs.readFileSync(path.join(directory,name),'utf8'))[1]);
@@ -28,10 +29,11 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
 (async()=>{
  let browser;
  try{
-  const launch={headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};
-  if(process.env.CHROME_PATH)browser=await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
+  const launch=browserName==='webkit'?{headless:true}:{headless:true,args:['--no-sandbox','--disable-dev-shm-usage']};
+  if(browserName==='webkit')browser=await webkit.launch(launch);
+  else if(process.env.CHROME_PATH)browser=await chromium.launch({...launch,executablePath:process.env.CHROME_PATH});
   else{try{browser=await chromium.launch({...launch,channel:'chrome'});}catch{browser=await chromium.launch({...launch,...(fs.existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{})});}}
-  for(const width of [320,390,393,414,428]){
+  for(const width of browserName==='webkit'?[393,414]:[320,390,393,414,428]){
    const context=await browser.newContext({viewport:{width,height:width===393?852:width===414?736:926},isMobile:true,hasTouch:true});
    const errors=[],writes=[],counts=new Map();let active=0,maximum=0,oddsLoads=0,servedOdds=oddsFixture,oddsFailure=false,oddsDelay=0;
    await context.route('**/*',async route=>{
@@ -72,8 +74,10 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
    await page.waitForFunction(()=>document.body.dataset.mobileLineupFit==='ready');
    const fit=await page.evaluate(()=>{
     const lineup=document.querySelector('.lineup'),style=getComputedStyle(lineup),canvas=document.createElement('canvas'),context=canvas.getContext('2d');context.font=style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
-    return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom:parseFloat(getComputedStyle(document.body).zoom),
-     digit:context.measureText('0').width,baseGap:document.body.dataset.lineupFit||lineup.classList.contains('lineup-nine')?12:19,between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
+    const zoom=parseFloat(getComputedStyle(document.body).zoom)||1,fixed=document.body.dataset.pageScale==='fixed-canvas-20261123';
+    const digit=context.measureText('0').width;
+    return {right:document.querySelector('.live-link').getBoundingClientRect().right,zoom,scale:parseFloat(document.body.style.getPropertyValue('--page-scale'))||zoom,
+     digit,baseGap:fixed?6+digit:(document.body.dataset.lineupFit||lineup.classList.contains('lineup-nine')?12:19),between:parseFloat(style.columnGap),within:parseFloat(getComputedStyle(lineup.querySelector('.line-group')).columnGap),
      rider:parseFloat(getComputedStyle(lineup.querySelector('.rider')).width),viewport:document.documentElement.clientWidth};
    });
    const compact=await page.evaluate(()=>document.body.dataset.mobileLayout==='compact-20261122');
@@ -91,7 +95,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
      return {input:box(row.querySelector('.race-comment-input')),save:box(row.querySelector('.race-comment-save')),feed:box(row.querySelector('.race-comment-feed')),
       form:box(row.querySelector('.race-comment-form')),search:box(document.querySelector('#search')),
       gap:box(row.querySelector('.video-actions')).left-box(row.querySelector('.race-time')).right,
-      media:[...document.querySelectorAll('#rows > tr .live-link')].map(n=>box(n).right),zoom:parseFloat(getComputedStyle(document.body).zoom),
+      media:[...document.querySelectorAll('#rows > tr .live-link')].map(n=>box(n).right),zoom:parseFloat(getComputedStyle(document.body).zoom)||1,
       font:getComputedStyle(row.querySelector('.race-comment-input')).fontSize};
     });
     assert.ok(result.input.width>150&&result.input.right<width-10,JSON.stringify(result));
@@ -138,8 +142,8 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
       if(!condition||!rank||!reason)return null;
       const before=rank.getBoundingClientRect();condition.textContent=result.dataset.meetingDay==='1'?'5':'-2';
       const box=condition.getBoundingClientRect(),after=rank.getBoundingClientRect(),start=reason.getBoundingClientRect();
-      const style=getComputedStyle(reason),zoom=parseFloat(getComputedStyle(document.body).zoom)||1;
-      const expected=start.left+(parseFloat(style.paddingLeft)+5*parseFloat(style.fontSize))*zoom;
+      const style=getComputedStyle(reason),zoom=parseFloat(getComputedStyle(document.body).zoom)||1,scale=parseFloat(document.body.style.getPropertyValue('--page-scale'))||zoom;
+      const expected=start.left+(parseFloat(style.paddingLeft)+5*parseFloat(style.fontSize))*scale;
       return {day:result.dataset.meetingDay,text:condition.textContent,right:box.right,expected,rankBefore:[before.x,before.y],rankAfter:[after.x,after.y],color:getComputedStyle(condition).color};
      }).filter(Boolean));
     assert.ok(values.some(value=>value.day==='1')&&values.some(value=>value.day==='2'));
@@ -267,7 +271,7 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     await page.waitForTimeout(80);await checkControls();
     await page.screenshot({path:'/tmp/lineup2-mobile-'+width+'.png'});
     assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
-    console.log('HANDSET CONTROLS PASS',JSON.stringify({width,height:width===393?852:736,mobileControls,fit,expansion,editing,conditions,writeRequests:0}));
+    console.log('HANDSET CONTROLS PASS',JSON.stringify({browser:browserName,width,height:width===393?852:736,mobileControls,fit,expansion,editing,conditions,writeRequests:0}));
     await context.close();continue;
    }
    // Read the complete expanded table using ordinary document scrolling.
@@ -382,26 +386,30 @@ const prefix='https://itaingtr.github.io/keirin-lineup2/';
     await page.evaluate(()=>{Date.now=window.savedNow;delete window.savedNow;});
    }
    assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
-   const cdp=await context.newCDPSession(page);
-   async function drag(from,to){
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y:250}]});
-    for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from+(to-from)*i/8,y:250}]});await page.waitForTimeout(25);}
-    await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(100);
+   if(browserName==='chromium'){
+    // Touch dispatch here uses Chromium's CDP-only API. WebKit still checks
+    // scrolling, odds expansion and normal control interaction above.
+    const cdp=await context.newCDPSession(page);
+    async function drag(from,to){
+     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y:250}]});
+     for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from+(to-from)*i/8,y:250}]});await page.waitForTimeout(25);}
+     await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(100);
+    }
+    await drag(width-35,35);
+    const panned=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
+    await page.locator('.ten-toggle').first().evaluate(node=>node.click());await page.waitForTimeout(30);
+    const afterPan=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
+    const panMetrics=await page.evaluate(()=>({inner:innerWidth,client:document.documentElement.clientWidth,scrollWidth:document.scrollingElement.scrollWidth,vv:{width:visualViewport.width,pageLeft:visualViewport.pageLeft,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale},table:document.querySelector('.table-wrap table').getBoundingClientRect().width,bodyOverflow:getComputedStyle(document.body).overflowX,rootOverflow:getComputedStyle(document.documentElement).overflowX}));
+    assert.ok(Math.abs(afterPan-panned)<1,'A history redraw must preserve horizontal panning: '+JSON.stringify({panned,afterPan,panMetrics}));
+    if(panMetrics.scrollWidth>panMetrics.client+1)assert.ok(panned>0,'An overflowing result must remain pannable');
+    await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+    const duringPannedOdds=await page.evaluate(()=>visualViewport.pageLeft);
+    assert.ok(Math.abs(duringPannedOdds-afterPan)<1,'An upward expansion must preserve a manually panned horizontal position');
+    await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
+    assert.ok(Math.abs(await page.evaluate(()=>visualViewport.pageLeft)-afterPan)<1,'Closing upward must preserve horizontal panning');
+    await drag(35,width-35);await cdp.detach();
    }
-   await drag(width-35,35);
-   const panned=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
-   await page.locator('.ten-toggle').first().evaluate(node=>node.click());await page.waitForTimeout(30);
-   const afterPan=await page.evaluate(()=>visualViewport?.pageLeft??window.scrollX);
-   const panMetrics=await page.evaluate(()=>({inner:innerWidth,client:document.documentElement.clientWidth,scrollWidth:document.scrollingElement.scrollWidth,vv:{width:visualViewport.width,pageLeft:visualViewport.pageLeft,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale},table:document.querySelector('.table-wrap table').getBoundingClientRect().width,bodyOverflow:getComputedStyle(document.body).overflowX,rootOverflow:getComputedStyle(document.documentElement).overflowX}));
-   assert.ok(Math.abs(afterPan-panned)<1,'A history redraw must preserve horizontal panning: '+JSON.stringify({panned,afterPan,panMetrics}));
-   if(panMetrics.scrollWidth>panMetrics.client+1)assert.ok(panned>0,'An overflowing result must remain pannable');
-   await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
-   const duringPannedOdds=await page.evaluate(()=>visualViewport.pageLeft);
-   assert.ok(Math.abs(duringPannedOdds-afterPan)<1,'An upward expansion must preserve a manually panned horizontal position');
-   await band.evaluate(node=>node.click());await page.waitForFunction(()=>!document.documentElement.dataset.oddsLayoutChange);
-   assert.ok(Math.abs(await page.evaluate(()=>visualViewport.pageLeft)-afterPan)<1,'Closing upward must preserve horizontal panning');
-   await drag(35,width-35);
-   await cdp.detach();await page.evaluate(()=>window.scrollTo(0,0));
+   await page.evaluate(()=>window.scrollTo(0,0));
    if(width===390)await page.screenshot({path:'/tmp/history-refinements-mobile.png'});
    console.log('HISTORY REFINEMENTS PASS',JSON.stringify({width,mobileControls,reasons:reasons.length,concurrency:maximum,requests:counts.size,oddsLoads,compactPairs:oddsAndDots.reduce((n,row)=>n+row.pairs.length,0),dots:oddsAndDots.reduce((n,row)=>n+row.dots.filter(Boolean).length,0),expansion,leftAligned:true,meetingHeight:15,fit,reasonGeometry,writeRequests:0}));
    await context.close();

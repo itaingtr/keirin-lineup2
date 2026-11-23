@@ -30,6 +30,8 @@ def apply(page, site, output, day):
     page = page.replace('<body', '<body '+MARKER+' data-lineup-spacing="readable-20261116" data-odds-overlay="up-20261116"', 1)
     if day >= '20261122':
         page = page.replace('<body ', '<body data-lineup-fit="nine-centered-20261122" data-mobile-layout="compact-20261122" ', 1)
+    if day >= '20261123':
+        page = page.replace('<body ', '<body data-page-scale="fixed-canvas-20261123" ', 1)
     tags = {}
     for name in ASSETS:
         content = (site/name).read_bytes()

@@ -55,7 +55,7 @@ body[data-mobile-layout="compact-20261122"] .lineup .meeting-order-line{position
 /* Five full-width reason characters at 6px, starting at the shared inset. */
 body[data-mobile-layout="compact-20261122"] .lineup .meeting-order-line .condition-history{position:absolute;top:0;right:calc(100% - var(--history-inset) - 30px);min-width:0;line-height:9px;text-align:right}
 @media(max-width:640px){
-body[data-history-refinements="20261116"]{width:calc(100vw / var(--lineup-zoom,1.2544));zoom:var(--lineup-zoom,1.2544)}
+body[data-history-refinements="20261116"]:not([data-page-scale="fixed-canvas-20261123"]){width:calc(100vw / var(--lineup-zoom,1.2544));zoom:var(--lineup-zoom,1.2544)}
 body[data-history-refinements="20261116"] .lineup{--line-gap:calc(19px - 1ch)}
 body[data-history-refinements="20261116"] .lineup.lineup-nine{--line-gap:calc(12px - 1ch)}
 body[data-history-refinements="20261116"] .lineup .line-separator{top:38px;height:18px}
@@ -76,22 +76,37 @@ body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-form,
 body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-feed{width:100%;min-width:0}
 /* Native iOS editing must not inherit the card's layout magnification. Keep
    each field's outer footprint while its cumulative CSS zoom stays one. */
-body[data-mobile-layout="compact-20261122"] .table-wrap .race-comment-input{zoom:calc(1 / var(--lineup-zoom,1.2544));width:auto;justify-self:stretch;min-width:0;max-width:none;height:calc(32px * var(--lineup-zoom,1.2544));min-height:calc(32px * var(--lineup-zoom,1.2544));padding:calc(5px * var(--lineup-zoom,1.2544)) calc(6px * var(--lineup-zoom,1.2544));line-height:calc(20px * var(--lineup-zoom,1.2544));white-space:pre-wrap;overflow-wrap:anywhere}
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .table-wrap .race-comment-input{zoom:calc(1 / var(--lineup-zoom,1.2544));width:auto;justify-self:stretch;min-width:0;max-width:none;height:calc(32px * var(--lineup-zoom,1.2544));min-height:calc(32px * var(--lineup-zoom,1.2544));padding:calc(5px * var(--lineup-zoom,1.2544)) calc(6px * var(--lineup-zoom,1.2544));line-height:calc(20px * var(--lineup-zoom,1.2544));white-space:pre-wrap;overflow-wrap:anywhere}
 body[data-mobile-layout="compact-20261122"] .page-bottom #search,
 body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
 body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{min-width:0;max-width:100%;font-size:17px!important}
-body[data-mobile-layout="compact-20261122"] .page-bottom #search,
-body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
-body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{zoom:calc(1 / var(--lineup-zoom,1.2544));max-width:calc(100% * var(--lineup-zoom,1.2544))}
-body[data-mobile-layout="compact-20261122"] .page-bottom #search{width:calc(100% * var(--lineup-zoom,1.2544))}
-body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-email,
-body[data-mobile-layout="compact-20261122"] .page-bottom .race-comments-code{width:min(calc(230px * var(--lineup-zoom,1.2544)),calc(100% * var(--lineup-zoom,1.2544)))}
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .page-bottom #search,
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .page-bottom .race-comments-email,
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .page-bottom .race-comments-code{zoom:calc(1 / var(--lineup-zoom,1.2544));max-width:calc(100% * var(--lineup-zoom,1.2544))}
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .page-bottom #search{width:calc(100% * var(--lineup-zoom,1.2544))}
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .page-bottom .race-comments-email,
+body[data-mobile-layout="compact-20261122"]:not([data-page-scale="fixed-canvas-20261123"]) .page-bottom .race-comments-code{width:min(calc(230px * var(--lineup-zoom,1.2544)),calc(100% * var(--lineup-zoom,1.2544)))}
 }
 
 @media(max-width:360px){
-body[data-history-refinements="20261116"] .table-wrap td.race{gap:2px}
-body[data-history-refinements="20261116"] .table-wrap .video-actions{gap:1px}
-body[data-history-refinements="20261116"] .table-wrap .video-link{padding-left:4px;padding-right:4px}
+body[data-history-refinements="20261116"]:not([data-page-scale="fixed-canvas-20261123"]) .table-wrap td.race{gap:2px}
+body[data-history-refinements="20261116"]:not([data-page-scale="fixed-canvas-20261123"]) .table-wrap .video-actions{gap:1px}
+body[data-history-refinements="20261116"]:not([data-page-scale="fixed-canvas-20261123"]) .table-wrap .video-link{padding-left:4px;padding-right:4px}
+}
+
+/* One fixed 358px coordinate canvas; devices differ only by its paint scale. */
+@media(max-width:640px){
+body[data-page-scale="fixed-canvas-20261123"]{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body[data-page-scale="fixed-canvas-20261123"] #page-canvas{position:absolute;top:0;left:0;width:var(--page-canvas-width,358px);transform:scale(var(--page-scale,1));transform-origin:0 0;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body[data-page-scale="fixed-canvas-20261123"] .lineup{--line-gap:6px}
+body[data-page-scale="fixed-canvas-20261123"] .table-wrap td.race-comment-cell{width:100%;max-width:100%;min-width:0}
+body[data-page-scale="fixed-canvas-20261123"] .table-wrap .race-comment-input{box-sizing:border-box;width:100%;justify-self:stretch;min-width:0;max-width:none;height:32px;min-height:32px;padding:5px 6px;line-height:20px;font-size:17px!important;white-space:pre-wrap;overflow-wrap:anywhere}
+body[data-page-scale="fixed-canvas-20261123"] .page-bottom #search,
+body[data-page-scale="fixed-canvas-20261123"] .page-bottom .race-comments-email,
+body[data-page-scale="fixed-canvas-20261123"] .page-bottom .race-comments-code{box-sizing:border-box;min-width:0;max-width:100%;font-size:17px!important}
+body[data-page-scale="fixed-canvas-20261123"] .page-bottom #search{width:100%}
+body[data-page-scale="fixed-canvas-20261123"] .page-bottom .race-comments-email,
+body[data-page-scale="fixed-canvas-20261123"] .page-bottom .race-comments-code{width:min(230px,100%)}
 }
 
 /* One geometry for every device: center actual members and measure both dots. */
@@ -114,3 +129,4 @@ body[data-lineup-fit="nine-centered-20261122"] .table-wrap .video-link{padding:4
 body[data-lineup-fit="nine-centered-20261122"] .table-wrap td.race-comment-cell{width:100%;max-width:100%}
 body[data-lineup-fit="nine-centered-20261122"] .table-wrap .race-comment-input{height:max(32px,calc(32px * var(--lineup-zoom)));min-height:max(32px,calc(32px * var(--lineup-zoom)))}
 }
+@media(max-width:640px){body[data-page-scale="fixed-canvas-20261123"] .lineup{--line-gap:6px}body[data-page-scale="fixed-canvas-20261123"] .table-wrap .lineup-cell{overflow:visible}}
