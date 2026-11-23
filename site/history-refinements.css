@@ -132,6 +132,7 @@ body[data-lineup-fit="nine-centered-20261122"] .table-wrap .race-comment-input{h
 }
 @media(max-width:640px){
 body[data-page-scale="fixed-canvas-20261123"] .lineup{--line-gap:6px}
+body[data-page-scale="fixed-canvas-20261123"] .lineup.lineup-nine{--line-gap:6px}
 body[data-page-scale="fixed-canvas-20261123"] .table-wrap .lineup-cell{overflow:visible}
 body[data-page-scale="fixed-canvas-20261123"] .table-wrap #rows>tr>td.race{width:100%;min-width:0;justify-content:space-between}
 body[data-page-scale="fixed-canvas-20261123"] .table-wrap #rows>tr>td.race>.video-actions{margin-left:0;margin-right:-8px}
